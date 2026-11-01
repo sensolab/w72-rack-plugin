@@ -35,6 +35,7 @@ w72-rack-plugin/
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
     commands.json         every command: name, parameters, description
+    protocol.go           embeds commands.json for the Go code
     limen/commands.json   limen's commands, the parity oracle
   docs/
     concept.md
@@ -86,7 +87,11 @@ The MCP server is a small Go program that speaks MCP over stdio to the client an
 - **Why Go.** One static executable, no runtime. It cross-compiles to Windows, Linux and macOS by setting `GOOS` and `GOARCH`. There's an official MCP SDK (`modelcontextprotocol/go-sdk`). Python was ruled out because users would have to install it.
 - **Its job is thin.** Generate the tool list from `protocol/commands.json`, forward each call to the module, return the reply. No patch logic lives in the binary.
 - **Its name.** The MCP server takes the bridge module's name, Brumista, which becomes the tools' prefix (`mcp__brumista__add_cable`).
-- **Configuration.** Host and port, with defaults matching the module. Registered in Claude Code with `claude mcp add`.
+- **Its tools.** One tool per command in `protocol/commands.json`, with the same name, description and parameters. `protocol/` is a small Go module that embeds the file, so the binary reads the one source of truth rather than a copy. A tool call returns the command's `result` as JSON text; an error reply or a failed connection comes back as a tool error the model can read.
+- **One connection per call.** Each call connects, sends `hello`, sends the command and closes. Brumista serves one client at a time, so a held connection would lock out every other client. Calls from one binary run one at a time, since Brumista's listen backlog is 1 and a burst of parallel connections is refused.
+- **The handshake.** The binary refuses a server whose `hello` doesn't name Brumista (limen answers `hello` too) and a module on another major version. Any other version mismatch works, with a warning on stderr.
+- **Configuration.** `-host` and `-port`, defaulting to `127.0.0.1` and `7200`. Registered in Claude Code with `claude mcp add brumista -- <path>/brumista-mcp`.
+- **Releases.** Pushing a tag `vX.Y.Z` that matches `plugin.json` runs `.github/workflows/release.yml`, which builds `brumista-mcp-X.Y.Z-<os>-<arch>` for Windows, Linux and macOS and publishes them, with `SHA256SUMS`, as a GitHub Release. `mcp/version.go` holds the version; a test checks it against `plugin.json`.
 - **The one-artifact alternative.** The module could serve MCP over HTTP itself (localhost only, an `Origin` check and a token). That's kept in reserve, since two artifacts with a sync procedure are acceptable.
 
 ## Toolchain and build
@@ -176,6 +181,9 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Every command that touches the engine or the scene runs on the main thread, reads included | 2026-11-01 |
 | A command that times out before the main thread starts it is cancelled and never runs | 2026-11-01 |
 | `hello` reports `server` and the semver `version`, not an integer protocol number | 2026-11-01 |
+| The MCP binary uses the official Go SDK (`modelcontextprotocol/go-sdk`) and embeds `commands.json` through a `protocol` Go module | 2026-11-01 |
+| The MCP binary opens one connection per call and runs its calls one at a time | 2026-11-01 |
+| Release binaries are plain executables per platform, published by a tag-triggered workflow | 2026-11-01 |
 
 ## Open questions
 
