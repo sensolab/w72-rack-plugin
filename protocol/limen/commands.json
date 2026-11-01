@@ -9,7 +9,7 @@
     "commit": "4a18dd6dd998f263c64ca7146b6274dbcf23def8",
     "file": "src/limen.cpp",
     "protocol": 2,
-    "checked": "2026-11-01, against the source and a running limen (Rack 2.6.6, Windows), read-only commands and argument errors only"
+    "checked": "2026-11-01, against the source and a running limen (Rack 2.6.6, Windows): every command except quit, save_patch, save_patch_as and set_fullscreen, the writes on two scratch modules that were removed afterwards"
   },
   "transport": {
     "address": "127.0.0.1:7000",
@@ -153,7 +153,7 @@
       },
       "result": null,
       "errors": ["missing id, param, or value", "module not found", "param not found"],
-      "notes": ["Runs on the server thread, not the main-thread queue.", "limen does not clamp the value; limen-mcp's tool description says Rack does. Not checked."]
+      "notes": ["Runs on the server thread, not the main-thread queue.", "The value is not clamped: 12 on a parameter with range 0 to 1 reads back as 12. limen-mcp's tool description says Rack clamps it."]
     },
     {
       "name": "list_cables",
@@ -200,7 +200,7 @@
         "position occupied",
         "unknown mode (expected nearest, force, squeeze, or strict)"
       ],
-      "notes": ["An unknown mode or a strict clash is only caught after the module has been created; limen then removes its widget again."]
+      "notes": ["An unknown mode or a strict clash is only caught after the module has been created; limen then removes it again, and list_modules shows no leftover."]
     },
     {
       "name": "remove_module",
@@ -226,7 +226,7 @@
       },
       "result": { "id": "integer", "pos": { "x": "integer", "y": "integer" } },
       "errors": ["missing id, x, or y", "module not found", "position occupied", "unknown mode (expected nearest, force, squeeze, or strict)"],
-      "notes": ["Every mode but strict may land the module somewhere other than x, y."]
+      "notes": ["Every mode but strict may land the module somewhere other than x, y: nearest moved a module asked for x 2 to x 9, next to the module already there.", "Fractional positions snap to the grid: x 12.6 landed at 13."]
     },
     {
       "name": "add_cable",
