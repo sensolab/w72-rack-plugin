@@ -12,7 +12,7 @@ flowchart LR
     bin -- "TCP, JSON" --> server
     cmds["commands.json<br/>one source of truth"] -. generates tools .-> bin
     cmds -. tested against .-> server
-    subgraph rack["Rack: W72 bridge module"]
+    subgraph rack["Rack: Brumista, the bridge module"]
         server["Server thread<br/>127.0.0.1, JSON over TCP"] -- writes --> queue["Main-thread queue<br/>writes, undo, validation"]
         queue -- main thread --> engine["Engine and scene<br/>modules, cables, params"]
         server -- reads --> engine
@@ -49,7 +49,7 @@ The sync procedure keeps the two artifacts from drifting:
 
 ## The bridge module
 
-The module is a TCP server inside Rack. Commands that read state answer from the server thread, and commands that change the patch run on Rack's main thread. limen has the same shape: one file of about 1,165 lines (`src/limen.cpp` in forsitan modulare `master-v2`), with no DSP.
+Brumista is a TCP server inside Rack. Commands that read state answer from the server thread, and commands that change the patch run on Rack's main thread. limen has the same shape: one file of about 1,165 lines (`src/limen.cpp` in forsitan modulare `master-v2`), with no DSP.
 
 - **Server thread.** Listens on `127.0.0.1` only, one client at a time, with JSON over TCP. `accept` times out every 100 ms so the thread can stop cleanly; on Linux, closing the socket from another thread doesn't reliably unblock `accept`.
 - **Main-thread queue.** Anything that touches the scene or the engine's topology (adding modules, cables, positions, saving) is queued as a function and run in the module's main-thread step. The server thread waits for its result.
@@ -81,7 +81,7 @@ The MCP server is a small Go program that speaks MCP over stdio to the client an
 
 - **Why Go.** One static executable, no runtime. It cross-compiles to Windows, Linux and macOS by setting `GOOS` and `GOARCH`. There's an official MCP SDK (`modelcontextprotocol/go-sdk`). Python was ruled out because users would have to install it.
 - **Its job is thin.** Generate the tool list from `protocol/commands.json`, forward each call to the module, return the reply. No patch logic lives in the binary.
-- **Its name.** The MCP server takes the bridge module's name, which becomes the tools' prefix (`mcp__<name>__add_cable`).
+- **Its name.** The MCP server takes the bridge module's name, Brumista, which becomes the tools' prefix (`mcp__brumista__add_cable`).
 - **Configuration.** Host and port, with defaults matching the module. Registered in Claude Code with `claude mcp add`.
 - **The one-artifact alternative.** The module could serve MCP over HTTP itself (localhost only, an `Origin` check and a token). That's kept in reserve, since two artifacts with a sync procedure are acceptable.
 
@@ -143,7 +143,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 
 - **Slugs:** plugin `W72`. Module slugs in plain ASCII, permanent once a patch uses them.
 - **No "VCV"** in any name, slug or binary name.
-- **The binary's name** follows the bridge module, for example `<name>-mcp`.
+- **The binary's name** follows the bridge module, for example `brumista-mcp`.
 - **Naming grammar and glossary:** in [concept.md](concept.md).
 
 ## Decisions
@@ -160,7 +160,8 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Pull requests for every change; Conventional Commits | 2026-11-01 |
 | Semantic Versioning, one version for plugin, binary and protocol (`2.MINOR.PATCH`) | 2026-11-01 |
 | Lightweight GitHub Actions CI once there is code | 2026-11-01 |
+| The bridge module is Brumista (slug `Brumista`); the MCP server takes the same name | 2026-11-01 |
 
 ## Open questions
 
-- [ ] What is the bridge module called? Candidates: Magutt, Tram, Naviglio, Brumista.
+None for now.
