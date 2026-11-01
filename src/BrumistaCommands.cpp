@@ -555,6 +555,8 @@ std::string requireTarget(json_t* req) {
 		throw CommandError("missing path");
 	if (!isAbsolutePath(path))
 		throw CommandError("path must be absolute");
+	if (system::isDirectory(path))
+		throw CommandError("path is a folder");
 	if (system::getExtension(path) != ".vcv")
 		path += ".vcv";
 	if (!system::isDirectory(system::getDirectory(path)))
