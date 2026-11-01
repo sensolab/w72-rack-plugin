@@ -101,7 +101,7 @@ Rack's stock parts, chosen for a dark panel. Nothing custom yet.
 
 ## How panels get made
 
-The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by a generator in the repo. The generator doesn't exist yet. What it has to do:
+The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by a generator in the repo, written in Go, which is already in the toolchain for the MCP server (`golang.org/x/image/font/sfnt` reads the glyph outlines). The generator doesn't exist yet. What it has to do:
 
 1. Take one description per module: slug, display name, family, HP, and its controls (kind, label, row and column).
 2. Write `res/<Slug>.svg` in mm, following this document: ground, band and title, labels, plate, mark.
@@ -111,6 +111,6 @@ The design is decided on the Claude Design canvas; the SVGs in `res/` are built 
 
 ## Open questions
 
-- [ ] Which language for the generator: Go, already in the toolchain (`golang.org/x/image/font/sfnt` reads glyph outlines), or Python with fontTools, as Sapphire does? Go avoids a second toolchain.
+- [x] Which language for the generator? Go, not Python with fontTools as Sapphire does, so there's no second toolchain.
 - [ ] What goes on Brumista's panel besides the link light, once milestone 1 defines its states?
 - [ ] Custom knobs to match the panels, or stock parts for good?

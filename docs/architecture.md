@@ -165,6 +165,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Panels are dark only; the W72 mark is the only element taken from the W72 web design system | 2026-11-01 |
 | Panel style Metropolitana: a family-coloured band, Inter Tight outlines, a light output plate ([design-system.md](design-system.md)) | 2026-11-01 |
 | Panel design is decided on a Claude Design canvas; panel SVGs are built by a generator in the repo | 2026-11-01 |
+| The panel generator is written in Go | 2026-11-01 |
 
 ## Open questions
 
