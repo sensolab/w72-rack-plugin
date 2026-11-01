@@ -55,7 +55,7 @@ Brumista is a TCP server inside Rack. Commands that read state answer from the s
 - **Server thread.** Listens on `127.0.0.1` only, one client at a time, with JSON over TCP. `accept` times out every 100 ms so the thread can stop cleanly; on Linux, closing the socket from another thread doesn't reliably unblock `accept`.
 - **Main-thread queue.** Anything that touches the scene or the engine's topology (adding modules, cables, positions, saving) is queued as a function and run in the module's main-thread step. The server thread waits for its result.
 - **Port.** 7200 by default, not limen's 7000, so both modules can sit in one patch while W72 is being built.
-- **Cables as Rack makes them.** Every new `CableWidget` gets a colour: the requested one, or `RackWidget::getNextCableColor()`. limen sets none, which leaves Rack's default of transparent black ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
+- **Cables as Rack makes them.** Every new `CableWidget` gets a colour: the requested one, or `RackWidget::getNextCableColor()`. limen does the same since forsitan 2.17.1; before that it set none, which left Rack's default of transparent black ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
 - **Undo.** Each change pushes a Rack history action (cable add or remove, module add, parameter change), so Ctrl+Z works on Claude's edits.
 - **Validate before acting.** Port indices are checked against what the panel actually exposes, and every command is wrapped so an exception becomes an error reply instead of a Rack crash. Through limen, a cable to a port with no panel jack (on NYSTHI Programmer) took Rack down.
 

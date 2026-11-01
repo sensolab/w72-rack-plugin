@@ -77,7 +77,7 @@ The first W72 module, Brumista, lets Claude read and patch a running Rack, so a 
 
 It grows out of limen, gosub's module in forsitan modulare, which proved the idea. Using it every day showed what a studio needs on top:
 
-- **Patches that read like yours.** Cables in a consistent colour scheme (for example blue clock, yellow pitch, green modulation, red audio), not invisible ones. In limen, cables added through its protocol currently get no colour at all ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
+- **Patches that read like yours.** Cables in a consistent colour scheme (for example blue clock, yellow pitch, green modulation, red audio), not invisible ones. In limen, cables added through its protocol got no colour at all until forsitan 2.17.1 fixed it ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
 - **Seeing what the panel sees.** Module state that lives outside parameters (a quantizer's scale mask, a mixer's gain trims) is visible today only by saving the patch and reading the file.
 - **Changes you can take back.** Every change Claude makes should be undoable with Ctrl+Z, like your own.
 - **Mistakes that don't crash Rack.** A cable to a port with no panel jack should be refused, not take Rack down.
