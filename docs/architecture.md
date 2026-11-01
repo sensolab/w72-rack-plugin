@@ -13,13 +13,12 @@ flowchart LR
     cmds["commands.json<br/>one source of truth"] -. generates tools .-> bin
     cmds -. tested against .-> server
     subgraph rack["Rack: Brumista, the bridge module"]
-        server["Server thread<br/>127.0.0.1, JSON over TCP"] -- writes --> queue["Main-thread queue<br/>writes, undo, validation"]
+        server["Server thread<br/>127.0.0.1, JSON over TCP"] -- "reads and writes" --> queue["Main-thread queue<br/>undo, validation, timeouts"]
         queue -- main thread --> engine["Engine and scene<br/>modules, cables, params"]
-        server -- reads --> engine
     end
 ```
 
-Reads answer straight from the server thread. Anything that changes the patch is queued and run on Rack's main thread, where undo and validation happen.
+Every command that touches the engine or the scene, read or write, is queued and run on Rack's main thread, where undo and validation happen. Only commands that read plugin data, which doesn't change while Rack runs, answer straight from the server thread.
 
 ## Repository and sync
 
@@ -46,17 +45,18 @@ w72-rack-plugin/
 
 The sync procedure keeps the two artifacts from drifting:
 
-1. **One source of truth.** `protocol/commands.json` lists every command. The Go server generates its MCP tool list from it. The C++ dispatch table is handwritten and checked against it by a test that compares `hello`'s command list with the file. Generating the C++ is a fallback if drift becomes a problem. Adding a command is one edit, and a mismatch fails the test.
+1. **One source of truth.** `protocol/commands.json` lists every command. The Go server generates its MCP tool list from it. The C++ dispatch table is handwritten and checked against it by `tools/check-commands.sh` in CI: the same commands, in the same order, on the same thread. `hello` builds its command list from that table, so a live `hello` agrees with the file too. Generating the C++ is a fallback if drift becomes a problem. Adding a command is one edit, and a mismatch fails the test.
 2. **One version, semver.** `plugin.json`'s version, the binary's version and the protocol version move together under Semantic Versioning. Rack pins the major version to its own (2.x for Rack 2), so new commands or modules are minor bumps and fixes are patches. A release tags all three.
 3. **A version handshake.** The module's `hello` reports its protocol version. The binary refuses a version it doesn't know, or warns, so an old pair says so instead of half working.
 4. **Separate distribution.** The plugin goes through the VCV Library; the binary ships as prebuilt files on GitHub Releases, built by GitHub Actions. This is how forsitan modulare does it ([limen-tools](https://github.com/gosub/limen-tools/releases)). The Library has no written rule on executables inside a plugin, but it builds plugins from source with a C++ toolchain, and macOS would likely block an unsigned executable.
 
 ## The bridge module
 
-Brumista is a TCP server inside Rack. Commands that read state answer from the server thread, and commands that change the patch run on Rack's main thread. limen has the same shape: one file of about 1,165 lines (`src/limen.cpp` in forsitan modulare `master-v2`), with no DSP.
+Brumista is a TCP server inside Rack. Commands that touch the patch run on Rack's main thread; only plugin and model lists answer from the server thread. limen has the same shape: one file of about 1,165 lines (`src/limen.cpp` in forsitan modulare `master-v2`), with no DSP.
 
-- **Server thread.** Listens on `127.0.0.1` only, one client at a time, with JSON over TCP. `accept` times out every 100 ms so the thread can stop cleanly; on Linux, closing the socket from another thread doesn't reliably unblock `accept`.
-- **Main-thread queue.** Anything that touches the scene or the engine's topology (adding modules, cables, positions, saving) is queued as a function and run in the module's main-thread step. The server thread waits for its result.
+- **Server thread.** Listens on `127.0.0.1` only, one client at a time, with one JSON object per line. It polls its sockets every 100 ms so it can stop cleanly; on Linux, closing a socket from another thread doesn't reliably wake it. Sends never raise `SIGPIPE`, so a client that hangs up can't take Rack down. If the port is taken (a second Brumista), it retries every second.
+- **Main-thread queue.** Anything that touches the engine or the scene, reads included, is queued as a function and run in the module widget's `step()`. Reading from the server thread races with the main thread removing a module. The server thread waits 2 s for the result.
+- **Timeouts cancel.** A command still queued when the wait ends is cancelled and never runs, so a client told "timeout" can trust nothing happened. One the main thread has already started is waited for until it finishes. limen leaves timed-out work in the queue to run later.
 - **Port.** 7200 by default, not limen's 7000, so both modules can sit in one patch while W72 is being built.
 - **Cables as Rack makes them.** Every new `CableWidget` gets a colour: the requested one, or `RackWidget::getNextCableColor()`. limen does the same since forsitan 2.17.1; before that it set none, which left Rack's default of transparent black ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
 - **Undo.** Each change pushes a Rack history action (cable add or remove, module add, parameter change), so Ctrl+Z works on Claude's edits.
@@ -173,6 +173,9 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Control positions reach the C++ through a generated `src/<Slug>Panel.hpp`, not a hidden SVG layer | 2026-11-01 |
 | Static Inter Tight files (OFL) live in `tools/panelgen/fonts/`, outside the plugin package | 2026-11-01 |
 | limen's command surface is captured in `protocol/limen/commands.json` as the parity oracle, apart from W72's own `protocol/commands.json` | 2026-11-01 |
+| Every command that touches the engine or the scene runs on the main thread, reads included | 2026-11-01 |
+| A command that times out before the main thread starts it is cancelled and never runs | 2026-11-01 |
+| `hello` reports `server` and the semver `version`, not an integer protocol number | 2026-11-01 |
 
 ## Open questions
 
