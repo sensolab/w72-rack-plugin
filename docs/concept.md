@@ -88,5 +88,5 @@ No extra runtime should be needed to use it: the module plus one downloaded bina
 ## Open questions
 
 - [ ] Will W72 hold sound modules as well as studio tools, or will tools get their own plugin later?
-- [ ] What is the panel style: what does a Milanese winter look like on a W72 panel?
+- [x] What is the panel style: what does a Milanese winter look like on a W72 panel? Metropolitana, after the Milan Metro's signage: see [design-system.md](design-system.md).
 - [ ] Which sound module comes second: Ghisa, Scighera or Gibigiana?

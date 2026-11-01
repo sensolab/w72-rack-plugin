@@ -6,6 +6,7 @@ Read these before starting any task:
 
 - [docs/concept.md](docs/concept.md): theme, naming grammar, glossary, design principles.
 - [docs/architecture.md](docs/architecture.md): architecture, sync procedure, milestones, decisions.
+- [docs/design-system.md](docs/design-system.md): the panel style, grid, colours, type and parts. Read it before touching a panel.
 
 The repository is meant to be public. Keep machine paths, personal notes and credentials out of committed files; machine-specific notes belong in a gitignored `CLAUDE.local.md`.
 
