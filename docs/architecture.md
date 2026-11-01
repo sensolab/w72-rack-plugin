@@ -37,6 +37,7 @@ w72-rack-plugin/
   docs/
     concept.md
     architecture.md       this document
+    design-system.md      the panel style
   CLAUDE.md               what every Claude Code thread reads first
 ```
 
@@ -161,6 +162,9 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Semantic Versioning, one version for plugin, binary and protocol (`2.MINOR.PATCH`) | 2026-11-01 |
 | Lightweight GitHub Actions CI once there is code | 2026-11-01 |
 | The bridge module is Brumista (slug `Brumista`); the MCP server takes the same name | 2026-11-01 |
+| Panels are dark only; the W72 mark is the only element taken from the W72 web design system | 2026-11-01 |
+| Panel style Metropolitana: a family-coloured band, Inter Tight outlines, a light output plate ([design-system.md](design-system.md)) | 2026-11-01 |
+| Panel design is decided on a Claude Design canvas; panel SVGs are built by a generator in the repo | 2026-11-01 |
 
 ## Open questions
 
