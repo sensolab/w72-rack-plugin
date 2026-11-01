@@ -17,7 +17,7 @@ The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so
 
 - **Slugs are permanent.** A module slug is written into every patch that uses it. Plain ASCII only (Fiòca → `Fioca`). Never rename a shipped slug.
 - **No "VCV"** in any name, slug or binary name.
-- **The bridge module's name is not decided yet.** Until it is, use a neutral working name in code and don't create its final slug.
+- **The bridge module is called Brumista.** Its slug is `Brumista`. The MCP server takes the same name, so its tools are `mcp__brumista__*`.
 - **Port 7200** is the bridge's default. limen (forsitan modulare) uses 7000 and may be running in the same patch: never take its port, and never talk to it as if it were W72.
 - **`protocol/commands.json` is the source of truth** for commands. The C++ dispatch is handwritten; a test checks it against the file. The Go server generates its tool list from it. A change to one side without the others is incomplete.
 - **Main thread for writes.** Anything that touches the scene or the engine's topology runs through the main-thread queue. Every write pushes a Rack history action so Ctrl+Z works.

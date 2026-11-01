@@ -42,17 +42,17 @@ Rules for names and slugs:
 
 ## Glossary
 
-Three names are approved (Ghisa, Scighera, Gibigiana). The bridge module's name is still open, and the rest are candidates. Spellings follow common use; classical Milanese orthography varies.
+Four names are approved (Brumista, Ghisa, Scighera, Gibigiana), and the rest are candidates. Spellings follow common use; classical Milanese orthography varies.
 
 | Name | Meaning | Module role | Status |
 | --- | --- | --- | --- |
+| Brumista | The old cab driver, from the brougham carriage | The bridge: carries Claude's commands into a running Rack, where it's told | Approved |
 | Ghisa | The Milanese traffic warden, nicknamed after the old helmet | Quantizer, router, sequential switch or ASR; possibly a shift register with a built-in quantizer | Approved |
 | Scighera | The thick Po Valley fog | Diffusion, reverb, smeared noise | Approved |
 | Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | Shimmer, moving reflection or delay | Approved |
-| Magutt | The bricklayer or labourer who builds what the architect drew | Bridge candidate: Claude builds the patch you design | Candidate |
-| Tram | The city's trams, carrying people between stops on fixed rails | Bridge candidate: carries commands on a fixed protocol | Candidate |
-| Naviglio | The canals that carried the Duomo's marble into the city | Bridge candidate: a channel into the rack | Candidate |
-| Brumista | The old cab driver, from the brougham carriage | Something that carries signals where it's told | Candidate |
+| Magutt | The bricklayer or labourer who builds what the architect drew | Passed over for the bridge: Claude builds the patch you design | Candidate |
+| Tram | The city's trams, carrying people between stops on fixed rails | Passed over for the bridge: carries commands on a fixed protocol | Candidate |
+| Naviglio | The canals that carried the Duomo's marble into the city | Passed over for the bridge: a channel into the rack | Candidate |
 | Galaverna | Frost that grows on branches from freezing fog | Freezer, accumulating texture | Candidate |
 | Fiòca | Snow | Granular, falling particles | Candidate |
 | Merla | *I giorni della merla*, the last three days of January, the coldest by folklore | Very slow three-stage modulator | Candidate |
@@ -73,7 +73,7 @@ These are the test a module has to pass, more than a feature list.
 
 ## The first module: the bridge
 
-The first W72 module lets Claude read and patch a running Rack, so a patch can be designed in conversation and built while you listen. Its name is still open (see the glossary).
+The first W72 module, Brumista, lets Claude read and patch a running Rack, so a patch can be designed in conversation and built while you listen.
 
 It grows out of limen, gosub's module in forsitan modulare, which proved the idea. Using it every day showed what a studio needs on top:
 
@@ -87,7 +87,6 @@ No extra runtime should be needed to use it: the module plus one downloaded bina
 
 ## Open questions
 
-- [ ] What is the bridge module called: Magutt, Tram, Naviglio or something else?
 - [ ] Will W72 hold sound modules as well as studio tools, or will tools get their own plugin later?
 - [ ] What is the panel style: what does a Milanese winter look like on a W72 panel?
 - [ ] Which sound module comes second: Ghisa, Scighera or Gibigiana?
