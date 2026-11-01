@@ -1,0 +1,374 @@
+{
+  "$comment": "limen's command surface, captured as the parity oracle for Brumista's first milestone. Not W72's own protocol: that is protocol/commands.json. Shapes use JSON values as type names; a key ending in ? may be absent, and [T] is an array of T.",
+  "source": {
+    "module": "limen",
+    "plugin": "forsitan",
+    "pluginVersion": "2.17.2",
+    "repository": "https://github.com/gosub/forsitan-modulare",
+    "branch": "master-v2",
+    "commit": "4a18dd6dd998f263c64ca7146b6274dbcf23def8",
+    "file": "src/limen.cpp",
+    "protocol": 2,
+    "checked": "2026-11-01, against the source and a running limen (Rack 2.6.6, Windows), read-only commands and argument errors only"
+  },
+  "transport": {
+    "address": "127.0.0.1:7000",
+    "framing": "one JSON object per line, newline-terminated, both ways; empty lines are ignored",
+    "clients": "one at a time; a second connection waits for the first to close",
+    "request": { "cmd": "string", "...": "the command's params, at the top level" },
+    "reply": {
+      "ok": { "ok": true, "result": "the command's result; null for commands that return nothing" },
+      "error": { "ok": false, "error": "string" }
+    },
+    "errors": [
+      "invalid JSON",
+      "missing cmd",
+      "unknown cmd",
+      "timeout waiting for main thread"
+    ],
+    "threads": "commands marked main are queued and run in limen's widget step(); the server thread waits 2 s for them (10 s for save_patch and save_patch_as), then replies with the timeout error while the queued work may still run"
+  },
+  "commands": [
+    {
+      "name": "hello",
+      "description": "Protocol version and the commands this limen supports.",
+      "thread": "server",
+      "params": {},
+      "result": { "protocol": 2, "commands": ["string"] },
+      "errors": []
+    },
+    {
+      "name": "list_plugins",
+      "description": "Every plugin loaded in Rack.",
+      "thread": "server",
+      "params": {},
+      "result": [{ "slug": "string", "name": "string", "version": "string" }],
+      "errors": []
+    },
+    {
+      "name": "list_models",
+      "description": "Every module model Rack can create, optionally for one plugin.",
+      "thread": "server",
+      "params": {
+        "plugin": { "type": "string", "required": false, "description": "plugin slug; an unknown slug returns an empty list" }
+      },
+      "result": [{ "plugin": "string", "slug": "string", "name": "string", "description": "string" }],
+      "errors": []
+    },
+    {
+      "name": "list_modules",
+      "description": "The modules in the patch, with grid position and width.",
+      "thread": "main",
+      "params": {
+        "plugin": { "type": "string", "required": false, "description": "plugin slug; an unknown slug returns an empty list" }
+      },
+      "result": [{
+        "id": "integer",
+        "plugin?": "string",
+        "model?": "string",
+        "name?": "string",
+        "numParams": "integer",
+        "numInputs": "integer",
+        "numOutputs": "integer",
+        "pos?": { "x": "integer, HP from Rack's origin", "y": "integer, rack row" },
+        "hp?": "integer"
+      }],
+      "errors": []
+    },
+    {
+      "name": "get_module",
+      "description": "One module, in the shape list_modules uses.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": "same object as one list_modules entry",
+      "errors": ["missing id", "module not found"]
+    },
+    {
+      "name": "get_module_info",
+      "description": "What Rack's right-click Info menu shows: model metadata, tags and the plugin's identity and links.",
+      "thread": "server",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": {
+        "id": "integer",
+        "model": {
+          "slug": "string", "name": "string", "description": "string",
+          "tags": ["string"], "manualUrl": "string", "modularGridUrl": "string"
+        },
+        "plugin": {
+          "slug?": "string", "name?": "string", "brand?": "string", "version?": "string",
+          "license?": "string", "author?": "string", "authorUrl?": "string", "pluginUrl?": "string",
+          "manualUrl?": "string", "sourceUrl?": "string", "donateUrl?": "string", "changelogUrl?": "string"
+        }
+      },
+      "errors": ["missing id", "module not found", "module has no model"]
+    },
+    {
+      "name": "list_ports",
+      "description": "A module's inputs and outputs by index, with their names.",
+      "thread": "server",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": {
+        "inputs": [{ "id": "integer", "name": "string, empty when the port has no name" }],
+        "outputs": [{ "id": "integer", "name": "string, empty when the port has no name" }]
+      },
+      "errors": ["missing id", "module not found"],
+      "notes": ["Lists every port the engine module declares, including ports with no jack on the panel (see problem panel-jack)."]
+    },
+    {
+      "name": "list_params",
+      "description": "A module's parameters: current value, name, range and unit.",
+      "thread": "server",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": [{ "id": "integer", "value": "number", "name?": "string", "min?": "number", "max?": "number", "unit?": "string" }],
+      "errors": ["missing id", "module not found"]
+    },
+    {
+      "name": "get_param",
+      "description": "One parameter, in the shape list_params uses.",
+      "thread": "server",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "param": { "type": "integer", "required": true, "description": "parameter index" }
+      },
+      "result": "same object as one list_params entry",
+      "errors": ["missing id or param", "module not found", "param not found"]
+    },
+    {
+      "name": "set_param",
+      "description": "Set a parameter's value.",
+      "thread": "server",
+      "mutates": true,
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "param": { "type": "integer", "required": true, "description": "parameter index" },
+        "value": { "type": "number", "required": true, "description": "new value, sent to Engine::setParamValue as a float" }
+      },
+      "result": null,
+      "errors": ["missing id, param, or value", "module not found", "param not found"],
+      "notes": ["Runs on the server thread, not the main-thread queue.", "limen does not clamp the value; limen-mcp's tool description says Rack does. Not checked."]
+    },
+    {
+      "name": "list_cables",
+      "description": "The cables in the patch, optionally only those touching one module.",
+      "thread": "server",
+      "params": {
+        "id": { "type": "integer", "required": false, "description": "only cables with this module at either end" },
+        "verbose": { "type": "boolean", "required": false, "default": false, "description": "add module and port names" }
+      },
+      "result": [{
+        "id": "integer",
+        "outputModule": "integer",
+        "outputPort": "integer",
+        "inputModule": "integer",
+        "inputPort": "integer",
+        "outputModuleName?": "string, with verbose",
+        "outputPortName?": "string, with verbose",
+        "inputModuleName?": "string, with verbose",
+        "inputPortName?": "string, with verbose"
+      }],
+      "errors": [],
+      "notes": ["Reports no cable colour."]
+    },
+    {
+      "name": "add_module",
+      "description": "Create a module and its widget; place it at a grid position, or next to an existing module when no position is given.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "plugin": { "type": "string", "required": true, "description": "plugin slug" },
+        "model": { "type": "string", "required": true, "description": "model slug" },
+        "x": { "type": "number", "required": false, "description": "grid column in HP; x and y go together" },
+        "y": { "type": "number", "required": false, "description": "grid row; x and y go together" },
+        "mode": { "type": "string", "required": false, "default": "nearest", "enum": ["nearest", "force", "squeeze", "strict"], "description": "what to do when the position is taken; used only with x and y" }
+      },
+      "result": { "id": "integer", "pos": { "x": "integer", "y": "integer" }, "hp": "integer" },
+      "errors": [
+        "missing plugin or model",
+        "x and y must both be numbers",
+        "plugin not found",
+        "model not found",
+        "failed to create module",
+        "failed to create module widget",
+        "position occupied",
+        "unknown mode (expected nearest, force, squeeze, or strict)"
+      ],
+      "notes": ["An unknown mode or a strict clash is only caught after the module has been created; limen then removes its widget again."]
+    },
+    {
+      "name": "remove_module",
+      "description": "Remove a module and its cables.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": null,
+      "errors": ["missing id", "module not found"]
+    },
+    {
+      "name": "move_module",
+      "description": "Move a module to a grid position and report where it landed.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "x": { "type": "number", "required": true, "description": "grid column in HP" },
+        "y": { "type": "number", "required": true, "description": "grid row" },
+        "mode": { "type": "string", "required": false, "default": "nearest", "enum": ["nearest", "force", "squeeze", "strict"], "description": "what to do when the position is taken" }
+      },
+      "result": { "id": "integer", "pos": { "x": "integer", "y": "integer" } },
+      "errors": ["missing id, x, or y", "module not found", "position occupied", "unknown mode (expected nearest, force, squeeze, or strict)"],
+      "notes": ["Every mode but strict may land the module somewhere other than x, y."]
+    },
+    {
+      "name": "add_cable",
+      "description": "Connect an output to an input.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "outputModule": { "type": "integer", "required": true, "description": "source module id" },
+        "outputPort": { "type": "integer", "required": true, "description": "output index" },
+        "inputModule": { "type": "integer", "required": true, "description": "destination module id" },
+        "inputPort": { "type": "integer", "required": true, "description": "input index" },
+        "color": { "type": "string", "required": false, "description": "\"#rrggbb\" or \"#rrggbbaa\"; without it, RackWidget::getNextCableColor()" }
+      },
+      "result": { "id": "integer" },
+      "errors": [
+        "missing outputModule, outputPort, inputModule, or inputPort",
+        "color must be a string \"#rrggbb\" or \"#rrggbbaa\"",
+        "output module not found",
+        "input module not found",
+        "output port out of range",
+        "input port out of range"
+      ],
+      "notes": [
+        "Port ranges are checked against the engine module's port counts, not the panel's jacks (see problem panel-jack).",
+        "No check that the input is free. What Rack does with a second cable on one input through this path was not tested."
+      ]
+    },
+    {
+      "name": "remove_cable",
+      "description": "Remove a cable.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "cable id" }
+      },
+      "result": null,
+      "errors": ["missing id", "cable not found"]
+    },
+    {
+      "name": "save_patch",
+      "description": "Save the patch to its own file, or to path as a copy that leaves the patch's path alone.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "path": { "type": "string", "required": false, "description": "target .vcv file; overwritten without asking" }
+      },
+      "result": { "path": "string" },
+      "errors": ["patch has never been saved; use save_patch_as with a path", "failed to save patch", "Rack's exception message"]
+    },
+    {
+      "name": "save_patch_as",
+      "description": "Rack's Save as: write the patch to path and make it the patch's file.",
+      "thread": "main",
+      "mutates": true,
+      "params": {
+        "path": { "type": "string", "required": true, "description": "target .vcv file; overwritten without asking" }
+      },
+      "result": { "path": "string" },
+      "errors": ["missing path", "failed to save patch", "Rack's exception message"]
+    },
+    {
+      "name": "set_fullscreen",
+      "description": "Enter or leave fullscreen; reports the resulting state.",
+      "thread": "main",
+      "params": {
+        "on": { "type": "boolean", "required": true, "description": "true for fullscreen" }
+      },
+      "result": { "fullscreen": "boolean" },
+      "errors": ["missing on"]
+    },
+    {
+      "name": "zoom_to_modules",
+      "description": "Fit the view to all modules, as Rack's F4 does.",
+      "thread": "server",
+      "params": {},
+      "result": null,
+      "errors": [],
+      "notes": ["Replies at once; the zoom runs over the next three frames."]
+    },
+    {
+      "name": "quit",
+      "description": "Close Rack's window.",
+      "thread": "main",
+      "mutates": true,
+      "params": {},
+      "result": null,
+      "errors": [],
+      "notes": ["No save prompt: unsaved changes are lost. Not called while capturing this file."]
+    },
+    {
+      "name": "batch",
+      "description": "Run a list of commands in order in one round trip.",
+      "thread": "server",
+      "params": {
+        "commands": { "type": "array", "required": true, "description": "request objects, each with its own cmd" },
+        "stopOnError": { "type": "boolean", "required": false, "default": true, "description": "stop after the first failing command" }
+      },
+      "result": {
+        "count": "integer, commands that ran",
+        "failed": "integer",
+        "stopped?": "integer, index of the command that stopped the batch",
+        "results": ["each command's own reply, { ok, result } or { ok, error }"]
+      },
+      "errors": ["missing commands array"],
+      "notes": [
+        "The envelope is ok whenever the batch is well formed; failures are inside results.",
+        "A nested batch is refused inside results with \"batch cannot be nested\", and a non-object entry with \"command must be an object\".",
+        "Commands that already ran are not undone when a later one fails."
+      ]
+    }
+  ],
+  "problems": [
+    {
+      "id": "cable-colour",
+      "summary": "Cables added through the protocol had no colour: a new CableWidget is transparent black, so only the plugs drew.",
+      "status": "fixed in forsitan 2.17.1, which also added add_cable's color param",
+      "reference": "https://github.com/gosub/forsitan-modulare/issues/24",
+      "brumista": "Every new cable gets the requested colour or RackWidget::getNextCableColor()."
+    },
+    {
+      "id": "panel-jack",
+      "summary": "add_cable accepts any port index below the engine module's port count. Some modules declare ports with no jack on the panel (NYSTHI Programmer input 19); a cable to one of those crashed Rack.",
+      "status": "open in 2.17.2: the check is unchanged. Seen in use, not reproduced while capturing this file.",
+      "brumista": "Validate port indices against the PortWidgets the panel actually has, and turn every exception into an error reply."
+    },
+    {
+      "id": "undo",
+      "summary": "No command pushes a Rack history action, so nothing done through limen can be undone with Ctrl+Z.",
+      "status": "open in 2.17.2: limen.cpp has no history calls",
+      "brumista": "Every write pushes a history action; a batch could be one complex action."
+    },
+    {
+      "id": "server-thread-writes",
+      "summary": "set_param writes from the server thread, outside the main-thread queue the other writes use.",
+      "status": "open in 2.17.2",
+      "brumista": "All writes run through the main-thread queue."
+    },
+    {
+      "id": "late-timeout",
+      "summary": "A command that times out waiting for the main thread is still queued and may run after the client has been told it failed.",
+      "status": "open in 2.17.2",
+      "brumista": "Not decided."
+    }
+  ]
+}

@@ -36,6 +36,7 @@ w72-rack-plugin/
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
     commands.json         every command: name, parameters, description
+    limen/commands.json   limen's commands, the parity oracle
   docs/
     concept.md
     architecture.md       this document
@@ -63,7 +64,7 @@ Brumista is a TCP server inside Rack. Commands that read state answer from the s
 
 ## Features and milestones
 
-The first milestone matches what limen does today, without its problems. Each later one adds a capability limen doesn't have.
+The first milestone matches what limen does today, without its problems. Each later one adds a capability limen doesn't have. limen's surface (forsitan 2.17.2, protocol 2) is captured in `protocol/limen/commands.json`: each command's params, result shape and error strings, plus the problems Brumista must not repeat.
 
 1. **Parity, done properly.** `hello`, list modules, params, ports and cables, add, move and remove modules, set params, add and remove cables, batch, save as. Plus cable colours, undo history and validation from the start.
     - Done when: a full patch section can be built end to end, with cables in the requested colours.
@@ -171,6 +172,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Panel descriptions place controls by row (counted from the bottom) and order, never by coordinate | 2026-11-01 |
 | Control positions reach the C++ through a generated `src/<Slug>Panel.hpp`, not a hidden SVG layer | 2026-11-01 |
 | Static Inter Tight files (OFL) live in `tools/panelgen/fonts/`, outside the plugin package | 2026-11-01 |
+| limen's command surface is captured in `protocol/limen/commands.json` as the parity oracle, apart from W72's own `protocol/commands.json` | 2026-11-01 |
 
 ## Open questions
 
