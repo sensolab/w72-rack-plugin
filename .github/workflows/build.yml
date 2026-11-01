@@ -31,3 +31,19 @@ jobs:
 
       - name: Package
         run: make dist
+
+  panels:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/panelgen
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/panelgen/go.mod
+          cache-dependency-path: tools/panelgen/go.sum
+
+      - name: Test, and check the generated panels are current
+        run: go test ./...

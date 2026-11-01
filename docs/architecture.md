@@ -30,7 +30,9 @@ w72-rack-plugin/
   plugin.json             the Rack plugin, slug W72
   Makefile
   src/                    C++: the bridge module, later the sound modules
-  res/                    panels (SVG)
+  res/                    panels (SVG), generated
+  panels/                 one description per panel
+  tools/panelgen/         the panel generator, Go (not in the plugin package)
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
     commands.json         every command: name, parameters, description
@@ -166,6 +168,9 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Panel style Metropolitana: a family-coloured band, Inter Tight outlines, a light output plate ([design-system.md](design-system.md)) | 2026-11-01 |
 | Panel design is decided on a Claude Design canvas; panel SVGs are built by a generator in the repo | 2026-11-01 |
 | The panel generator is written in Go | 2026-11-01 |
+| Panel descriptions place controls by row (counted from the bottom) and order, never by coordinate | 2026-11-01 |
+| Control positions reach the C++ through a generated `src/<Slug>Panel.hpp`, not a hidden SVG layer | 2026-11-01 |
+| Static Inter Tight files (OFL) live in `tools/panelgen/fonts/`, outside the plugin package | 2026-11-01 |
 
 ## Open questions
 

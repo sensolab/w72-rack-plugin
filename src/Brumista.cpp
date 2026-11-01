@@ -1,11 +1,12 @@
-// Brumista: the bridge module. Empty for now; the TCP server comes in milestone 1.
+// Brumista: the bridge module. The TCP server comes in milestone 1; until then the link light stays off.
 #include "plugin.hpp"
+#include "BrumistaPanel.hpp"
 
 struct Brumista : Module {
 	enum ParamId { PARAMS_LEN };
 	enum InputId { INPUTS_LEN };
 	enum OutputId { OUTPUTS_LEN };
-	enum LightId { LIGHTS_LEN };
+	enum LightId { LINK_LIGHT, LIGHTS_LEN };
 
 	Brumista() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -17,8 +18,10 @@ struct BrumistaWidget : ModuleWidget {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/Brumista.svg")));
 
-		addChild(createWidget<ScrewSilver>(Vec(0, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		for (Vec pos : BrumistaPanel::SCREWS)
+			addChild(createWidget<ScrewBlack>(pos));
+
+		addChild(createLightCentered<MediumLight<WhiteLight>>(BrumistaPanel::LINK_LIGHT, module, Brumista::LINK_LIGHT));
 	}
 };
 
