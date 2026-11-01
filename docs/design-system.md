@@ -101,16 +101,20 @@ Rack's stock parts, chosen for a dark panel. Nothing custom yet.
 
 ## How panels get made
 
-The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by a generator in the repo, written in Go, which is already in the toolchain for the MCP server (`golang.org/x/image/font/sfnt` reads the glyph outlines). The generator doesn't exist yet. What it has to do:
+The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by `tools/panelgen`, a Go program (Go is already in the toolchain for the MCP server). Nobody edits a panel SVG by hand.
 
-1. Take one description per module: slug, display name, family, HP, and its controls (kind, label, row and column).
-2. Write `res/<Slug>.svg` in mm, following this document: ground, band and title, labels, plate, mark.
-3. Turn every label into outlines from the Inter Tight font file.
-4. Keep control positions in one place, so the C++ widget and the SVG can't disagree: a hidden `components` layer, or a generated header.
-5. Check the result the way Rack parses it (nanosvg at 75 DPI), so a panel that uses an unsupported feature fails the build instead of rendering wrong.
+1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`), a label and a row.
+2. **Rows count from the bottom.** Row 0 is the output row on the plate (y = 345.5 px), and each row up is 48 px higher. Controls in a row share its width equally, in the order they are listed, so a description never holds a coordinate.
+3. `make panels` writes `res/<Slug>.svg` in mm (ground, band and title, labels, plate, mark) and `src/<Slug>Panel.hpp`, which holds each control's centre and the screws' corners in px. The module widget places its parts from that header, so the widget and the SVG can't disagree.
+4. Every label is turned into outlines from the static Inter Tight SemiBold and Bold files in `tools/panelgen/fonts/` (read with `golang.org/x/image/font/sfnt`). They stay out of the plugin package.
+5. The generator refuses what nanosvg can't draw (`text`, `style`, `class`, `use`, clips, masks, filters, dashes), and a description that breaks the grid: a second large knob, an output off row 0, more jacks in a row than HP / 2.
+6. CI runs `go test` in `tools/panelgen`, which also fails when a committed panel or header differs from what the generator writes now.
+
+Kerning is not applied yet: Inter Tight keeps it in its `GPOS` table, which `sfnt` doesn't read. Labels are short capitals and the difference is small, but a long mixed-case name may want it later.
 
 ## Open questions
 
 - [x] Which language for the generator? Go, not Python with fontTools as Sapphire does, so there's no second toolchain.
 - [ ] What goes on Brumista's panel besides the link light, once milestone 1 defines its states?
+- [ ] Outputs on a panel under 6 HP: the mark sits where the plate would. The generator refuses it until it's designed.
 - [ ] Custom knobs to match the panels, or stock parts for good?

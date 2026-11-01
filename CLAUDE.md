@@ -12,7 +12,9 @@ The repository is meant to be public. Keep machine paths, personal notes and cre
 
 ## Layout
 
-The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so the VCV Library can build it. `mcp/` (Go) and `protocol/` sit beside it and stay out of the plugin package (`DISTRIBUTABLES`).
+The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so the VCV Library can build it. `mcp/` (Go), `protocol/`, `panels/` and `tools/panelgen/` (Go) sit beside it and stay out of the plugin package (`DISTRIBUTABLES`).
+
+Panels are generated: edit `panels/<Slug>.json` and run `make panels`, which rewrites `res/<Slug>.svg` and `src/<Slug>Panel.hpp`. Never edit either by hand.
 
 ## Rules
 
