@@ -184,6 +184,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | The MCP binary uses the official Go SDK (`modelcontextprotocol/go-sdk`) and embeds `commands.json` through a `protocol` Go module | 2026-11-01 |
 | The MCP binary opens one connection per call and runs its calls one at a time | 2026-11-01 |
 | Release binaries are plain executables per platform, published by a tag-triggered workflow | 2026-11-01 |
+| The first release is v2.1.0, tagged when Brumista reaches parity with limen (milestone 1) | 2026-11-01 |
 
 ## Open questions
 
