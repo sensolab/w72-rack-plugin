@@ -26,6 +26,7 @@ type Param struct {
 	Required    bool     `json:"required"`
 	Default     any      `json:"default,omitempty"`
 	Enum        []string `json:"enum,omitempty"`
+	Items       any      `json:"items,omitempty"`
 	Description string   `json:"description"`
 }
 
@@ -48,6 +49,9 @@ func (c Command) inputSchema() map[string]any {
 		}
 		if p.Enum != nil {
 			prop["enum"] = p.Enum
+		}
+		if p.Items != nil {
+			prop["items"] = p.Items
 		}
 		props[name] = prop
 		if p.Required {
