@@ -108,6 +108,12 @@ func TestToolsMatchCommands(t *testing.T) {
 			if required != p.Required {
 				t.Errorf("%s.%s: required is %v, want %v", c.Name, name, required, p.Required)
 			}
+			if p.Enum != nil {
+				enum, _ := props[name].(map[string]any)["enum"].([]any)
+				if len(enum) != len(p.Enum) {
+					t.Errorf("%s.%s: enum is %v, want %v", c.Name, name, enum, p.Enum)
+				}
+			}
 		}
 	}
 }

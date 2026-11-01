@@ -60,8 +60,9 @@ Brumista is a TCP server inside Rack. Commands that touch the patch run on Rack'
 - **Timeouts cancel.** A command still queued when the wait ends is cancelled and never runs, so a client told "timeout" can trust nothing happened. One the main thread has already started is waited for until it finishes. limen leaves timed-out work in the queue to run later.
 - **Port.** 7200 by default, not limen's 7000, so both modules can sit in one patch while W72 is being built.
 - **Cables as Rack makes them.** Every new `CableWidget` gets a colour: the requested one, or `RackWidget::getNextCableColor()`. limen does the same since forsitan 2.17.1; before that it set none, which left Rack's default of transparent black ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
-- **Undo.** Each change pushes a Rack history action (cable add or remove, module add, parameter change), so Ctrl+Z works on Claude's edits.
-- **Validate before acting.** Port indices are checked against what the panel actually exposes, and every command is wrapped so an exception becomes an error reply instead of a Rack crash. Through limen, a cable to a port with no panel jack (on NYSTHI Programmer) took Rack down.
+- **Undo.** Each write records one Rack history step (cable add or remove, module add, move or remove, parameter change), so Ctrl+Z works on Claude's edits. Writes record through one function, which a batch can point at a `ComplexAction` so the whole batch is one step. `remove_module` calls Rack's own Delete, which pushes its step itself; batch will have to adopt it.
+- **Parameters as a knob sets them.** `set_param` goes through the `ParamQuantity`, which clamps to the range and rounds stepped parameters, and replies with the value that resulted.
+- **Validate before acting.** Port indices are checked against what the panel actually exposes, and every command is wrapped so an exception becomes an error reply instead of a Rack crash. Through limen, a cable to a port with no panel jack (on NYSTHI Programmer) took Rack down: Rack's `CableWidget::setCable` throws once the engine already holds the cable. Arguments, placement mode included, are checked before anything changes. Brumista refuses to remove a Brumista module, since its commands run inside that widget's `step()`.
 
 ## Features and milestones
 
@@ -69,6 +70,12 @@ The first milestone matches what limen does today, without its problems. Each la
 
 1. **Parity, done properly.** `hello`, list modules, params, ports and cables, add, move and remove modules, set params, add and remove cables, batch, save as. Plus cable colours, undo history and validation from the start.
     - Done when: a full patch section can be built end to end, with cables in the requested colours.
+    - The commands still missing after the read-only ones ship in four groups, in order:
+        1. Patch edits: `set_param`, `add_module`, `remove_module`, `move_module`, `add_cable`, `remove_cable`, each with its undo step.
+        2. `batch`, built on group 1. A whole batch undoes as one step.
+        3. Saving: `save_patch` and `save_patch_as`. `save_patch_as` refuses to overwrite an existing file unless the call asks for it.
+        4. View: `set_fullscreen` and `zoom_to_modules`, last or alongside saving.
+    - `quit` stays out: it closes Rack with no save prompt.
 2. **Seeing state.** Read a module's JSON state live (`dataToJson`), which today needs a save and a parse of the `.vcv` file. Set a cable's colour after the fact.
     - Done when: a quantizer's scale mask or a mixer's gain trims can be read from a running patch.
 3. **Building blocks.** Load a `.vcvm` preset into a module and add a `.vcvs` selection at a position. Stoermelder PackOne (8FACE, STRIP) is the prior art.
@@ -185,6 +192,12 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | The MCP binary opens one connection per call and runs its calls one at a time | 2026-11-01 |
 | Release binaries are plain executables per platform, published by a tag-triggered workflow | 2026-11-01 |
 | The first release is v2.1.0, tagged when Brumista reaches parity with limen (milestone 1) | 2026-11-01 |
+| The remaining parity commands ship in four groups: patch edits, batch, saving, view; `quit` is left out | 2026-11-01 |
+| A whole `batch` undoes as one step; writes record undo through one function a batch can group | 2026-11-01 |
+| `save_patch_as` refuses to overwrite an existing file unless the call asks for it | 2026-11-01 |
+| `set_param` clamps and snaps through the `ParamQuantity` and replies with the resulting parameter | 2026-11-01 |
+| A cable with no colour takes Rack's next cable colour; choosing colours by signal is the caller's job | 2026-11-01 |
+| `remove_module` goes through Rack's Delete, and refuses a Brumista module | 2026-11-01 |
 
 ## Open questions
 

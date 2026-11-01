@@ -1,9 +1,11 @@
-// Brumista's commands: the dispatch table and the read-only handlers.
+// Brumista's commands: the dispatch table and the handlers. Writes run on the main
+// thread and record a Rack undo step.
 // Shapes and error strings follow limen (forsitan modulare, GPL-3.0-or-later, by gosub),
 // recorded in protocol/limen/commands.json; differences are noted in protocol/commands.json.
 #include "BrumistaCommands.hpp"
 #include "plugin.hpp"
 #include <tag.hpp>
+#include <cctype>
 
 namespace brumista {
 
@@ -34,10 +36,85 @@ engine::Module* requireModule(int64_t id) {
 	return m;
 }
 
+// Undo. Every write records its step here. A batch will open a group so that its
+// writes undo together; outside one, each write is its own step in Edit > Undo.
+history::ComplexAction* undoGroup = nullptr;
+
+void record(history::Action* h) {
+	if (undoGroup)
+		undoGroup->push(h);
+	else
+		APP->history->push(h);
+}
+
+// A ComplexAction that may hold nothing, such as a move that changed no position.
+void recordAll(history::ComplexAction* h) {
+	if (h->isEmpty())
+		delete h;
+	else
+		record(h);
+}
+
+enum class Mode { NEAREST, FORCE, SQUEEZE, STRICT };
+
+// The request's placement mode, nearest when absent. Checked before anything
+// changes; limen only notices a bad mode after it has created the module.
+Mode requireMode(json_t* req) {
+	json_t* j = json_object_get(req, "mode");
+	if (!j)
+		return Mode::NEAREST;
+	std::string s = json_is_string(j) ? json_string_value(j) : "";
+	if (s == "nearest")
+		return Mode::NEAREST;
+	if (s == "force")
+		return Mode::FORCE;
+	if (s == "squeeze")
+		return Mode::SQUEEZE;
+	if (s == "strict")
+		return Mode::STRICT;
+	throw CommandError("unknown mode (expected nearest, force, squeeze, or strict)");
+}
+
+// Moves mw to a grid position under one of Rack's placement policies; false when
+// strict finds the place taken. The caller has called updateModuleOldPositions(),
+// which squeeze starts from and the undo step is read against.
+bool place(app::ModuleWidget* mw, math::Vec grid, Mode mode) {
+	app::RackWidget* rack = APP->scene->rack;
+	// Grid to pixels through setGridPosition, so the mapping is Rack's own.
+	math::Vec saved = mw->box.pos;
+	mw->setGridPosition(grid);
+	math::Vec px = mw->box.pos;
+	mw->box.pos = saved;
+	switch (mode) {
+		case Mode::NEAREST: rack->setModulePosNearest(mw, px); return true;
+		case Mode::FORCE: rack->setModulePosForce(mw, px); return true;
+		case Mode::SQUEEZE: rack->setModulePosSqueeze(mw, px); return true;
+		case Mode::STRICT: return rack->requestModulePos(mw, px);
+	}
+	return false;
+}
+
+bool isHexColor(const std::string& s) {
+	if ((s.size() != 7 && s.size() != 9) || s[0] != '#')
+		return false;
+	for (size_t i = 1; i < s.size(); i++)
+		if (!std::isxdigit((unsigned char) s[i]))
+			return false;
+	return true;
+}
+
 std::string portName(const std::vector<engine::PortInfo*>& infos, int i) {
 	if (i >= 0 && i < (int) infos.size() && infos[i])
 		return infos[i]->name;
 	return "";
+}
+
+json_t* posJson(app::ModuleWidget* mw) {
+	math::Vec p = mw->getGridPosition();
+	json_t* pos = json_object();
+	json_object_set_new(pos, "x", json_integer(std::lround(p.x)));
+	json_object_set_new(pos, "y", json_integer(std::lround(p.y)));
+	return pos;
 }
 
 json_t* moduleJson(engine::Module* m) {
@@ -52,11 +129,7 @@ json_t* moduleJson(engine::Module* m) {
 	json_object_set_new(obj, "numInputs", json_integer(m->getNumInputs()));
 	json_object_set_new(obj, "numOutputs", json_integer(m->getNumOutputs()));
 	if (app::ModuleWidget* mw = APP->scene->rack->getModule(m->id)) {
-		math::Vec p = mw->getGridPosition();
-		json_t* pos = json_object();
-		json_object_set_new(pos, "x", json_integer(std::lround(p.x)));
-		json_object_set_new(pos, "y", json_integer(std::lround(p.y)));
-		json_object_set_new(obj, "pos", pos);
+		json_object_set_new(obj, "pos", posJson(mw));
 		json_object_set_new(obj, "hp", json_integer(std::lround(mw->getGridSize().x)));
 	}
 	return obj;
@@ -235,6 +308,219 @@ json_t* listCables(json_t* req) {
 	return arr;
 }
 
+json_t* setParam(json_t* req) {
+	json_t* idJ = json_object_get(req, "id");
+	json_t* paramJ = json_object_get(req, "param");
+	json_t* valueJ = json_object_get(req, "value");
+	if (!json_is_integer(idJ) || !json_is_integer(paramJ) || !json_is_number(valueJ))
+		throw CommandError("missing id, param, or value");
+	engine::Module* m = requireModule(json_integer_value(idJ));
+	int64_t param = json_integer_value(paramJ);
+	if (param < 0 || param >= m->getNumParams())
+		throw CommandError("param not found");
+	int p = (int) param;
+	float oldValue = APP->engine->getParamValue(m, p);
+	// The quantity clamps to the range and snaps stepped params, as a knob would.
+	if (engine::ParamQuantity* pq = m->getParamQuantity(p))
+		pq->setImmediateValue((float) json_number_value(valueJ));
+	else
+		APP->engine->setParamValue(m, p, (float) json_number_value(valueJ));
+	float newValue = APP->engine->getParamValue(m, p);
+	if (newValue != oldValue) {
+		history::ParamChange* h = new history::ParamChange;
+		h->moduleId = m->id;
+		h->paramId = p;
+		h->oldValue = oldValue;
+		h->newValue = newValue;
+		record(h);
+	}
+	return paramJson(m, p);
+}
+
+json_t* addModule(json_t* req) {
+	json_t* pluginJ = json_object_get(req, "plugin");
+	json_t* modelJ = json_object_get(req, "model");
+	if (!json_is_string(pluginJ) || !json_is_string(modelJ))
+		throw CommandError("missing plugin or model");
+	json_t* xJ = json_object_get(req, "x");
+	json_t* yJ = json_object_get(req, "y");
+	bool placed = xJ || yJ;
+	if (placed && !(json_is_number(xJ) && json_is_number(yJ)))
+		throw CommandError("x and y must both be numbers");
+	Mode mode = requireMode(req);
+	plugin::Plugin* p = plugin::getPlugin(json_string_value(pluginJ));
+	if (!p)
+		throw CommandError("plugin not found");
+	plugin::Model* mdl = p->getModel(json_string_value(modelJ));
+	if (!mdl)
+		throw CommandError("model not found");
+
+	engine::Module* m = mdl->createModule();
+	if (!m)
+		throw CommandError("failed to create module");
+	APP->engine->addModule(m);
+	app::ModuleWidget* mw = nullptr;
+	try {
+		mw = mdl->createModuleWidget(m);
+	}
+	catch (...) {
+		APP->engine->removeModule(m);
+		delete m;
+		throw;
+	}
+	if (!mw) {
+		APP->engine->removeModule(m);
+		delete m;
+		throw CommandError("failed to create module widget");
+	}
+
+	// As Rack's own paste does: record positions, place the widget, then add it, so
+	// one undo step holds the new module and any modules force or squeeze pushed aside.
+	// Deleting a widget that was never added also removes and deletes its module.
+	app::RackWidget* rack = APP->scene->rack;
+	rack->updateModuleOldPositions();
+	if (placed) {
+		if (!place(mw, math::Vec(json_number_value(xJ), json_number_value(yJ)), mode)) {
+			delete mw;
+			throw CommandError("position occupied");
+		}
+	}
+	else {
+		// Next to an existing module, so it lands in view, as limen does.
+		std::vector<app::ModuleWidget*> mws = rack->getModules();
+		rack->setModulePosNearest(mw, mws.empty() ? math::Vec() : mws.front()->box.pos);
+	}
+	try {
+		rack->addModule(mw);
+	}
+	catch (...) {
+		delete mw;
+		throw;
+	}
+
+	history::ComplexAction* h = new history::ComplexAction;
+	h->name = "add module";
+	h->push(rack->getModuleDragAction());
+	history::ModuleAdd* add = new history::ModuleAdd;
+	add->setModule(mw);
+	h->push(add);
+	record(h);
+
+	json_t* obj = json_object();
+	json_object_set_new(obj, "id", json_integer(m->id));
+	json_object_set_new(obj, "pos", posJson(mw));
+	json_object_set_new(obj, "hp", json_integer(std::lround(mw->getGridSize().x)));
+	return obj;
+}
+
+json_t* removeModule(json_t* req) {
+	int64_t id = requireInt(req, "id", "missing id");
+	app::ModuleWidget* mw = APP->scene->rack->getModule(id);
+	if (!mw)
+		throw CommandError("module not found");
+	// Commands run in Brumista's widget step(): removing a Brumista from there would
+	// delete the widget mid-step and wait forever for the server thread serving this call.
+	if (mw->getModel() == modelBrumista)
+		throw CommandError("Brumista can't remove a Brumista module");
+	// Rack's own Delete: cables, the gap squeeze closes, and the module, as one undo step.
+	// It pushes to the history itself, so a batch will have to adopt that step.
+	mw->removeAction();
+	return json_null();
+}
+
+json_t* moveModule(json_t* req) {
+	json_t* idJ = json_object_get(req, "id");
+	json_t* xJ = json_object_get(req, "x");
+	json_t* yJ = json_object_get(req, "y");
+	if (!json_is_integer(idJ) || !json_is_number(xJ) || !json_is_number(yJ))
+		throw CommandError("missing id, x, or y");
+	Mode mode = requireMode(req);
+	app::RackWidget* rack = APP->scene->rack;
+	app::ModuleWidget* mw = rack->getModule(json_integer_value(idJ));
+	if (!mw)
+		throw CommandError("module not found");
+	rack->updateModuleOldPositions();
+	if (!place(mw, math::Vec(json_number_value(xJ), json_number_value(yJ)), mode))
+		throw CommandError("position occupied");
+	history::ComplexAction* h = rack->getModuleDragAction();
+	h->name = "move module";
+	recordAll(h);
+
+	// Every mode but strict may land the module elsewhere, so report where it is.
+	json_t* obj = json_object();
+	json_object_set_new(obj, "id", json_integer(mw->module->id));
+	json_object_set_new(obj, "pos", posJson(mw));
+	return obj;
+}
+
+json_t* addCable(json_t* req) {
+	json_t* omJ = json_object_get(req, "outputModule");
+	json_t* opJ = json_object_get(req, "outputPort");
+	json_t* imJ = json_object_get(req, "inputModule");
+	json_t* ipJ = json_object_get(req, "inputPort");
+	if (!json_is_integer(omJ) || !json_is_integer(opJ) || !json_is_integer(imJ) || !json_is_integer(ipJ))
+		throw CommandError("missing outputModule, outputPort, inputModule, or inputPort");
+	json_t* colorJ = json_object_get(req, "color");
+	if (colorJ && !(json_is_string(colorJ) && isHexColor(json_string_value(colorJ))))
+		throw CommandError("color must be a string \"#rrggbb\" or \"#rrggbbaa\"");
+
+	engine::Module* outM = APP->engine->getModule(json_integer_value(omJ));
+	if (!outM)
+		throw CommandError("output module not found");
+	engine::Module* inM = APP->engine->getModule(json_integer_value(imJ));
+	if (!inM)
+		throw CommandError("input module not found");
+	int64_t op = json_integer_value(opJ);
+	int64_t ip = json_integer_value(ipJ);
+	if (op < 0 || op >= outM->getNumOutputs())
+		throw CommandError("output port out of range");
+	if (ip < 0 || ip >= inM->getNumInputs())
+		throw CommandError("input port out of range");
+	// A module may declare ports it has no jack for; a cable to one throws in
+	// CableWidget::setCable, after the engine already holds it. Check the panel first.
+	app::RackWidget* rack = APP->scene->rack;
+	app::ModuleWidget* outMw = rack->getModule(outM->id);
+	if (!outMw || !outMw->getOutput((int) op))
+		throw CommandError("output port has no jack on the panel");
+	app::ModuleWidget* inMw = rack->getModule(inM->id);
+	if (!inMw || !inMw->getInput((int) ip))
+		throw CommandError("input port has no jack on the panel");
+
+	engine::Cable* cable = new engine::Cable;
+	cable->outputModule = outM;
+	cable->outputId = (int) op;
+	cable->inputModule = inM;
+	cable->inputId = (int) ip;
+	APP->engine->addCable(cable);
+	app::CableWidget* cw = new app::CableWidget;
+	cw->setCable(cable);
+	cw->color = colorJ ? color::fromHexString(json_string_value(colorJ)) : rack->getNextCableColor();
+	rack->addCable(cw);
+
+	history::CableAdd* h = new history::CableAdd;
+	h->setCable(cw);
+	record(h);
+
+	json_t* obj = json_object();
+	json_object_set_new(obj, "id", json_integer(cable->id));
+	json_object_set_new(obj, "color", json_string(color::toHexString(cw->color).c_str()));
+	return obj;
+}
+
+json_t* removeCable(json_t* req) {
+	int64_t id = requireInt(req, "id", "missing id");
+	app::CableWidget* cw = APP->scene->rack->getCable(id);
+	if (!cw)
+		throw CommandError("cable not found");
+	history::CableRemove* h = new history::CableRemove;
+	h->setCable(cw);
+	APP->scene->rack->removeCable(cw);
+	// Deleting the widget removes and deletes its engine cable.
+	delete cw;
+	record(h);
+	return json_null();
+}
+
 struct Command {
 	const char* name;
 	Thread thread;
@@ -253,6 +539,12 @@ const Command COMMANDS[] = {
 	{"list_params", Thread::MAIN, listParams},
 	{"get_param", Thread::MAIN, getParam},
 	{"list_cables", Thread::MAIN, listCables},
+	{"set_param", Thread::MAIN, setParam},
+	{"add_module", Thread::MAIN, addModule},
+	{"remove_module", Thread::MAIN, removeModule},
+	{"move_module", Thread::MAIN, moveModule},
+	{"add_cable", Thread::MAIN, addCable},
+	{"remove_cable", Thread::MAIN, removeCable},
 };
 
 json_t* hello(json_t*) {

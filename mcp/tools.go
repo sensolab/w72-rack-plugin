@@ -22,10 +22,11 @@ type Command struct {
 }
 
 type Param struct {
-	Type        string `json:"type"`
-	Required    bool   `json:"required"`
-	Default     any    `json:"default,omitempty"`
-	Description string `json:"description"`
+	Type        string   `json:"type"`
+	Required    bool     `json:"required"`
+	Default     any      `json:"default,omitempty"`
+	Enum        []string `json:"enum,omitempty"`
+	Description string   `json:"description"`
 }
 
 func loadSpec() (*Spec, error) {
@@ -44,6 +45,9 @@ func (c Command) inputSchema() map[string]any {
 		prop := map[string]any{"type": p.Type, "description": p.Description}
 		if p.Default != nil {
 			prop["default"] = p.Default
+		}
+		if p.Enum != nil {
+			prop["enum"] = p.Enum
 		}
 		props[name] = prop
 		if p.Required {
