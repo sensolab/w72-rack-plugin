@@ -1,0 +1,19 @@
+# Rack plugin build output
+/build/
+/dist/
+/dep/
+/plugin.dll
+/plugin.so
+/plugin.dylib
+
+# Go
+/mcp/bin/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local, machine-specific notes
+CLAUDE.local.md
