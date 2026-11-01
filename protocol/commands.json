@@ -1,5 +1,5 @@
 {
-  "$comment": "Brumista's protocol: every command it answers. The source of truth: the C++ dispatch table in src/BrumistaCommands.cpp is checked against it (tools/check-commands.sh), and the MCP server generates its tools from it (protocol/protocol.go embeds this file). Shapes use the notation of protocol/limen/commands.json: JSON values as type names, a key ending in ? may be absent, [T] is an array of T. limenDiff notes where a command departs from limen's.",
+  "$comment": "Brumista's protocol: every command it answers. The source of truth: the C++ dispatch table in src/BrumistaCommands.cpp is checked against it (tools/check-commands.sh), and the MCP server generates its tools from it (protocol/protocol.go embeds this file). Shapes use the notation of protocol/limen/commands.json: JSON values as type names, a key ending in ? may be absent, [T] is an array of T. limenDiff notes where a command departs from limen's; undo says what a write leaves in Rack's Edit > Undo.",
   "transport": {
     "address": "127.0.0.1:7200",
     "framing": "one JSON object per line, newline-terminated, both ways; empty lines are ignored, a trailing \\r is dropped",
@@ -23,6 +23,7 @@
       "Port 7200, not 7000.",
       "Every read that touches the engine or the scene runs on the main thread; limen reads params, ports, cables and module info from the server thread.",
       "A timed-out command is cancelled rather than left queued (limen problem late-timeout).",
+      "Every write records a Rack undo step, so Ctrl+Z works on it (limen problem undo).",
       "A request line over 1 MiB closes the connection with \"request too long\"."
     ]
   },
@@ -162,6 +163,124 @@
       }],
       "errors": [],
       "limenDiff": ["Adds color, which limen doesn't report."]
+    },
+    {
+      "name": "set_param",
+      "description": "Set a parameter's value. The value is clamped to the parameter's range and rounded on stepped parameters, as turning the knob would; the reply reads it back.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "param": { "type": "integer", "required": true, "description": "parameter index" },
+        "value": { "type": "number", "required": true, "description": "new value, in the parameter's own range (list_params shows min and max)" }
+      },
+      "result": "the parameter after the change, in the shape list_params uses",
+      "errors": ["missing id, param, or value", "module not found", "param not found"],
+      "undo": "one step, only when the value changed",
+      "limenDiff": [
+        "Runs on the main thread; limen writes from the server thread.",
+        "Clamps and snaps through the ParamQuantity; limen stores the raw value, so 12 on a 0 to 1 knob reads back as 12.",
+        "Returns the parameter; limen returns null."
+      ]
+    },
+    {
+      "name": "add_module",
+      "description": "Create a module and place it at a grid position, or next to an existing module when no position is given. Returns where it landed.",
+      "thread": "main",
+      "params": {
+        "plugin": { "type": "string", "required": true, "description": "plugin slug (list_plugins)" },
+        "model": { "type": "string", "required": true, "description": "model slug (list_models)" },
+        "x": { "type": "number", "required": false, "description": "grid column in HP; give x and y together" },
+        "y": { "type": "number", "required": false, "description": "rack row; give x and y together" },
+        "mode": { "type": "string", "required": false, "default": "nearest", "enum": ["nearest", "force", "squeeze", "strict"], "description": "what to do when the position is taken: nearest moves to the closest free place, force pushes neighbours in the row aside, squeeze slides them to make room, strict refuses" }
+      },
+      "result": { "id": "integer", "pos": { "x": "integer", "y": "integer" }, "hp": "integer" },
+      "errors": [
+        "missing plugin or model",
+        "x and y must both be numbers",
+        "unknown mode (expected nearest, force, squeeze, or strict)",
+        "plugin not found",
+        "model not found",
+        "failed to create module",
+        "failed to create module widget",
+        "position occupied"
+      ],
+      "undo": "one step: the new module, with any modules force or squeeze pushed aside",
+      "limenDiff": ["An unknown mode is refused before the module is created; limen creates it, then removes it."]
+    },
+    {
+      "name": "remove_module",
+      "description": "Remove a module and its cables, as Rack's Delete does.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": null,
+      "errors": ["missing id", "module not found", "Brumista can't remove a Brumista module"],
+      "undo": "one step: the cables, the module, and the gap closed when Rack's squeeze setting is on",
+      "limenDiff": [
+        "Goes through Rack's Delete, so with squeeze on the modules to the right close the gap; limen leaves it.",
+        "Refuses to remove a Brumista module, which would stop the server answering the call."
+      ]
+    },
+    {
+      "name": "move_module",
+      "description": "Move a module to a grid position and report where it landed.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "x": { "type": "number", "required": true, "description": "grid column in HP" },
+        "y": { "type": "number", "required": true, "description": "rack row" },
+        "mode": { "type": "string", "required": false, "default": "nearest", "enum": ["nearest", "force", "squeeze", "strict"], "description": "what to do when the position is taken: nearest moves to the closest free place, force pushes neighbours in the row aside, squeeze slides them to make room, strict refuses" }
+      },
+      "result": { "id": "integer", "pos": { "x": "integer", "y": "integer" } },
+      "errors": [
+        "missing id, x, or y",
+        "unknown mode (expected nearest, force, squeeze, or strict)",
+        "module not found",
+        "position occupied"
+      ],
+      "undo": "one step for every module that moved; none when nothing moved",
+      "notes": ["Every mode but strict may land the module somewhere other than x, y. Fractional positions snap to the grid."]
+    },
+    {
+      "name": "add_cable",
+      "description": "Connect an output to an input with a coloured cable. Without a colour, the cable takes Rack's next cable colour, as a dragged cable does.",
+      "thread": "main",
+      "params": {
+        "outputModule": { "type": "integer", "required": true, "description": "source module id" },
+        "outputPort": { "type": "integer", "required": true, "description": "output index (list_ports)" },
+        "inputModule": { "type": "integer", "required": true, "description": "destination module id" },
+        "inputPort": { "type": "integer", "required": true, "description": "input index (list_ports)" },
+        "color": { "type": "string", "required": false, "description": "\"#rrggbb\" or \"#rrggbbaa\"" }
+      },
+      "result": { "id": "integer", "color": "string, \"#rrggbb\" or \"#rrggbbaa\"" },
+      "errors": [
+        "missing outputModule, outputPort, inputModule, or inputPort",
+        "color must be a string \"#rrggbb\" or \"#rrggbbaa\"",
+        "output module not found",
+        "input module not found",
+        "output port out of range",
+        "input port out of range",
+        "output port has no jack on the panel",
+        "input port has no jack on the panel"
+      ],
+      "undo": "one step",
+      "notes": ["An input may take more than one cable; Rack sums them, as with stacked cables."],
+      "limenDiff": [
+        "Refuses a port the panel has no jack for (limen problem panel-jack, which crashed Rack).",
+        "Returns the cable's colour as well as its id."
+      ]
+    },
+    {
+      "name": "remove_cable",
+      "description": "Remove a cable.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "cable id (list_cables)" }
+      },
+      "result": null,
+      "errors": ["missing id", "cable not found"],
+      "undo": "one step"
     }
   ]
 }
