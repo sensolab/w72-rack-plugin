@@ -368,7 +368,7 @@
       "id": "late-timeout",
       "summary": "A command that times out waiting for the main thread is still queued and may run after the client has been told it failed.",
       "status": "open in 2.17.2",
-      "brumista": "Not decided."
+      "brumista": "A command still queued when the wait ends is cancelled and never runs; one already started is waited for."
     }
   ]
 }
