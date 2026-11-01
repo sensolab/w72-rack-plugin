@@ -5,6 +5,8 @@
 #include "BrumistaCommands.hpp"
 #include "plugin.hpp"
 #include <tag.hpp>
+#include <patch.hpp>
+#include <settings.hpp>
 #include <cctype>
 
 namespace brumista {
@@ -534,6 +536,91 @@ json_t* removeCable(json_t* req) {
 	return json_null();
 }
 
+bool isAbsolutePath(const std::string& p) {
+#if defined ARCH_WIN
+	if (p.size() >= 3 && std::isalpha((unsigned char) p[0]) && p[1] == ':' && (p[2] == '\\' || p[2] == '/'))
+		return true;
+	return p.size() >= 2 && (p[0] == '\\' || p[0] == '/') && p[0] == p[1];
+#else
+	return !p.empty() && p[0] == '/';
+#endif
+}
+
+// The request's target file: absolute, in a folder that exists, ending in .vcv as
+// Rack's Save as makes it, and not an existing file unless overwrite is set.
+std::string requireTarget(json_t* req) {
+	json_t* pathJ = json_object_get(req, "path");
+	std::string path = json_is_string(pathJ) ? json_string_value(pathJ) : "";
+	if (path.empty())
+		throw CommandError("missing path");
+	if (!isAbsolutePath(path))
+		throw CommandError("path must be absolute");
+	if (system::getExtension(path) != ".vcv")
+		path += ".vcv";
+	if (!system::isDirectory(system::getDirectory(path)))
+		throw CommandError("folder not found");
+	if (system::exists(path)) {
+		if (system::isDirectory(path))
+			throw CommandError("path is a folder");
+		if (!json_is_true(json_object_get(req, "overwrite")))
+			throw CommandError("file exists; set overwrite to replace it");
+	}
+	return path;
+}
+
+// Writes the patch to path. The file records whether the patch had unsaved changes,
+// so the history is marked saved first, as Rack's Save does; keepSaved false puts
+// the mark back afterwards, for a copy. A failed save always puts it back.
+void writePatch(const std::string& path, bool keepSaved) {
+	history::State* hs = APP->history;
+	int savedIndex = hs->savedIndex;
+	hs->setSaved();
+	try {
+		APP->patch->save(path);
+	}
+	catch (Exception& e) {
+		hs->savedIndex = savedIndex;
+		throw CommandError(e.what());
+	}
+	catch (...) {
+		hs->savedIndex = savedIndex;
+		throw CommandError("failed to save patch");
+	}
+	if (!keepSaved)
+		hs->savedIndex = savedIndex;
+}
+
+json_t* pathJson(const std::string& path) {
+	json_t* obj = json_object();
+	json_object_set_new(obj, "path", json_string(path.c_str()));
+	return obj;
+}
+
+// Rack's Save, or with a path a copy that leaves the patch's own file and its
+// unsaved state alone.
+json_t* savePatch(json_t* req) {
+	if (json_object_get(req, "path")) {
+		std::string path = requireTarget(req);
+		writePatch(path, false);
+		return pathJson(path);
+	}
+	std::string path = APP->patch->path;
+	if (path.empty())
+		throw CommandError("patch has never been saved; use save_patch_as with a path");
+	writePatch(path, true);
+	return pathJson(path);
+}
+
+// Rack's Save as: the file becomes the patch's own and joins the recent patches.
+json_t* savePatchAs(json_t* req) {
+	std::string path = requireTarget(req);
+	writePatch(path, true);
+	APP->patch->path = path;
+	settings::lastPatchDirectory = system::getDirectory(path);
+	APP->patch->pushRecentPath(path);
+	return pathJson(path);
+}
+
 json_t* batch(json_t* req);
 
 struct Command {
@@ -561,6 +648,8 @@ const Command COMMANDS[] = {
 	{"add_cable", Thread::MAIN, addCable},
 	{"remove_cable", Thread::MAIN, removeCable},
 	{"batch", Thread::MAIN, batch},
+	{"save_patch", Thread::MAIN, savePatch},
+	{"save_patch_as", Thread::MAIN, savePatchAs},
 };
 
 json_t* hello(json_t*) {

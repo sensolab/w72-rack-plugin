@@ -17,9 +17,12 @@ const (
 	dialTimeout = 2 * time.Second
 	// Brumista waits 2 s for the main thread; the rest is slack for the reply.
 	replyTimeout = 5 * time.Second
-	// A batch's 2 s covers only its start, and its commands then run back to back.
-	batchReplyTimeout = 30 * time.Second
+	// For a batch or a save, the 2 s covers only the start: a batch's commands then
+	// run back to back, and a save writes the whole patch archive.
+	longReplyTimeout = 30 * time.Second
 )
+
+var longCommands = map[any]bool{"batch": true, "save_patch": true, "save_patch_as": true}
 
 // Bridge sends commands to Brumista. Each call opens its own connection, checks
 // it with hello and closes it, because Brumista serves one client at a time and
@@ -83,8 +86,8 @@ func (b *Bridge) Call(ctx context.Context, cmd string, args map[string]json.RawM
 
 func (b *Bridge) roundTrip(ctx context.Context, conn net.Conn, r *bufio.Reader, req map[string]any) (json.RawMessage, error) {
 	timeout := replyTimeout
-	if req["cmd"] == "batch" {
-		timeout = batchReplyTimeout
+	if longCommands[req["cmd"]] {
+		timeout = longReplyTimeout
 	}
 	deadline := time.Now().Add(timeout)
 	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {

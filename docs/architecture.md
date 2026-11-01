@@ -62,6 +62,7 @@ Brumista is a TCP server inside Rack. Commands that touch the patch run on Rack'
 - **Cables as Rack makes them.** Every new `CableWidget` gets a colour: the requested one, or `RackWidget::getNextCableColor()`. limen does the same since forsitan 2.17.1; before that it set none, which left Rack's default of transparent black ([forsitan-modulare#24](https://github.com/gosub/forsitan-modulare/issues/24)).
 - **Undo.** Each write records one Rack history step (cable add or remove, module add, move or remove, parameter change), so Ctrl+Z works on Claude's edits. Writes record through one function, which a batch points at a `ComplexAction` so the whole batch is one step. `remove_module` calls Rack's own Delete, which pushes its step itself; inside a batch it is taken back off the history into the group.
 - **A batch is one main-thread task.** `batch` runs all its commands in a single queued function, so no frame falls between them and a client sees the patch only before or after. The 2 s wait covers the batch's start; the MCP binary allows 30 s for its reply. limen runs a batch on the server thread and sends each write to the main thread on its own.
+- **Saving as Rack's menu saves.** `save_patch` without a path is Rack's Save; `save_patch_as` is Save as, which makes the file the patch's own and adds it to the recent patches. Both mark the patch saved before writing, as Rack does, so the file doesn't carry Rack's unsaved mark. `save_patch` with a path writes a copy and leaves the patch's file and unsaved state alone. Any explicit path must be absolute, in a folder that exists, and gets `.vcv` when it lacks it; an existing file is replaced only when the call sets `overwrite`. limen overwrites silently and leaves the patch marked unsaved. Saves get the MCP binary's 30 s reply window, as a batch does.
 - **Parameters as a knob sets them.** `set_param` goes through the `ParamQuantity`, which clamps to the range and rounds stepped parameters, and replies with the value that resulted.
 - **Validate before acting.** Port indices are checked against what the panel actually exposes, and every command is wrapped so an exception becomes an error reply instead of a Rack crash. Through limen, a cable to a port with no panel jack (on NYSTHI Programmer) took Rack down: Rack's `CableWidget::setCable` throws once the engine already holds the cable. Arguments, placement mode included, are checked before anything changes. Brumista refuses to remove a Brumista module, since its commands run inside that widget's `step()`.
 
@@ -74,7 +75,7 @@ The first milestone matches what limen does today, without its problems. Each la
     - The commands still missing after the read-only ones ship in four groups, in order:
         1. Patch edits: `set_param`, `add_module`, `remove_module`, `move_module`, `add_cable`, `remove_cable`, each with its undo step.
         2. `batch`, built on group 1. A whole batch undoes as one step.
-        3. Saving: `save_patch` and `save_patch_as`. `save_patch_as` refuses to overwrite an existing file unless the call asks for it.
+        3. Saving: `save_patch` and `save_patch_as`. Neither replaces an existing file unless the call asks for it.
         4. View: `set_fullscreen` and `zoom_to_modules`, last or alongside saving.
     - `quit` stays out: it closes Rack with no save prompt.
 2. **Seeing state.** Read a module's JSON state live (`dataToJson`), which today needs a save and a parse of the `.vcv` file. Set a cable's colour after the fact.
@@ -196,6 +197,8 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | The remaining parity commands ship in four groups: patch edits, batch, saving, view; `quit` is left out | 2026-11-01 |
 | A whole `batch` undoes as one step; writes record undo through one function a batch can group | 2026-11-01 |
 | `save_patch_as` refuses to overwrite an existing file unless the call asks for it | 2026-11-01 |
+| A `save_patch` copy follows the same rule: an explicit path never replaces a file unless `overwrite` is true | 2026-11-01 |
+| Saves follow Rack's menu: the patch is marked saved, paths must be absolute and get `.vcv` when missing | 2026-11-01 |
 | `set_param` clamps and snaps through the `ParamQuantity` and replies with the resulting parameter | 2026-11-01 |
 | A cable with no colour takes Rack's next cable colour; choosing colours by signal is the caller's job | 2026-11-01 |
 | `remove_module` goes through Rack's Delete, and refuses a Brumista module | 2026-11-01 |

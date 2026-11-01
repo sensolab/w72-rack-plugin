@@ -308,6 +308,62 @@
         "Runs as one main-thread task, so no frame falls between its commands; limen sends each write to the main thread on its own. The 2 s wait covers the batch's start, not its length.",
         "The whole batch is one undo step (limen problem undo)."
       ]
+    },
+    {
+      "name": "save_patch",
+      "description": "Save the patch to its own file, as Rack's Save does. With a path, write a copy there instead and leave the patch's file alone.",
+      "thread": "main",
+      "params": {
+        "path": { "type": "string", "required": false, "description": "absolute path for a copy; .vcv is added when missing" },
+        "overwrite": { "type": "boolean", "required": false, "default": false, "description": "replace the file at path if one exists" }
+      },
+      "result": { "path": "string, the file written" },
+      "errors": [
+        "patch has never been saved; use save_patch_as with a path",
+        "missing path",
+        "path must be absolute",
+        "folder not found",
+        "path is a folder",
+        "file exists; set overwrite to replace it",
+        "failed to save patch",
+        "Rack's exception message"
+      ],
+      "undo": "none; saving isn't an edit",
+      "notes": [
+        "Without a path the patch is marked saved, as Rack's Save marks it. A copy leaves the patch's unsaved state as it was, and the copy itself opens as saved.",
+        "Inside a batch, the batch's own undo step lands after the save, so Rack shows the patch as changed although the file holds the batch's edits."
+      ],
+      "limenDiff": [
+        "A copy refuses to replace an existing file unless overwrite is true; limen overwrites without asking.",
+        "Relative paths and missing folders are refused; .vcv is added when missing, as Rack's Save as does.",
+        "limen leaves the patch marked unsaved and writes that mark into the file."
+      ]
+    },
+    {
+      "name": "save_patch_as",
+      "description": "Rack's Save as: write the patch to path and make it the patch's own file. Refuses to replace an existing file unless overwrite is true.",
+      "thread": "main",
+      "params": {
+        "path": { "type": "string", "required": true, "description": "absolute path; .vcv is added when missing" },
+        "overwrite": { "type": "boolean", "required": false, "default": false, "description": "replace the file at path if one exists" }
+      },
+      "result": { "path": "string, the file written" },
+      "errors": [
+        "missing path",
+        "path must be absolute",
+        "folder not found",
+        "path is a folder",
+        "file exists; set overwrite to replace it",
+        "failed to save patch",
+        "Rack's exception message"
+      ],
+      "undo": "none; saving isn't an edit",
+      "notes": ["The patch is marked saved, its folder becomes Rack's last patch folder, and the file joins File > Open recent, as with Rack's Save as."],
+      "limenDiff": [
+        "Refuses to replace an existing file unless overwrite is true; limen overwrites without asking.",
+        "Relative paths and missing folders are refused; .vcv is added when missing, as Rack's Save as does.",
+        "limen leaves the patch marked unsaved and writes that mark into the file."
+      ]
     }
   ]
 }
