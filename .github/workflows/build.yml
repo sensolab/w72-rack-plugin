@@ -32,6 +32,14 @@ jobs:
       - name: Package
         run: make dist
 
+  commands:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the dispatch table against protocol/commands.json
+        run: tools/check-commands.sh
+
   panels:
     runs-on: ubuntu-latest
     defaults:
