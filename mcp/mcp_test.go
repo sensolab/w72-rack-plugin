@@ -130,6 +130,28 @@ func TestForwardsArguments(t *testing.T) {
 	}
 }
 
+func TestBatchForwardsCommands(t *testing.T) {
+	cs := session(t, fakeRack(t, brumistaHello))
+	text, isErr := call(t, cs, "batch", map[string]any{
+		"commands":    []any{map[string]any{"cmd": "set_param", "id": 1, "param": 0, "value": 0.5}},
+		"stopOnError": false,
+	})
+	if isErr {
+		t.Fatal(text)
+	}
+	var got struct {
+		Cmd         string           `json:"cmd"`
+		Commands    []map[string]any `json:"commands"`
+		StopOnError bool             `json:"stopOnError"`
+	}
+	if err := json.Unmarshal([]byte(text), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Cmd != "batch" || len(got.Commands) != 1 || got.Commands[0]["cmd"] != "set_param" || got.StopOnError {
+		t.Errorf("got %s", text)
+	}
+}
+
 func TestHello(t *testing.T) {
 	cs := session(t, fakeRack(t, brumistaHello))
 	text, isErr := call(t, cs, "hello", nil)

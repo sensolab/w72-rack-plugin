@@ -281,6 +281,33 @@
       "result": null,
       "errors": ["missing id", "cable not found"],
       "undo": "one step"
+    },
+    {
+      "name": "batch",
+      "description": "Run a list of commands in order in one round trip. The whole batch is one step in Rack's Edit > Undo.",
+      "thread": "main",
+      "params": {
+        "commands": { "type": "array", "items": { "type": "object" }, "required": true, "description": "request objects, each with its own cmd and params, as they would be sent alone" },
+        "stopOnError": { "type": "boolean", "required": false, "default": true, "description": "stop after the first failing command" }
+      },
+      "result": {
+        "count": "integer, commands that ran, the failing one included",
+        "failed": "integer",
+        "stopped?": "integer, index of the command that stopped the batch",
+        "results": ["each command's own reply, { ok, result } or { ok, error }"]
+      },
+      "errors": ["missing commands array"],
+      "undo": "one step for the whole batch, holding the steps of every command that ran; none when nothing changed",
+      "notes": [
+        "The envelope is ok whenever the batch is well formed; failures are inside results.",
+        "A nested batch is refused inside results with \"batch cannot be nested\", and a non-object entry with \"command must be an object\".",
+        "Commands that ran before a failure stay done; Ctrl+Z takes them back together.",
+        "A stopOnError that isn't a boolean is ignored, as in limen."
+      ],
+      "limenDiff": [
+        "Runs as one main-thread task, so no frame falls between its commands; limen sends each write to the main thread on its own. The 2 s wait covers the batch's start, not its length.",
+        "The whole batch is one undo step (limen problem undo)."
+      ]
     }
   ]
 }

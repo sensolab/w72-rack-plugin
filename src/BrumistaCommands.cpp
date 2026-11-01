@@ -36,7 +36,7 @@ engine::Module* requireModule(int64_t id) {
 	return m;
 }
 
-// Undo. Every write records its step here. A batch will open a group so that its
+// Undo. Every write records its step here. A batch opens a group so that its
 // writes undo together; outside one, each write is its own step in Edit > Undo.
 history::ComplexAction* undoGroup = nullptr;
 
@@ -45,6 +45,17 @@ void record(history::Action* h) {
 		undoGroup->push(h);
 	else
 		APP->history->push(h);
+}
+
+// Takes back into the open group the step a Rack call pushed to the history itself.
+void adoptLastStep(size_t sizeBefore) {
+	history::State* hs = APP->history;
+	if (!undoGroup || hs->actions.size() <= sizeBefore || hs->actionIndex != (int) hs->actions.size())
+		return;
+	history::Action* h = hs->actions.back();
+	hs->actions.pop_back();
+	hs->actionIndex--;
+	undoGroup->push(h);
 }
 
 // A ComplexAction that may hold nothing, such as a move that changed no position.
@@ -423,8 +434,10 @@ json_t* removeModule(json_t* req) {
 	if (mw->getModel() == modelBrumista)
 		throw CommandError("Brumista can't remove a Brumista module");
 	// Rack's own Delete: cables, the gap squeeze closes, and the module, as one undo step.
-	// It pushes to the history itself, so a batch will have to adopt that step.
+	// It pushes to the history itself, so inside a batch the group adopts that step.
+	size_t sizeBefore = APP->history->actions.size();
 	mw->removeAction();
+	adoptLastStep(sizeBefore);
 	return json_null();
 }
 
@@ -521,6 +534,8 @@ json_t* removeCable(json_t* req) {
 	return json_null();
 }
 
+json_t* batch(json_t* req);
+
 struct Command {
 	const char* name;
 	Thread thread;
@@ -545,6 +560,7 @@ const Command COMMANDS[] = {
 	{"move_module", Thread::MAIN, moveModule},
 	{"add_cable", Thread::MAIN, addCable},
 	{"remove_cable", Thread::MAIN, removeCable},
+	{"batch", Thread::MAIN, batch},
 };
 
 json_t* hello(json_t*) {
@@ -575,6 +591,80 @@ std::string run(const Command* command, json_t* req) {
 	catch (std::exception& e) {
 		return errorReply(std::string("internal error: ") + e.what());
 	}
+}
+
+// The reply to one command of a batch, as the object it would have been on the wire.
+json_t* runEntry(json_t* entry) {
+	std::string out;
+	json_t* cmd = json_is_object(entry) ? json_object_get(entry, "cmd") : nullptr;
+	const Command* command = json_is_string(cmd) ? findCommand(json_string_value(cmd)) : nullptr;
+	if (!json_is_object(entry))
+		out = errorReply("command must be an object");
+	else if (!json_is_string(cmd))
+		out = errorReply("missing cmd");
+	else if (!command)
+		out = errorReply("unknown cmd");
+	else if (command->run == batch)
+		out = errorReply("batch cannot be nested");
+	else
+		out = run(command, entry);
+	json_error_t err;
+	json_t* obj = json_loads(out.c_str(), 0, &err);
+	return obj ? obj : json_pack("{s:b, s:s}", "ok", 0, "error", "malformed response");
+}
+
+// Runs the commands in order in one main-thread task, so no frame falls between
+// them, and records their undo steps as one.
+json_t* batch(json_t* req) {
+	json_t* commands = json_object_get(req, "commands");
+	if (!json_is_array(commands))
+		throw CommandError("missing commands array");
+	json_t* stopJ = json_object_get(req, "stopOnError");
+	bool stopOnError = json_is_boolean(stopJ) ? json_is_true(stopJ) : true;
+
+	// Closes the group on the way out, even past an exception, so the steps of the
+	// commands that ran reach the history. Commands that ran before a failure stay
+	// done, as in limen; they undo together.
+	struct Grouping {
+		history::ComplexAction* group = new history::ComplexAction;
+		Grouping() {
+			group->name = "batch";
+			undoGroup = group;
+		}
+		~Grouping() {
+			undoGroup = nullptr;
+			recordAll(group);
+		}
+	};
+
+	json_t* results = json_array();
+	int failed = 0;
+	int stopped = -1;
+	{
+		Grouping grouping;
+		size_t i;
+		json_t* entry;
+		json_array_foreach(commands, i, entry) {
+			json_t* one = runEntry(entry);
+			bool ok = json_is_true(json_object_get(one, "ok"));
+			json_array_append_new(results, one);
+			if (!ok) {
+				failed++;
+				if (stopOnError) {
+					stopped = (int) i;
+					break;
+				}
+			}
+		}
+	}
+
+	json_t* obj = json_object();
+	json_object_set_new(obj, "count", json_integer((json_int_t) json_array_size(results)));
+	json_object_set_new(obj, "failed", json_integer(failed));
+	if (stopped >= 0)
+		json_object_set_new(obj, "stopped", json_integer(stopped));
+	json_object_set_new(obj, "results", results);
+	return obj;
 }
 
 } // namespace
