@@ -1,0 +1,167 @@
+{
+  "$comment": "Brumista's protocol: every command it answers. The source of truth: the C++ dispatch table in src/BrumistaCommands.cpp is checked against it (tools/check-commands.sh), and the MCP server will generate its tools from it. Shapes use the notation of protocol/limen/commands.json: JSON values as type names, a key ending in ? may be absent, [T] is an array of T. limenDiff notes where a command departs from limen's.",
+  "transport": {
+    "address": "127.0.0.1:7200",
+    "framing": "one JSON object per line, newline-terminated, both ways; empty lines are ignored, a trailing \\r is dropped",
+    "clients": "one at a time; a second connection waits for the first to close",
+    "request": { "cmd": "string", "...": "the command's params, at the top level" },
+    "reply": {
+      "ok": { "ok": true, "result": "the command's result; null for commands that return nothing" },
+      "error": { "ok": false, "error": "string" }
+    },
+    "errors": [
+      "invalid JSON",
+      "missing cmd",
+      "unknown cmd",
+      "timeout waiting for main thread",
+      "server stopping",
+      "request too long",
+      "internal error: <message>"
+    ],
+    "threads": "commands marked main touch the engine or the scene: they are queued and run in Brumista's widget step(), on the main thread. The server thread waits 2 s. A command still queued when the wait ends is cancelled and never runs; one the main thread has started is waited for until it finishes. Commands marked server read plugin data that doesn't change while Rack runs.",
+    "limenDiff": [
+      "Port 7200, not 7000.",
+      "Every read that touches the engine or the scene runs on the main thread; limen reads params, ports, cables and module info from the server thread.",
+      "A timed-out command is cancelled rather than left queued (limen problem late-timeout).",
+      "A request line over 1 MiB closes the connection with \"request too long\"."
+    ]
+  },
+  "commands": [
+    {
+      "name": "hello",
+      "description": "Brumista's version and the commands it supports. The version is the plugin's, which the protocol and the MCP binary share.",
+      "thread": "server",
+      "params": {},
+      "result": { "server": "\"Brumista\"", "version": "string, semver", "commands": ["string"] },
+      "errors": [],
+      "limenDiff": ["limen replies { protocol: 2, commands }; Brumista names itself and reports its semver version instead of an integer."]
+    },
+    {
+      "name": "list_plugins",
+      "description": "Every plugin loaded in Rack.",
+      "thread": "server",
+      "params": {},
+      "result": [{ "slug": "string", "name": "string", "version": "string" }],
+      "errors": []
+    },
+    {
+      "name": "list_models",
+      "description": "Every module model Rack can create, optionally for one plugin.",
+      "thread": "server",
+      "params": {
+        "plugin": { "type": "string", "required": false, "description": "plugin slug; an unknown slug returns an empty list" }
+      },
+      "result": [{ "plugin": "string", "slug": "string", "name": "string", "description": "string" }],
+      "errors": []
+    },
+    {
+      "name": "list_modules",
+      "description": "The modules in the patch, with grid position and width.",
+      "thread": "main",
+      "params": {
+        "plugin": { "type": "string", "required": false, "description": "plugin slug; an unknown slug returns an empty list" }
+      },
+      "result": [{
+        "id": "integer",
+        "plugin?": "string",
+        "model?": "string",
+        "name?": "string",
+        "numParams": "integer",
+        "numInputs": "integer",
+        "numOutputs": "integer",
+        "pos?": { "x": "integer, HP from Rack's origin", "y": "integer, rack row" },
+        "hp?": "integer"
+      }],
+      "errors": []
+    },
+    {
+      "name": "get_module",
+      "description": "One module, in the shape list_modules uses.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": "same object as one list_modules entry",
+      "errors": ["missing id", "module not found"]
+    },
+    {
+      "name": "get_module_info",
+      "description": "What Rack's right-click Info menu shows: model metadata, tags and the plugin's identity and links.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": {
+        "id": "integer",
+        "model": {
+          "slug": "string", "name": "string", "description": "string",
+          "tags": ["string"], "manualUrl": "string", "modularGridUrl": "string"
+        },
+        "plugin": {
+          "slug?": "string", "name?": "string", "brand?": "string", "version?": "string",
+          "license?": "string", "author?": "string", "authorUrl?": "string", "pluginUrl?": "string",
+          "manualUrl?": "string", "sourceUrl?": "string", "donateUrl?": "string", "changelogUrl?": "string"
+        }
+      },
+      "errors": ["missing id", "module not found", "module has no model"]
+    },
+    {
+      "name": "list_ports",
+      "description": "A module's inputs and outputs by index, with their names.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": {
+        "inputs": [{ "id": "integer", "name": "string, empty when the port has no name" }],
+        "outputs": [{ "id": "integer", "name": "string, empty when the port has no name" }]
+      },
+      "errors": ["missing id", "module not found"],
+      "notes": ["Lists every port the engine module declares, including any with no jack on the panel."]
+    },
+    {
+      "name": "list_params",
+      "description": "A module's parameters: current value, name, range and unit.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": [{ "id": "integer", "value": "number", "name?": "string", "min?": "number", "max?": "number", "unit?": "string" }],
+      "errors": ["missing id", "module not found"]
+    },
+    {
+      "name": "get_param",
+      "description": "One parameter, in the shape list_params uses.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "param": { "type": "integer", "required": true, "description": "parameter index" }
+      },
+      "result": "same object as one list_params entry",
+      "errors": ["missing id or param", "module not found", "param not found"]
+    },
+    {
+      "name": "list_cables",
+      "description": "The cables in the patch with their colours, optionally only those touching one module.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": false, "description": "only cables with this module at either end" },
+        "verbose": { "type": "boolean", "required": false, "default": false, "description": "add module and port names" }
+      },
+      "result": [{
+        "id": "integer",
+        "outputModule": "integer",
+        "outputPort": "integer",
+        "inputModule": "integer",
+        "inputPort": "integer",
+        "color?": "string, \"#rrggbb\" or \"#rrggbbaa\", from the cable's widget",
+        "outputModuleName?": "string, with verbose",
+        "outputPortName?": "string, with verbose",
+        "inputModuleName?": "string, with verbose",
+        "inputPortName?": "string, with verbose"
+      }],
+      "errors": [],
+      "limenDiff": ["Adds color, which limen doesn't report."]
+    }
+  ]
+}
