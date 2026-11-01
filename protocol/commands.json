@@ -364,6 +364,27 @@
         "Relative paths and missing folders are refused; .vcv is added when missing, as Rack's Save as does.",
         "limen leaves the patch marked unsaved and writes that mark into the file."
       ]
+    },
+    {
+      "name": "set_fullscreen",
+      "description": "Enter or leave fullscreen; reports the resulting state.",
+      "thread": "main",
+      "params": {
+        "on": { "type": "boolean", "required": true, "description": "true for fullscreen" }
+      },
+      "result": { "fullscreen": "boolean" },
+      "errors": ["missing on"],
+      "undo": "none; the window isn't part of the patch"
+    },
+    {
+      "name": "zoom_to_modules",
+      "description": "Fit the view to all modules, as Rack's F4 does.",
+      "thread": "main",
+      "params": {},
+      "result": null,
+      "errors": [],
+      "undo": "none; the view isn't part of the patch",
+      "limenDiff": ["Runs on the main thread and replies once the view has moved; limen replies at once and zooms over the next three frames."]
     }
   ]
 }

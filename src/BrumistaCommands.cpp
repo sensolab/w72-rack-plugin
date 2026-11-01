@@ -623,6 +623,23 @@ json_t* savePatchAs(json_t* req) {
 	return pathJson(path);
 }
 
+// The window, not the patch: no undo step.
+json_t* setFullscreen(json_t* req) {
+	json_t* onJ = json_object_get(req, "on");
+	if (!json_is_boolean(onJ))
+		throw CommandError("missing on");
+	APP->window->setFullScreen(json_is_true(onJ));
+	json_t* obj = json_object();
+	json_object_set_new(obj, "fullscreen", json_boolean(APP->window->isFullScreen()));
+	return obj;
+}
+
+// Rack's F4. On the main thread, so the view has moved by the time the reply goes out.
+json_t* zoomToModules(json_t*) {
+	APP->scene->rackScroll->zoomToModules();
+	return json_null();
+}
+
 json_t* batch(json_t* req);
 
 struct Command {
@@ -652,6 +669,8 @@ const Command COMMANDS[] = {
 	{"batch", Thread::MAIN, batch},
 	{"save_patch", Thread::MAIN, savePatch},
 	{"save_patch_as", Thread::MAIN, savePatchAs},
+	{"set_fullscreen", Thread::MAIN, setFullscreen},
+	{"zoom_to_modules", Thread::MAIN, zoomToModules},
 };
 
 json_t* hello(json_t*) {
