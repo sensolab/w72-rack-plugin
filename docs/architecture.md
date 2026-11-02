@@ -126,7 +126,7 @@ The build loop:
 
 Cross-compiling from Linux (VCV's `rack-plugin-toolchain`, or mingw-w64 with the `-posix` g++) is the alternative. It's worth it only to check Linux and macOS builds before a Library submission, and the Library builds those itself.
 
-Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, and compiles the plugin on Linux against the Rack SDK. Release builds of the binary come from the same Actions setup.
+Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
 
 ## Where work runs
 

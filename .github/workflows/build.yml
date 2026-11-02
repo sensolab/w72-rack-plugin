@@ -12,22 +12,38 @@ env:
   RACK_SDK_VERSION: 2.6.6
 
 jobs:
-  plugin-linux:
-    runs-on: ubuntu-latest
+  # The Library builds Windows, macOS (x64, arm64) and Linux itself, so each
+  # platform it builds is compiled here before a submission. Windows is built
+  # locally with MSYS2.
+  plugin:
+    name: plugin (${{ matrix.sdk }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, sdk: lin-x64 }
+          - { os: macos-15-intel, sdk: mac-x64 }
+          - { os: macos-latest, sdk: mac-arm64 }
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends jq zstd
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install jq zstd
 
       - name: Download Rack SDK
         run: |
-          curl -fsSL -o sdk.zip "https://vcvrack.com/downloads/Rack-SDK-${RACK_SDK_VERSION}-lin-x64.zip"
+          curl -fsSL -o sdk.zip "https://vcvrack.com/downloads/Rack-SDK-${RACK_SDK_VERSION}-${{ matrix.sdk }}.zip"
           unzip -q sdk.zip -d "$RUNNER_TEMP"
           echo "RACK_DIR=$RUNNER_TEMP/Rack-SDK" >> "$GITHUB_ENV"
 
       - name: Build
-        run: make -j"$(nproc)"
+        run: make -j"$(getconf _NPROCESSORS_ONLN)"
 
       - name: Package
         run: make dist
