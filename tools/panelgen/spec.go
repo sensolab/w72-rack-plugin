@@ -64,6 +64,15 @@ const (
 	Input     Kind = "input"
 	Output    Kind = "output"
 	Light     Kind = "light"
+
+	// Button is a latching square button with a flat square light.
+	Button Kind = "button"
+	// ButtonGrid is a grid of buttons at 30 px (2 HP) pitch both ways.
+	ButtonGrid Kind = "button-grid"
+	// Bars is a display: a row of flat bar lights in a well.
+	Bars Kind = "bars"
+	// Keyboard is a display: twelve flat square lights laid out as one octave.
+	Keyboard Kind = "keyboard"
 )
 
 var diameters = map[Kind]float64{
@@ -73,6 +82,14 @@ var diameters = map[Kind]float64{
 	Input:     8.03,
 	Output:    8.03,
 	Light:     3.0,
+	Button:    buttonSize * mmPerPx,
+}
+
+// Displays and the button grid have no diameter: they size from their own fields.
+func isDisplay(k Kind) bool { return k == Bars || k == Keyboard }
+func knownKind(k Kind) bool {
+	_, ok := diameters[k]
+	return ok || isDisplay(k) || k == ButtonGrid
 }
 
 // Module is one panel description, read from panels/<Slug>.json.
@@ -92,6 +109,15 @@ type Control struct {
 	Kind  Kind   `json:"kind"`
 	Label string `json:"label"`
 	Row   int    `json:"row"`
+	// Dy nudges the control off its row, in px (down is positive), at most half
+	// a row either way. Controls in a row are nudged together by giving them the
+	// same Dy. Outputs stay on the plate and take none.
+	Dy float64 `json:"dy,omitempty"`
+	// Count is the number of bars in a bars display.
+	Count int `json:"count,omitempty"`
+	// Cols and Rows size a button grid.
+	Cols int `json:"cols,omitempty"`
+	Rows int `json:"rows,omitempty"`
 }
 
 // Placed is a control with its centre in px.
@@ -136,6 +162,8 @@ func (m *Module) check() error {
 	ids := map[string]bool{}
 	large := 0
 	jacks := map[int]int{}
+	rowCount := map[int]int{}
+	rowHasWide := map[int]bool{}
 	for _, c := range m.Controls {
 		if !idRe.MatchString(c.ID) {
 			return fmt.Errorf("control id %q must be an upper-case C++ identifier", c.ID)
@@ -144,11 +172,11 @@ func (m *Module) check() error {
 			return fmt.Errorf("control id %q is used twice", c.ID)
 		}
 		ids[c.ID] = true
-		if _, ok := diameters[c.Kind]; !ok {
+		if !knownKind(c.Kind) {
 			return fmt.Errorf("%s: unknown kind %q", c.ID, c.Kind)
 		}
-		if c.Row < 0 || outputRowY-rowPitch*float64(c.Row) < bandY+bandH+rowPitch/2 {
-			return fmt.Errorf("%s: row %d is off the panel", c.ID, c.Row)
+		if err := m.checkPart(c); err != nil {
+			return err
 		}
 		if c.Kind == Output && c.Row != 0 {
 			return fmt.Errorf("%s: outputs go in row 0, on the plate", c.ID)
@@ -162,9 +190,18 @@ func (m *Module) check() error {
 		if c.Kind == Input || c.Kind == Output {
 			jacks[c.Row]++
 		}
+		rowCount[c.Row]++
+		if isDisplay(c.Kind) || c.Kind == ButtonGrid {
+			rowHasWide[c.Row] = true
+		}
 	}
 	if large > 1 {
 		return fmt.Errorf("at most one knob-large per module")
+	}
+	for row, n := range rowCount {
+		if n > 1 && rowHasWide[row] {
+			return fmt.Errorf("row %d holds a display or button grid, which takes the whole row", row)
+		}
 	}
 	for row, n := range jacks {
 		if n > m.HP/2 && n > 1 {
@@ -191,7 +228,7 @@ func (m *Module) place() []Placed {
 		i := seen[c.Row] + 1
 		seen[c.Row] = i
 		n := count[c.Row]
-		out = append(out, Placed{c, w * float64(2*i-1) / float64(2*n), rowY(c.Row)})
+		out = append(out, Placed{c, w * float64(2*i-1) / float64(2*n), rowY(c.Row) + c.Dy})
 	}
 	return out
 }

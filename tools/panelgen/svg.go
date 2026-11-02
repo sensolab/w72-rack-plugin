@@ -60,6 +60,14 @@ func (w *svgWriter) rect(id string, x, y, width, height, r float64, fill string)
 		id, mm(x), mm(y), mm(width), mm(height), round, fill)
 }
 
+// well draws a display's well or a button's bezel: a dark box with a hairline.
+func (w *svgWriter) well(id string, b Box) {
+	// The stroke is centred on the edge, so the box is pulled in by half of it.
+	const hair = 1.0
+	w.line(`<rect id="%s" x="%s" y="%s" width="%s" height="%s" rx="%s" ry="%s" fill="%s" stroke="%s" stroke-width="%s"/>`,
+		id, mm(b.X+hair/2), mm(b.Y+hair/2), mm(b.W-hair), mm(b.H-hair), mm(wellRadius), mm(wellRadius), colWell, colWellEdge, mm(hair))
+}
+
 func (w *svgWriter) path(id, d, fill string) {
 	w.line(`<path id="%s" fill="%s" d="%s"/>`, id, fill, d)
 }
@@ -96,7 +104,18 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 		w.rect("plate", span[0], plateTop, span[1]-span[0], plateBottom-plateTop, plateRadius, colPlate)
 	}
 
-	// Labels: above what they name, below a light.
+	// Wells and bezels, under their labels.
+	for _, p := range placed {
+		for i, b := range m.bezels(p) {
+			id := "well-" + p.ID
+			if p.Kind == ButtonGrid {
+				id = fmt.Sprintf("%s-%d", id, i)
+			}
+			w.well(id, b)
+		}
+	}
+
+	// Labels: above what they name, below a light or a button, inside a display's well.
 	for _, p := range placed {
 		if p.Label == "" {
 			continue
@@ -108,8 +127,13 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 		t := Text{face, labelSize, labelTracking, strings.ToUpper(p.Label)}
 		r := radiusPx(p.Kind)
 		baseline := p.Y - r - labelGap
-		if p.Kind == Light {
+		switch {
+		case p.Kind == Light:
 			baseline = p.Y + r + labelGap + t.CapHeight()
+		case p.Kind == Button:
+			baseline = p.Y + buttonSize/2 + labelGap + t.CapHeight()
+		case isDisplay(p.Kind):
+			baseline = m.well(p).Y + wellHeight - wellLabelPad
 		}
 		d, err := t.PathCentered(p.X, baseline)
 		if err != nil {

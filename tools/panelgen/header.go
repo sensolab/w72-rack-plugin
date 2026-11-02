@@ -14,12 +14,38 @@ func panelHeader(m *Module) string {
 	fmt.Fprintf(&b, "namespace %sPanel {\n\n", m.Slug)
 
 	placed := m.place()
-	if len(placed) > 0 {
-		b.WriteString("// Centres of the controls, in px.\n")
-		for _, p := range placed {
-			fmt.Fprintf(&b, "static const rack::math::Vec %s = rack::math::Vec(%sf, %sf);\n", p.ID, fnum(p.X), fnum(p.Y))
+	var vecs, others strings.Builder
+	for _, p := range placed {
+		switch {
+		case isDisplay(p.Kind):
+			w := m.well(p)
+			fmt.Fprintf(&others, "static const rack::math::Rect %s_WELL = %s;\n", p.ID, rect(w))
+			fmt.Fprintf(&others, "static const rack::math::Rect %s[] = {\n", p.ID)
+			for _, l := range m.lights(p) {
+				fmt.Fprintf(&others, "\t%s,\n", rect(l))
+			}
+			others.WriteString("};\n\n")
+		case p.Kind == ButtonGrid:
+			fmt.Fprintf(&others, "static const rack::math::Vec %s[] = {\n", p.ID)
+			for _, pt := range m.gridPoints(p) {
+				fmt.Fprintf(&others, "\track::math::Vec(%sf, %sf),\n", fnum(pt.X), fnum(pt.Y))
+			}
+			others.WriteString("};\n\n")
+		default:
+			fmt.Fprintf(&vecs, "static const rack::math::Vec %s = rack::math::Vec(%sf, %sf);\n", p.ID, fnum(p.X), fnum(p.Y))
 		}
-		b.WriteString("\n")
+	}
+	if vecs.Len() > 0 {
+		b.WriteString("// Centres of the controls, in px.\n")
+		b.WriteString(vecs.String() + "\n")
+	}
+	if others.Len() > 0 {
+		b.WriteString("// Square parts. A button's light is FLAT_LIGHT_SIZE wide, centred on the button;\n")
+		b.WriteString("// a display is its well and the boxes of its lights (bars left to right;\n")
+		b.WriteString("// keyboard from C to B), in px. A button grid lists centres row by row.\n")
+		fmt.Fprintf(&b, "static const float BUTTON_SIZE = %sf;\n", fnum(buttonSize))
+		fmt.Fprintf(&b, "static const float FLAT_LIGHT_SIZE = %sf;\n\n", fnum(flatLightSize))
+		b.WriteString(others.String())
 	}
 
 	b.WriteString("// Top-left corners of the screws, in px.\n")
@@ -39,4 +65,8 @@ func fnum(v float64) string {
 		s += ".0"
 	}
 	return s
+}
+
+func rect(b Box) string {
+	return fmt.Sprintf("rack::math::Rect(rack::math::Vec(%sf, %sf), rack::math::Vec(%sf, %sf))", fnum(b.X), fnum(b.Y), fnum(b.W), fnum(b.H))
 }
