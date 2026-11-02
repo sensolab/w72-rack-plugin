@@ -11,6 +11,7 @@
       "slug": "Brumista",
       "name": "Brumista",
       "description": "Bridge that lets Claude read and patch a running Rack",
+      "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/brumista.md",
       "tags": ["Utility"]
     }
   ]

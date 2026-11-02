@@ -41,6 +41,7 @@ w72-rack-plugin/
     concept.md
     architecture.md       this document
     design-system.md      the panel style
+    modules/              one page per module; each module's manualUrl
   CLAUDE.md               what every Claude Code thread reads first
 ```
 
@@ -205,6 +206,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | `remove_module` goes through Rack's Delete, and refuses a Brumista module | 2026-11-01 |
 | `batch` runs as one main-thread task and keeps limen's reply shape; commands that ran before a failure stay done and undo together | 2026-11-01 |
 | `set_fullscreen` and `zoom_to_modules` run on the main thread and record no undo step; zooming is Rack's F4, repeated over three frames as limen does | 2026-11-01 |
+| Each module has a page in `docs/modules/`, and its `manualUrl` in `plugin.json` points to that page on `main` | 2026-11-02 |
 
 ## Open questions
 
