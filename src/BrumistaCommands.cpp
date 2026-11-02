@@ -623,6 +623,29 @@ json_t* savePatchAs(json_t* req) {
 	return pathJson(path);
 }
 
+// The window, not the patch: no undo step.
+json_t* setFullscreen(json_t* req) {
+	json_t* onJ = json_object_get(req, "on");
+	if (!json_is_boolean(onJ))
+		throw CommandError("missing on");
+	APP->window->setFullScreen(json_is_true(onJ));
+	json_t* obj = json_object();
+	json_object_set_new(obj, "fullscreen", json_boolean(APP->window->isFullScreen()));
+	return obj;
+}
+
+// Frames left in which stepView() repeats Rack's F4.
+int zoomFrames = 0;
+
+// Rack's F4. One call sets the zoom, but the offset is clamped against the scroll
+// area's old size until it catches up in the next frames, so the fit is repeated
+// there too, as limen does.
+json_t* zoomToModules(json_t*) {
+	APP->scene->rackScroll->zoomToModules();
+	zoomFrames = 2;
+	return json_null();
+}
+
 json_t* batch(json_t* req);
 
 struct Command {
@@ -652,6 +675,8 @@ const Command COMMANDS[] = {
 	{"batch", Thread::MAIN, batch},
 	{"save_patch", Thread::MAIN, savePatch},
 	{"save_patch_as", Thread::MAIN, savePatchAs},
+	{"set_fullscreen", Thread::MAIN, setFullscreen},
+	{"zoom_to_modules", Thread::MAIN, zoomToModules},
 };
 
 json_t* hello(json_t*) {
@@ -759,6 +784,13 @@ json_t* batch(json_t* req) {
 }
 
 } // namespace
+
+void stepView() {
+	if (zoomFrames > 0) {
+		zoomFrames--;
+		APP->scene->rackScroll->zoomToModules();
+	}
+}
 
 std::string handleLine(Server& server, const std::string& line) {
 	json_error_t err;

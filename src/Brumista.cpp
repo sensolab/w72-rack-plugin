@@ -48,8 +48,10 @@ struct BrumistaWidget : ModuleWidget {
 	// Commands that touch the patch run here, on the main thread.
 	void step() override {
 		ModuleWidget::step();
-		if (Brumista* m = getModule<Brumista>())
+		if (Brumista* m = getModule<Brumista>()) {
+			brumista::stepView();
 			m->server.drain();
+		}
 	}
 
 	void appendContextMenu(Menu* menu) override {
