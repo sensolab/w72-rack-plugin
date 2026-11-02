@@ -4,7 +4,7 @@ Modules for [VCV Rack](https://vcvrack.com/) by WinterOf72, named in Milanese di
 
 The first module is a bridge that lets Claude read and patch a running Rack, together with a small MCP server. Sound modules (Ghisa, Scighera, Gibigiana) come later.
 
-Nothing is released yet. The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build).
+The first release, 2.1.0, ships Brumista; each module has a page in [docs/modules](docs/modules/README.md). The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build).
 
 ## The MCP server
 
