@@ -1,6 +1,6 @@
 // Ghisa: a 16-stage shift register whose taps are a control. Eight shape buttons
 // pick stages from an eight-stage window that DEPTH slides through the register;
-// the taps leave as a poly CHORD, a per-voice CHANGE trigger and a mono BASS.
+// the taps leave as a poly CHORD, a per-voice CHANGE trigger or gate and a mono BASS.
 // Everything the outputs read is latched on the clock.
 //
 // The Root bass scores intervals as cvly bss's Harmonic mode does
@@ -66,6 +66,7 @@ struct Ghisa : Module {
 
 	enum BassMode { BASS_LOWEST, BASS_ROOT };
 	enum ChordOrder { ORDER_STAGE, ORDER_PITCH };
+	enum ChangeMode { CHANGE_TRIGGER, CHANGE_GATE };
 
 	// Stage 1 is reg[0], the newest.
 	float reg[STAGES] = {};
@@ -82,11 +83,15 @@ struct Ghisa : Module {
 	int bassMode = BASS_LOWEST;
 	int bassOctave = 0;
 	int chordOrder = ORDER_STAGE;
+	int changeMode = CHANGE_TRIGGER;
 
 	bool holding = false;
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger holdGate;
+	// A trigger's 1 ms pulse; in gate mode, the 1 ms gap that retriggers a gate already high.
 	dsp::PulseGenerator changePulse[TAPS];
+	bool changeGate[TAPS] = {};
+	bool gateMode = false;
 
 	Ghisa() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -103,7 +108,7 @@ struct Ghisa : Module {
 		configInput(DEPTH_INPUT, "Depth")->description = "1.25 V per stage, added to the knob";
 		configInput(HOLD_INPUT, "Hold")->description = "While high, stage 16 feeds stage 1";
 		configOutput(CHORD_OUTPUT, "Chord");
-		configOutput(CHANGE_OUTPUT, "Change")->description = "Per channel, a trigger when that channel's voltage changed";
+		configOutput(CHANGE_OUTPUT, "Change")->description = "Per channel, a trigger (or a gate until the next clock) when that channel's voltage changed";
 		configOutput(BASS_OUTPUT, "Bass");
 	}
 
@@ -112,6 +117,7 @@ struct Ghisa : Module {
 		bassMode = BASS_LOWEST;
 		bassOctave = 0;
 		chordOrder = ORDER_STAGE;
+		changeMode = CHANGE_TRIGGER;
 		latchPending = true;
 	}
 
@@ -125,7 +131,8 @@ struct Ghisa : Module {
 	}
 
 	// Reads the shape and DEPTH and taps the register. On a clock, CHANGE fires for
-	// each channel that is new or whose voltage moved by more than 1 mV.
+	// each channel that is new or whose voltage moved by more than 1 mV: a trigger,
+	// or a gate held until the next clock.
 	void latch(bool clocked) {
 		latchPending = false;
 		for (int k = 0; k < TAPS; k++)
@@ -145,10 +152,13 @@ struct Ghisa : Module {
 		if (chordOrder == ORDER_PITCH)
 			std::copy(sorted, sorted + n, next);
 
+		gateMode = changeMode == CHANGE_GATE;
 		if (clocked) {
-			for (int c = 0; c < n; c++) {
-				if (c >= channels || std::fabs(next[c] - chord[c]) > 1e-3f)
+			for (int c = 0; c < TAPS; c++) {
+				bool changed = c < n && (c >= channels || std::fabs(next[c] - chord[c]) > 1e-3f);
+				if (changed && (!gateMode || changeGate[c]))
 					changePulse[c].trigger(1e-3f);
+				changeGate[c] = changed && gateMode;
 			}
 		}
 		std::copy(next, next + n, chord);
@@ -181,7 +191,8 @@ struct Ghisa : Module {
 			bool fire = changePulse[c].process(args.sampleTime);
 			if (c < channels) {
 				outputs[CHORD_OUTPUT].setVoltage(chord[c], c);
-				outputs[CHANGE_OUTPUT].setVoltage(fire ? 10.f : 0.f, c);
+				bool high = gateMode ? changeGate[c] && !fire : fire;
+				outputs[CHANGE_OUTPUT].setVoltage(high ? 10.f : 0.f, c);
 			}
 		}
 		outputs[BASS_OUTPUT].setVoltage(bass);
@@ -196,6 +207,7 @@ struct Ghisa : Module {
 		json_object_set_new(rootJ, "bass", json_string(bassMode == BASS_ROOT ? "root" : "lowest"));
 		json_object_set_new(rootJ, "bassOctave", json_integer(bassOctave));
 		json_object_set_new(rootJ, "chordOrder", json_string(chordOrder == ORDER_PITCH ? "pitch" : "stage"));
+		json_object_set_new(rootJ, "change", json_string(changeMode == CHANGE_GATE ? "gate" : "trigger"));
 		return rootJ;
 	}
 
@@ -209,6 +221,8 @@ struct Ghisa : Module {
 			bassOctave = clamp((int) json_integer_value(j), 0, 3);
 		if (json_t* j = json_object_get(rootJ, "chordOrder"))
 			chordOrder = isString(j, "pitch") ? ORDER_PITCH : ORDER_STAGE;
+		if (json_t* j = json_object_get(rootJ, "change"))
+			changeMode = isString(j, "gate") ? CHANGE_GATE : CHANGE_TRIGGER;
 		latchPending = true;
 	}
 };
@@ -281,6 +295,7 @@ struct GhisaWidget : ModuleWidget {
 		menu->addChild(createIndexPtrSubmenuItem("Bass", {"Lowest", "Root"}, &m->bassMode));
 		menu->addChild(createIndexPtrSubmenuItem("Bass octave", {"Off", "Above C1", "Above C2", "Above C3"}, &m->bassOctave));
 		menu->addChild(createIndexPtrSubmenuItem("Chord order", {"By stage", "By pitch"}, &m->chordOrder));
+		menu->addChild(createIndexPtrSubmenuItem("Change", {"Trigger", "Gate until next clock"}, &m->changeMode));
 	}
 };
 

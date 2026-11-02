@@ -30,14 +30,14 @@ Ghisa has no quantizer. The quantizer upstream is where the harmony is decided (
 - **DEPTH.** Where the window starts: stage 1 + DEPTH, from 0 to 8, in whole stages. The knob and the CV add (1.25 V per stage, so 0 to 10 V covers the range) and the sum is clamped. At DEPTH 0 the window is stages 1 to 8; at DEPTH 8 it is stages 9 to 16.
 - **Changes land on the clock.** A new shape or DEPTH takes effect at the next clock, together with the shift, so the chord only ever changes in time.
 - **HOLD.** While the button is on or the HOLD gate is high, each clock recirculates stage 16 into stage 1 instead of sampling IN, so the register loops its last 16 values and the chord repeats every 16 clocks, whatever the shape or DEPTH: a fixed point under the moving voicing.
-- **Saved with the patch.** The register's contents and the menu modes are saved, so a patch reopens with the chord it closed on, and Brumista's `get_module_data` can read them: `register` (16 voltages, stage 1 first), `bass` (`lowest` or `root`), `bassOctave` (0 for off, 1 to 3 for C1 to C3) and `chordOrder` (`stage` or `pitch`).
+- **Saved with the patch.** The register's contents and the menu modes are saved, so a patch reopens with the chord it closed on, and Brumista's `get_module_data` can read them: `register` (16 voltages, stage 1 first), `bass` (`lowest` or `root`), `bassOctave` (0 for off, 1 to 3 for C1 to C3) and `chordOrder` (`stage` or `pitch`) and `change` (`trigger` or `gate`).
 
 ## Outputs
 
 | Output | Carries |
 | --- | --- |
 | CHORD | One channel per lit button, holding that tap's voltage. With no button lit it carries one channel at 0 V, since Rack keeps a patched output at one channel at least. |
-| CHANGE | One channel per CHORD channel: a 1 ms, 10 V trigger on a clock when that channel's voltage changed (by more than 1 mV). |
+| CHANGE | One channel per CHORD channel: a 1 ms, 10 V trigger on a clock when that channel's voltage changed (by more than 1 mV), or a gate until the next clock (see *Change* in the menu). |
 | BASS | One voltage taken from the tapped stages, by the bass mode. |
 
 All three change only on a clock. CHANGE lets a poly envelope re-attack only the voices that moved, so notes shared by two chords keep sounding: voice leading as articulation. Patch it in place of CLOCK into the pad's envelope. Channels are compared as they leave CHORD, so with *Chord order* set to pitch a channel follows the *n*-th lowest note; a channel that appears when the shape grows fires once.
@@ -51,6 +51,7 @@ The working modes live in the menu, not on the panel. Like the panel's controls,
 | Bass | Lowest: the lowest tapped voltage. Root: the tap that best explains the others as a chord (thirds and fifths above it), scored as `bss`'s Harmonic mode does; a tie goes to the lower note | Lowest |
 | Bass octave | Off, or fold the bass into the octave above C1, C2 or C3 | Off |
 | Chord order | By stage (button order) or by pitch, low to high | By stage |
+| Change | Trigger: 1 ms. Gate until next clock: high from the clock where the channel changed to the next clock, for an envelope that reads a gate; a channel that changes on two clocks in a row drops for 1 ms in between, so the envelope retriggers | Trigger |
 
 ## Panel
 
