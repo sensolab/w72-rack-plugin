@@ -120,7 +120,7 @@
       "errors": ["missing id", "module not found"],
       "notes": [
         "Lists every port the engine module declares, including any with no jack on the panel.",
-        "voltages is always an array, empty when channels is 0, as on an unpatched input. Mono and poly have one shape.",
+        "voltages is always an array, empty when channels is 0. Rack keeps a port with no cable at 0 channels, outputs included, so an unpatched output reads empty. Mono and poly have one shape.",
         "The values in one reply are not one instant: the engine keeps running while they are read, so two fast signals can't be compared."
       ],
       "limenDiff": ["Adds channels and voltages, which limen doesn't report."]
