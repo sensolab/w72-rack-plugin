@@ -57,6 +57,10 @@ How it behaves:
 
 There is no `quit`: closing Rack from outside skips its save prompt.
 
+## Security
+
+Brumista listens on the loopback address only (`127.0.0.1`), so other machines cannot reach it. It has no authentication: any program on the same machine can connect, then edit the patch, change parameters and save files. Add it to a patch only when that is acceptable, and remove it when it isn't needed.
+
 ## Relation to limen
 
 Brumista speaks the command protocol of limen, the bridge module in gosub's [forsitan modulare](https://github.com/gosub/forsitan-modulare), so the commands, parameters, reply shapes and error strings match, and a client written for limen works against Brumista on port 7200. Its behaviour was checked against a running limen (forsitan 2.17.2), and limen's surface is recorded in [protocol/limen/commands.json](../../protocol/limen/commands.json) as the reference. The code is W72's own; the server's socket loop follows the shape of limen's, as the source files' headers note. Both modules are GPL-3.0-or-later.

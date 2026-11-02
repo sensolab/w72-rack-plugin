@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in a W72 module or the MCP server doesn't work as documented.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: W72 version
+      description: Shown in Rack's plugin manager, or by `brumista-mcp -version`.
+      placeholder: "2.3.0"
+    validations:
+      required: true
+  - type: input
+    id: rack
+    attributes:
+      label: Rack version and operating system
+      placeholder: "Rack 2.6.6 Free, Windows 11"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Brumista (module)
+        - brumista-mcp (MCP server)
+        - Ghisa
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what was expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: A minimal patch is best. Attach a `.vcv` file if one helps.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: The relevant lines of Rack's `log.txt`, or the MCP server's stderr.
+      render: text

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/sensolab/w72-rack-plugin/tree/main/docs
+    about: Module pages, the concept and the architecture notes.
