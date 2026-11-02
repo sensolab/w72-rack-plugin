@@ -230,4 +230,4 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 
 ## Open questions
 
-None for now.
+- [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
