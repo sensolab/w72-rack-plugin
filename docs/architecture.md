@@ -212,6 +212,10 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | `set_fullscreen` and `zoom_to_modules` run on the main thread and record no undo step; zooming is Rack's F4, repeated over three frames as limen does | 2026-11-01 |
 | Each module has a page in `docs/modules/`, and its `manualUrl` in `plugin.json` points to that page on `main` | 2026-11-02 |
 | Seeing state extends `list_params` (`default`, `display`, switch `labels`) and `list_ports` (`channels`, instant `voltages`, always an array) with new fields only, and adds `get_module_data` for `dataToJson`; all per module, on the main thread | 2026-11-02 |
+| Display readouts are signage text (Inter Tight SemiBold) drawn live with NanoVG on the light layer; that one weight ships in `res/fonts/` | 2026-11-02 |
+| Display ink is white; a highlight colour stays open until a module needs one | 2026-11-02 |
+| A quantizer's scale shows as a twelve-light keyboard; rows of states use flat bar lights; single states keep stock round lights | 2026-11-02 |
+| A readout takes one 48 px grid row | 2026-11-02 |
 
 ## Open questions
 
