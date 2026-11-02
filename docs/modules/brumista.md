@@ -20,6 +20,16 @@ The tools appear as `mcp__brumista__<command>`, one per command below. `-host` a
 
 One Brumista per patch is enough. A second one finds the port taken, stays dark and retries every second, so it takes over if the first is removed.
 
+## Port
+
+Right-click the module to see its state (listening, client connected, or port in use) and a **Port** field holding the port it listens on, 7200 unless changed. Type another port (1024 to 65535) and press Enter: Brumista drops its listener and any client, and listens on the new port at once. An invalid entry leaves the field open and the port unchanged. If the new port is taken, the LINK light goes off and Brumista retries every second, as it does at start.
+
+The port is saved with the patch, and with presets and copies of the module. Point the MCP binary at it with `-port`:
+
+```
+claude mcp add brumista -- /path/to/brumista-mcp -port 7201
+```
+
 ## Panel
 
 ![Brumista panel](../../res/Brumista.svg)
@@ -27,6 +37,7 @@ One Brumista per patch is enough. A second one finds the port taken, stays dark 
 | Control | What it shows |
 | --- | --- |
 | LINK light | Off: the port is taken (by another Brumista or another program) and Brumista retries every second. Dim: listening, no client. Full: a client is connected. |
+| Right-click menu | The server's state, and the port field ([Port](#port)). |
 
 The MCP binary opens one connection per tool call, so the light flashes to full during a call and drops back to dim.
 
@@ -63,13 +74,13 @@ Brumista listens on the loopback address only (`127.0.0.1`), so other machines c
 
 ## Relation to limen
 
-Brumista speaks the command protocol of limen, the bridge module in gosub's [forsitan modulare](https://github.com/gosub/forsitan-modulare), so the commands, parameters, reply shapes and error strings match, and a client written for limen works against Brumista on port 7200. Its behaviour was checked against a running limen (forsitan 2.17.2), and limen's surface is recorded in [protocol/limen/commands.json](../../protocol/limen/commands.json) as the reference. The code is W72's own; the server's socket loop follows the shape of limen's, as the source files' headers note. Both modules are GPL-3.0-or-later.
+Brumista speaks the command protocol of limen, the bridge module in gosub's [forsitan modulare](https://github.com/gosub/forsitan-modulare), so the commands, parameters, reply shapes and error strings match, and a client written for limen works against Brumista on its port, 7200 by default. Its behaviour was checked against a running limen (forsitan 2.17.2), and limen's surface is recorded in [protocol/limen/commands.json](../../protocol/limen/commands.json) as the reference. The code is W72's own; the server's socket loop follows the shape of limen's, as the source files' headers note. Both modules are GPL-3.0-or-later.
 
 Where Brumista departs from limen:
 
 | | limen | Brumista |
 | --- | --- | --- |
-| Port | 7000 | 7200, so both can run in one patch |
+| Port | 7000, fixed | 7200 by default, so both can run in one patch; set in the right-click menu and saved with the patch |
 | `hello` | `{protocol: 2, commands}` | `{server: "Brumista", version, commands}`, with the plugin's semver |
 | Port with no panel jack | Accepted; can crash Rack | Refused with an error |
 | `set_param` | Raw value from the server thread; returns null | Clamped and snapped on the main thread; returns the parameter |

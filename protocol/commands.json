@@ -1,7 +1,7 @@
 {
   "$comment": "Brumista's protocol: every command it answers. The source of truth: the C++ dispatch table in src/BrumistaCommands.cpp is checked against it (tools/check-commands.sh), and the MCP server generates its tools from it (protocol/protocol.go embeds this file). Shapes use the notation of protocol/limen/commands.json: JSON values as type names, a key ending in ? may be absent, [T] is an array of T. limenDiff notes where a command departs from limen's; undo says what a write leaves in Rack's Edit > Undo.",
   "transport": {
-    "address": "127.0.0.1:7200",
+    "address": "127.0.0.1:7200 by default; the module's right-click menu sets another port, saved with the patch",
     "framing": "one JSON object per line, newline-terminated, both ways; empty lines are ignored, a trailing \\r is dropped",
     "clients": "one at a time; a second connection waits for the first to close",
     "request": { "cmd": "string", "...": "the command's params, at the top level" },
