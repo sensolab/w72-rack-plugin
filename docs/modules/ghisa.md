@@ -57,11 +57,14 @@ The working modes live in the menu, not on the panel.
 
 ![Ghisa panel mock](ghisa-mock.png)
 
-From the top: the register display, the shape buttons in two rows of four, DEPTH and HOLD, the inputs (IN, CLOCK, DEPTH, HOLD) and the plate with CHORD and BASS.
+From the top: the register display just under the band, the shape buttons, DEPTH and HOLD, the inputs (IN, CLOCK, DEPTH, HOLD) and the plate with CHORD and BASS.
+
+- **Shape buttons** form a 2 × 4 grid with a 30 px (2 HP) pitch both ways, unnumbered: the grid reads as the shape, left to right and top to bottom.
+- **Off the row grid.** The display, the button grid and the DEPTH row sit a few px off the 48 px rows (in px: register centre 62, buttons 110 and 140, DEPTH and HOLD 210). The inputs and the plate keep their rows.
 
 - **Register display:** sixteen flat bars, one per stage, newest at the left. Off: outside the window. Dim: in the window, not tapped. Full: tapped. The voicing can be watched moving.
 - **Shape buttons and HOLD:** the square flat light from [design-system.md](../design-system.md#displays), on a button.
-- The generator gains `button` (a latching button with a square light) and `bars` kinds with Ghisa.
+- The generator gains `button` (a latching button with a square light), a button grid, and `bars` kinds with Ghisa, plus a way to nudge a row off the 48 px grid and to put a display in the top row under the band.
 
 ## In a patch
 
@@ -71,7 +74,6 @@ From the top: the register display, the shape buttons in two rows of four, DEPTH
 
 ## Open questions
 
-- [ ] Panel layout: the register under the band (B on the mock) or one row lower (A).
 - [ ] HOLD's loop length: always 16, or the deepest tapped stage, so the loop is as long as the chord's memory.
 - [ ] Default shape: 1, 3, 5 is a guess, to be set by ear.
 - [ ] Whether a CHANGE trigger out (high when the chord's notes change) earns its place.
