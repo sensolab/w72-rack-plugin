@@ -144,6 +144,14 @@ void Server::start() {
 	});
 }
 
+void Server::setPort(int newPort) {
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		port = newPort;
+	}
+	cv.notify_all();
+}
+
 void Server::signalStop() {
 	{
 		std::lock_guard<std::mutex> lock(mutex);
@@ -210,17 +218,18 @@ void Server::drain() {
 
 void Server::loop() {
 	while (!stopping) {
-		intptr_t listener = openListener(port);
+		const int bound = port;
+		intptr_t listener = openListener(bound);
 		if (listener == NO_SOCKET) {
 			// Another Brumista, or something else, has the port: try again each second.
 			status = Status::WAITING_FOR_PORT;
 			std::unique_lock<std::mutex> lock(mutex);
-			cv.wait_for(lock, std::chrono::seconds(1), [&] { return stopping.load(); });
+			cv.wait_for(lock, std::chrono::seconds(1), [&] { return stopping || port != bound; });
 			continue;
 		}
-		INFO("Brumista listening on 127.0.0.1:%d", port);
+		INFO("Brumista listening on 127.0.0.1:%d", bound);
 		status = Status::LISTENING;
-		while (!stopping) {
+		while (!stopping && port == bound) {
 			int ready = waitReadable(listener, 100);
 			if (ready == 0)
 				continue;
@@ -239,7 +248,7 @@ void Server::loop() {
 			setsockopt(toNative(client), SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
 #endif
 			status = Status::CONNECTED;
-			serve(client);
+			serve(client, bound);
 			closeSocket(client);
 			status = Status::LISTENING;
 		}
@@ -248,10 +257,10 @@ void Server::loop() {
 	status = Status::STOPPED;
 }
 
-void Server::serve(intptr_t client) {
+void Server::serve(intptr_t client, int bound) {
 	std::string buffer;
 	char chunk[4096];
-	while (!stopping) {
+	while (!stopping && port == bound) {
 		int ready = waitReadable(client, 100);
 		if (ready == 0)
 			continue;

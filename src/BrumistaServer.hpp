@@ -31,7 +31,9 @@ struct Server {
 	void join();
 
 	Status getStatus() const { return status.load(); }
-	int getPort() const { return port; }
+	int getPort() const { return port.load(); }
+	// Any thread: the server drops its listener and any client, and binds the new port.
+	void setPort(int newPort);
 
 	// Server thread: queues fn for the main thread and waits for its reply. A task
 	// still waiting when the timeout passes is cancelled and never runs; one the main
@@ -45,9 +47,9 @@ private:
 	struct Task;
 
 	void loop();
-	void serve(intptr_t client);
+	void serve(intptr_t client, int bound);
 
-	const int port;
+	std::atomic<int> port;
 	std::function<std::string(const std::string&)> handler;
 	std::thread thread;
 	std::atomic<bool> stopping{false};

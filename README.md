@@ -33,7 +33,7 @@ Panels are generated. Edit `panels/<Slug>.json` and run `make panels` (needs Go)
 claude mcp add brumista -- /path/to/brumista-mcp
 ```
 
-`-host` and `-port` point it elsewhere. Brumista listens on the loopback address only and has no authentication: any program on the same machine can use it to edit and save patches. See [Brumista](docs/modules/brumista.md#security).
+`-host` and `-port` point it elsewhere, for instance at a port set in Brumista's right-click menu. Brumista listens on the loopback address only and has no authentication: any program on the same machine can use it to edit and save patches. See [Brumista](docs/modules/brumista.md#security).
 
 ## Contributing
 
