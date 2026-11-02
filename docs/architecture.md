@@ -216,6 +216,14 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Display ink is white; a highlight colour stays open until a module needs one | 2026-11-02 |
 | A quantizer's scale shows as a twelve-light keyboard; rows of states use flat bar lights; single states keep stock round lights | 2026-11-02 |
 | A readout takes one 48 px grid row | 2026-11-02 |
+| Ghisa is a 16-stage shift register with a drawn tap shape (8 buttons) that a DEPTH knob and CV slide through the register; it has no quantizer | 2026-11-02 |
+| Ghisa's shape and DEPTH changes take effect on the next clock | 2026-11-02 |
+| Ghisa builds in the bass tap (`bss`'s job): a BASS output beside the poly CHORD | 2026-11-02 |
+| A module's working modes go in its right-click menu, not on the panel | 2026-11-02 |
+| Ghisa's HOLD is a button and a gate input; while either is on, stage 16 feeds stage 1, so the loop is always 16 clocks | 2026-11-02 |
+| Ghisa's default shape is buttons 1, 3 and 6 | 2026-11-02 |
+| Ghisa has a poly CHANGE output: per voice, a trigger when that voice's note moved | 2026-11-02 |
+| Ghisa's panel: register display under the band, shape buttons as an unnumbered 2 × 4 grid at 2 HP pitch; rows above the inputs may sit off the 48 px grid | 2026-11-02 |
 
 ## Open questions
 

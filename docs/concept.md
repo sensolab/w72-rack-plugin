@@ -47,7 +47,7 @@ Four names are approved (Brumista, Ghisa, Scighera, Gibigiana), and the rest are
 | Name | Meaning | Module role | Status |
 | --- | --- | --- | --- |
 | Brumista | The old cab driver, from the brougham carriage | The bridge: carries Claude's commands into a running Rack, where it's told | Approved |
-| Ghisa | The Milanese traffic warden, nicknamed after the old helmet | Quantizer, router, sequential switch or ASR; possibly a shift register with a built-in quantizer | Approved |
+| Ghisa | The Milanese traffic warden, nicknamed after the old helmet | A shift register whose taps are a control: chords and a bass from the melody's recent past ([design](modules/ghisa.md)) | Approved |
 | Scighera | The thick Po Valley fog | Diffusion, reverb, smeared noise | Approved |
 | Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | Shimmer, moving reflection or delay | Approved |
 | Magutt | The bricklayer or labourer who builds what the architect drew | Passed over for the bridge: Claude builds the patch you design | Candidate |
