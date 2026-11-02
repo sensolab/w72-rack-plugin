@@ -65,7 +65,7 @@ From the top: the register display just under the band, the shape buttons, DEPTH
 
 - **Register display:** sixteen flat bars, one per stage, newest at the left. Off: outside the window. Dim: in the window, not tapped. Full: tapped. The voicing can be watched moving.
 - **Shape buttons and HOLD:** the square flat light from [design-system.md](../design-system.md#displays), on a button.
-- The generator gains `button` (a latching button with a square light), a button grid, and `bars` kinds with Ghisa, plus a way to nudge a row off the 48 px grid and to put a display in the top row under the band.
+- The generator knows these parts (`button`, `button-grid`, `bars`, the `dy` nudge, a display in the top row), and `panels/Ghisa.json` describes this panel.
 
 ## In a patch
 

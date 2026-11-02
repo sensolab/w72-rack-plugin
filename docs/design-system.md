@@ -86,7 +86,7 @@ One typeface, [Inter Tight](https://fonts.google.com/specimen/Inter+Tight) (SIL 
 
 ## Parts
 
-Rack's stock parts, chosen for a dark panel. Nothing custom yet.
+Rack's stock parts, chosen for a dark panel, and the flat button, the first custom part.
 
 | Part | Class | Size |
 | --- | --- | --- |
@@ -96,12 +96,13 @@ Rack's stock parts, chosen for a dark panel. Nothing custom yet.
 | Jacks | `DarkPJ301MPort` | 8.03 mm |
 | Screws | `ScrewBlack` | 5.08 mm |
 | Lights | `MediumLight<WhiteLight>` | 3 mm |
+| Button | custom: latching, 14 px bezel, flat square light 9 px | see [Displays](#displays) |
 
 `DarkPJ301MPort` and `ScrewBlack`, not the `Themed*` classes: a themed part turns light when *Use dark panels if available* is off, and these panels are always dark.
 
 ## Displays
 
-Designed before any module needs one, and mocked up on Ghisa and Scighera. Nothing here is built yet; the sizes come from the mocks and get tuned when the first display is built.
+Designed before any module needs one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; no widget draws them yet, and the sizes come from the mocks and get tuned when the first display is built.
 
 A display has two halves. The well and its label are panel SVG, made by the generator like everything else. What lights up is a widget drawn live with NanoVG on Rack's light layer, so it stays lit when the room is dimmed and sharp at any zoom.
 
@@ -117,13 +118,14 @@ A display has two halves. The well and its label are panel SVG, made by the gene
 - **One row.** A readout takes one 48 px row: a well 38 px tall, 10 px in from each side, ground `#151718`, a `#2c2f32` hairline, corners 1.5 like the plate. Half rows wait until a module needs them.
 - **Flat lights for arrays, round for single states.** The keyboard's square light is the first W72 part; bars are the same part, stretched. Off is `#2b2d30`; dim is the ink at about 40%.
 - **A sample in the browser.** The module browser draws a panel with no module behind it, so each display shows a sample value there.
-- The generator gains `readout`, `keyboard` and `bars` kinds with the first module that uses them.
+- **Generator kinds.** `bars` (`count`) and `keyboard` are displays: a well 38 px tall and 10 px in from each side, with the label inside it at the foot. `button` is a 14 px bezel with its label below. `button-grid` (`cols`, `rows`) is buttons at a 30 px (2 HP) pitch both ways, centred, with no label. The generator draws the wells and bezels; the header lists the boxes and centres the widget draws its lights in (bars left to right, keyboard C to B, grids row by row). `readout` waits for the first module that needs live text.
+- **Off the grid.** A control takes `dy`, a nudge in px of up to half a row, and a display or button may sit in the top row, with its top 6 px under the band. A display or grid takes its whole row.
 
 ## How panels get made
 
 The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by `tools/panelgen`, a Go program (Go is already in the toolchain for the MCP server). Nobody edits a panel SVG by hand.
 
-1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`), a label and a row.
+1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`, `button`, `button-grid`, `bars`, `keyboard`), a label and a row, and optionally a `dy` nudge.
 2. **Rows count from the bottom.** Row 0 is the output row on the plate (y = 345.5 px), and each row up is 48 px higher. Controls in a row share its width equally, in the order they are listed, so a description never holds a coordinate.
 3. `make panels` writes `res/<Slug>.svg` in mm (ground, band and title, labels, plate, mark) and `src/<Slug>Panel.hpp`, which holds each control's centre and the screws' corners in px. The module widget places its parts from that header, so the widget and the SVG can't disagree.
 4. Every label is turned into outlines from the static Inter Tight SemiBold and Bold files in `tools/panelgen/fonts/` (read with `golang.org/x/image/font/sfnt`). They stay out of the plugin package.

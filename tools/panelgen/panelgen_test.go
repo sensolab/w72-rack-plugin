@@ -127,3 +127,90 @@ func TestBrumistaPanel(t *testing.T) {
 		t.Error("the font licence must ship with the fonts")
 	}
 }
+
+func TestNudgeAndDisplayRow(t *testing.T) {
+	m := &Module{Slug: "T", Name: "T", Family: "trades", HP: 8, Controls: []Control{
+		{ID: "REG", Kind: Bars, Label: "REG", Row: 6, Dy: 4.5, Count: 16},
+		{ID: "K", Kind: Knob, Row: 3, Dy: 8.5},
+	}}
+	if err := m.check(); err != nil {
+		t.Fatal(err)
+	}
+	p := m.place()
+	if p[0].Y != 62 || p[1].Y != 210 {
+		t.Errorf("y = %v, %v; want 62, 210", p[0].Y, p[1].Y)
+	}
+	if w := m.well(p[0]); w != (Box{10, 43, 100, 38}) {
+		t.Errorf("well %v", w)
+	}
+	l := m.lights(p[0])
+	if len(l) != 16 || l[0] != (Box{12.5, 48.5, 5, 20}) || l[15].X+l[15].W != 107.5 {
+		t.Errorf("bars %v ... %v", l[0], l[15])
+	}
+	// A display one row up from where Ghisa has it would touch the band.
+	m.Controls[0].Row, m.Controls[0].Dy = 7, 0
+	if m.check() == nil {
+		t.Error("display under the band's floor accepted")
+	}
+}
+
+func TestButtonGrid(t *testing.T) {
+	m := &Module{Slug: "T", Name: "T", Family: "trades", HP: 8, Controls: []Control{
+		{ID: "G", Kind: ButtonGrid, Row: 5, Dy: 4.5, Cols: 4, Rows: 2},
+	}}
+	if err := m.check(); err != nil {
+		t.Fatal(err)
+	}
+	pts := m.gridPoints(m.place()[0])
+	if len(pts) != 8 || pts[0] != (Pt{15, 110}) || pts[3] != (Pt{105, 110}) || pts[4] != (Pt{15, 140}) {
+		t.Errorf("grid %v", pts)
+	}
+	m.Controls[0].Cols = 5
+	if m.check() == nil {
+		t.Error("5 columns at 2 HP pitch accepted on 8 HP")
+	}
+}
+
+func TestKeyboard(t *testing.T) {
+	m := &Module{Slug: "T", Name: "T", Family: "trades", HP: 8, Controls: []Control{
+		{ID: "KEYS", Kind: Keyboard, Label: "SCALE", Row: 6, Dy: 4.5},
+	}}
+	if err := m.check(); err != nil {
+		t.Fatal(err)
+	}
+	l := m.lights(m.place()[0])
+	if len(l) != 12 {
+		t.Fatalf("%d lights", len(l))
+	}
+	// Black keys (1, 3, 6, 8, 10) sit in the upper row, between their white neighbours.
+	for i, black := range []bool{false, true, false, true, false, false, true, false, true, false, true, false} {
+		if black != (l[i].Y == l[0].Y-keyGap-l[0].H) {
+			t.Errorf("note %d in the wrong row", i)
+		}
+	}
+	if mid := l[1].X + l[1].W/2; mid <= l[0].X+l[0].W/2 || mid >= l[2].X+l[2].W/2 {
+		t.Errorf("C# not between C and D")
+	}
+	if (&Module{Slug: "T", Name: "T", Family: "trades", HP: 4, Controls: m.Controls}).check() == nil {
+		t.Error("keyboard on 4 HP accepted")
+	}
+}
+
+func TestGhisaPanel(t *testing.T) {
+	m, err := loadModule(filepath.Join("..", "..", "panels", "Ghisa.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svg, err := panelSVG(m, testFaces(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`id="well-REGISTER"`, `id="well-SHAPE-7"`, `id="well-HOLD"`, `id="label-REGISTER"`, `id="plate"`} {
+		if !strings.Contains(svg, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	if strings.Contains(svg, `id="label-SHAPE"`) {
+		t.Error("the button grid has no label")
+	}
+}
