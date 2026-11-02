@@ -13,6 +13,13 @@
       "description": "Bridge that lets Claude read and patch a running Rack",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/brumista.md",
       "tags": ["Utility"]
+    },
+    {
+      "slug": "Ghisa",
+      "name": "Ghisa",
+      "description": "Shift register whose taps are a control: a drawn shape, slid through the register by CV, read as a chord and a bass",
+      "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/ghisa.md",
+      "tags": ["Sample and hold", "Polyphonic"]
     }
   ]
 }

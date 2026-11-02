@@ -2,8 +2,6 @@
 
 *The Milanese traffic warden: it stands in the stream of notes and sends each one where the chord needs it.*
 
-> **Designed, not built.** This page is the design. It becomes the manual when Ghisa ships, and gets its `manualUrl` then.
-
 Ghisa is a shift register whose taps are a control. Each clock pushes the input's voltage into a 16-stage register. A shape of up to eight stages, drawn with buttons, reads the register into a polyphonic CHORD, and a DEPTH knob with CV slides that shape back through the register, so the same voicing reads from older memory. BASS gives one note of the chord for a bass voice, and CHANGE tells each voice when its note has moved.
 
 - **Family:** trades · **Width:** 8 HP · **Slug:** `Ghisa` · **Since:** not released
@@ -32,13 +30,13 @@ Ghisa has no quantizer. The quantizer upstream is where the harmony is decided (
 - **DEPTH.** Where the window starts: stage 1 + DEPTH, from 0 to 8, in whole stages. The knob and the CV add (1.25 V per stage, so 0 to 10 V covers the range) and the sum is clamped. At DEPTH 0 the window is stages 1 to 8; at DEPTH 8 it is stages 9 to 16.
 - **Changes land on the clock.** A new shape or DEPTH takes effect at the next clock, together with the shift, so the chord only ever changes in time.
 - **HOLD.** While the button is on or the HOLD gate is high, each clock recirculates stage 16 into stage 1 instead of sampling IN, so the register loops its last 16 values and the chord repeats every 16 clocks, whatever the shape or DEPTH: a fixed point under the moving voicing.
-- **Saved with the patch.** The register's contents are saved, so a patch reopens with the chord it closed on, and Brumista's `get_module_data` can read them.
+- **Saved with the patch.** The register's contents and the menu modes are saved, so a patch reopens with the chord it closed on, and Brumista's `get_module_data` can read them: `register` (16 voltages, stage 1 first), `bass` (`lowest` or `root`), `bassOctave` (0 for off, 1 to 3 for C1 to C3) and `chordOrder` (`stage` or `pitch`).
 
 ## Outputs
 
 | Output | Carries |
 | --- | --- |
-| CHORD | One channel per lit button, holding that tap's voltage. No button lit gives zero channels. |
+| CHORD | One channel per lit button, holding that tap's voltage. With no button lit it carries one channel at 0 V, since Rack keeps a patched output at one channel at least. |
 | CHANGE | One channel per CHORD channel: a 1 ms, 10 V trigger on a clock when that channel's voltage changed (by more than 1 mV). |
 | BASS | One voltage taken from the tapped stages, by the bass mode. |
 
@@ -46,11 +44,11 @@ All three change only on a clock. CHANGE lets a poly envelope re-attack only the
 
 ## Right-click menu
 
-The working modes live in the menu, not on the panel.
+The working modes live in the menu, not on the panel. Like the panel's controls, a change lands on the next clock.
 
 | Item | Choices | Default |
 | --- | --- | --- |
-| Bass | Lowest: the lowest tapped voltage. Root: the tap that best explains the others as a chord (thirds and fifths above it), as `bss`'s Harmonic mode does | Lowest |
+| Bass | Lowest: the lowest tapped voltage. Root: the tap that best explains the others as a chord (thirds and fifths above it), scored as `bss`'s Harmonic mode does; a tie goes to the lower note | Lowest |
 | Bass octave | Off, or fold the bass into the octave above C1, C2 or C3 | Off |
 | Chord order | By stage (button order) or by pitch, low to high | By stage |
 
@@ -64,7 +62,8 @@ From the top: the register display just under the band, the shape buttons, DEPTH
 - **Off the row grid.** The display, the button grid and the DEPTH row sit a few px off the 48 px rows (in px: register centre 62, buttons 110 and 140, DEPTH and HOLD 210). The inputs and the plate keep their rows.
 
 - **Register display:** sixteen flat bars, one per stage, newest at the left. Off: outside the window. Dim: in the window, not tapped. Full: tapped. The voicing can be watched moving.
-- **Shape buttons and HOLD:** the square flat light from [design-system.md](../design-system.md#displays), on a button.
+- **Shape buttons and HOLD:** the square flat light from [design-system.md](../design-system.md#displays), on a button. A shape button lights when it is on, even before the clock lands it; HOLD lights while the register loops, by the button or the gate.
+- **In the module browser** the panel shows a sample: the shape 1·2·4·6·8 at DEPTH 5.
 - The generator knows these parts (`button`, `button-grid`, `bars`, the `dy` nudge, a display in the top row), and `panels/Ghisa.json` describes this panel.
 
 ## In a patch

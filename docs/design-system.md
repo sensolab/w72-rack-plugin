@@ -102,7 +102,7 @@ Rack's stock parts, chosen for a dark panel, and the flat button, the first cust
 
 ## Displays
 
-Designed before any module needs one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; no widget draws them yet, and the sizes come from the mocks and get tuned when the first display is built.
+Designed before any module needs one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; `src/widgets.hpp` draws the flat button and the bars (Ghisa is the first to use them), and the keyboard and readout wait for their first module. The sizes come from the mocks and get tuned by eye.
 
 A display has two halves. The well and its label are panel SVG, made by the generator like everything else. What lights up is a widget drawn live with NanoVG on Rack's light layer, so it stays lit when the room is dimmed and sharp at any zoom.
 
