@@ -108,27 +108,48 @@
     },
     {
       "name": "list_ports",
-      "description": "A module's inputs and outputs by index, with their names.",
+      "description": "A module's inputs and outputs by index, with their names, channel counts and instant voltages. A voltage is one sample taken when the call runs: good for held signals such as pitch CV, gates held open or offsets, meaningless for audio-rate or fast ones, and a short trigger is easily missed.",
       "thread": "main",
       "params": {
         "id": { "type": "integer", "required": true, "description": "module id" }
       },
       "result": {
-        "inputs": [{ "id": "integer", "name": "string, empty when the port has no name" }],
-        "outputs": [{ "id": "integer", "name": "string, empty when the port has no name" }]
+        "inputs": [{ "id": "integer", "name": "string, empty when the port has no name", "channels": "integer, 0 to 16", "voltages": ["number, one per channel"] }],
+        "outputs": [{ "id": "integer", "name": "string, empty when the port has no name", "channels": "integer, 0 to 16", "voltages": ["number, one per channel"] }]
       },
       "errors": ["missing id", "module not found"],
-      "notes": ["Lists every port the engine module declares, including any with no jack on the panel."]
+      "notes": [
+        "Lists every port the engine module declares, including any with no jack on the panel.",
+        "voltages is always an array, empty when channels is 0, as on an unpatched input. Mono and poly have one shape.",
+        "The values in one reply are not one instant: the engine keeps running while they are read, so two fast signals can't be compared."
+      ],
+      "limenDiff": ["Adds channels and voltages, which limen doesn't report."]
     },
     {
       "name": "list_params",
-      "description": "A module's parameters: current value, name, range and unit.",
+      "description": "A module's parameters: current value, name, range, unit and default, the value as the module displays it, and a switch's labels.",
       "thread": "main",
       "params": {
         "id": { "type": "integer", "required": true, "description": "module id" }
       },
-      "result": [{ "id": "integer", "value": "number", "name?": "string", "min?": "number", "max?": "number", "unit?": "string" }],
-      "errors": ["missing id", "module not found"]
+      "result": [{
+        "id": "integer",
+        "value": "number, raw, in min to max",
+        "name?": "string",
+        "min?": "number",
+        "max?": "number",
+        "unit?": "string",
+        "default?": "number, raw",
+        "display?": "string, the value as the module's tooltip shows it, with its unit, e.g. \"440.0 Hz\" or a switch's label",
+        "labels?": ["string, a switch's label for each position, from min up"]
+      }],
+      "errors": ["missing id", "module not found"],
+      "notes": [
+        "value is the engine's current value, which glides toward a knob's target on a smoothed parameter; display shows the target, as Rack's tooltip does.",
+        "display comes from the module's own code; it is left out if that code fails.",
+        "A parameter is the knob's position, not what the module does with it once CV is added: that shows only at the outputs."
+      ],
+      "limenDiff": ["Adds default, display and labels, which limen doesn't report."]
     },
     {
       "name": "get_param",
@@ -140,6 +161,21 @@
       },
       "result": "same object as one list_params entry",
       "errors": ["missing id or param", "module not found", "param not found"]
+    },
+    {
+      "name": "get_module_data",
+      "description": "A module's own saved state, read live: what its dataToJson() writes under \"data\" in the patch file. It holds what parameters don't, such as a quantizer's scale mask or a sequencer's steps, in a shape each module chooses.",
+      "thread": "main",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" }
+      },
+      "result": { "id": "integer", "data": "any JSON the module writes; null when it keeps none" },
+      "errors": ["missing id", "module not found"],
+      "notes": [
+        "The shape is the module's own and undocumented by Rack; the module's source or a saved .vcv shows what the keys mean.",
+        "Some modules store large data here, such as samples or long text, so the reply can be large."
+      ],
+      "limenDiff": ["New; limen has no such command."]
     },
     {
       "name": "list_cables",

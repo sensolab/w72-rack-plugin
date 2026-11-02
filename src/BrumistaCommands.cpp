@@ -157,7 +157,39 @@ json_t* paramJson(engine::Module* m, int i) {
 		json_object_set_new(obj, "min", json_real(pq->minValue));
 		json_object_set_new(obj, "max", json_real(pq->maxValue));
 		json_object_set_new(obj, "unit", json_string(pq->unit.c_str()));
+		json_object_set_new(obj, "default", json_real(pq->getDefaultValue()));
+		// The tooltip's text, from the module's own code, which may override it. A
+		// broken override costs this one field, not the reply.
+		try {
+			json_object_set_new(obj, "display", json_string((pq->getDisplayValueString() + pq->getUnit()).c_str()));
+		}
+		catch (...) {
+		}
+		if (engine::SwitchQuantity* sq = dynamic_cast<engine::SwitchQuantity*>(pq)) {
+			if (!sq->labels.empty()) {
+				json_t* labels = json_array();
+				for (const std::string& l : sq->labels)
+					json_array_append_new(labels, json_string(l.c_str()));
+				json_object_set_new(obj, "labels", labels);
+			}
+		}
 	}
+	return obj;
+}
+
+// One port with its instant voltages. The engine writes the channel count and the
+// voltages apart, so the count is read once and capped; at worst one value is stale.
+template <class P>
+json_t* portJson(const std::vector<engine::PortInfo*>& infos, P& port, int i) {
+	int channels = math::clamp((int) port.getChannels(), 0, PORT_MAX_CHANNELS);
+	json_t* voltages = json_array();
+	for (int c = 0; c < channels; c++)
+		json_array_append_new(voltages, json_real(port.getVoltage(c)));
+	json_t* obj = json_object();
+	json_object_set_new(obj, "id", json_integer(i));
+	json_object_set_new(obj, "name", json_string(portName(infos, i).c_str()));
+	json_object_set_new(obj, "channels", json_integer(channels));
+	json_object_set_new(obj, "voltages", voltages);
 	return obj;
 }
 
@@ -271,19 +303,26 @@ json_t* getParam(json_t* req) {
 
 json_t* listPorts(json_t* req) {
 	engine::Module* m = requireModule(requireInt(req, "id", "missing id"));
-	auto ports = [](const std::vector<engine::PortInfo*>& infos, int count) {
-		json_t* arr = json_array();
-		for (int i = 0; i < count; i++) {
-			json_t* obj = json_object();
-			json_object_set_new(obj, "id", json_integer(i));
-			json_object_set_new(obj, "name", json_string(portName(infos, i).c_str()));
-			json_array_append_new(arr, obj);
-		}
-		return arr;
-	};
+	json_t* inputs = json_array();
+	for (int i = 0; i < m->getNumInputs(); i++)
+		json_array_append_new(inputs, portJson(m->inputInfos, m->inputs[i], i));
+	json_t* outputs = json_array();
+	for (int i = 0; i < m->getNumOutputs(); i++)
+		json_array_append_new(outputs, portJson(m->outputInfos, m->outputs[i], i));
 	json_t* obj = json_object();
-	json_object_set_new(obj, "inputs", ports(m->inputInfos, m->getNumInputs()));
-	json_object_set_new(obj, "outputs", ports(m->outputInfos, m->getNumOutputs()));
+	json_object_set_new(obj, "inputs", inputs);
+	json_object_set_new(obj, "outputs", outputs);
+	return obj;
+}
+
+// The state a module saves in the patch beyond its params, live: what its
+// dataToJson() writes under "data" in a .vcv file.
+json_t* getModuleData(json_t* req) {
+	engine::Module* m = requireModule(requireInt(req, "id", "missing id"));
+	json_t* data = m->dataToJson();
+	json_t* obj = json_object();
+	json_object_set_new(obj, "id", json_integer(m->id));
+	json_object_set_new(obj, "data", data ? data : json_null());
 	return obj;
 }
 
@@ -665,6 +704,7 @@ const Command COMMANDS[] = {
 	{"list_ports", Thread::MAIN, listPorts},
 	{"list_params", Thread::MAIN, listParams},
 	{"get_param", Thread::MAIN, getParam},
+	{"get_module_data", Thread::MAIN, getModuleData},
 	{"list_cables", Thread::MAIN, listCables},
 	{"set_param", Thread::MAIN, setParam},
 	{"add_module", Thread::MAIN, addModule},

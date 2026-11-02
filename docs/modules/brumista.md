@@ -37,7 +37,7 @@ Every command is a JSON object on one line, `{"cmd": "<name>", ...params}`, and 
 | Group | Commands |
 | --- | --- |
 | Handshake | `hello` |
-| Reading | `list_plugins`, `list_models`, `list_modules`, `get_module`, `get_module_info`, `list_ports`, `list_params`, `get_param`, `list_cables` |
+| Reading | `list_plugins`, `list_models`, `list_modules`, `get_module`, `get_module_info`, `list_ports`, `list_params`, `get_param`, `get_module_data`, `list_cables` |
 | Editing | `set_param`, `add_module`, `remove_module`, `move_module`, `add_cable`, `remove_cable` |
 | Several at once | `batch` |
 | Saving | `save_patch`, `save_patch_as` |
@@ -47,6 +47,8 @@ How it behaves:
 
 - **Every edit can be undone.** Each write records one step in Rack's Edit > Undo, so Ctrl+Z takes it back like a hand edit. A `batch` is a single step, whatever it holds. Saving and the view commands aren't edits and record nothing.
 - **Cables always have a colour.** `add_cable` uses the colour it's given (`#rrggbb` or `#rrggbbaa`), or Rack's next cable colour, as a dragged cable would. `list_cables` reports each cable's colour.
+- **Reads show what the panel shows.** `list_params` gives each parameter's value as the module displays it (`"440.0 Hz"`, or a switch's label), its default and a switch's labels. `list_ports` gives each port's channel count and voltages. `get_module_data` reads the state a module saves beyond its parameters, such as a quantizer's scale mask.
+- **Voltages are one instant.** A voltage is a single sample taken when the call runs: right for a pitch CV, a held gate or an offset, meaningless for an audio-rate signal, and a short trigger is easily missed.
 - **Parameters behave like knobs.** `set_param` clamps to the parameter's range, rounds stepped parameters, and replies with the value that resulted.
 - **Ports are checked against the panel.** A cable to a port the module declares but has no jack for is refused instead of crashing Rack.
 - **Saves don't overwrite by accident.** Paths must be absolute and get `.vcv` when missing. An existing file is replaced only when the call sets `overwrite`. `save_patch` with no path is Rack's Save; `save_patch_as` is Save as.
@@ -72,6 +74,8 @@ Where Brumista departs from limen:
 | `batch` | Each write sent to the main thread on its own | One main-thread task, no frame in between |
 | Saving | Overwrites silently; leaves the patch marked unsaved | Refuses to overwrite unless `overwrite`; marks the patch saved |
 | `list_cables` | No colour | Includes each cable's colour |
+| `list_params`, `list_ports` | Value, name, range, unit; port names | Adds display strings, defaults, switch labels, channel counts and voltages |
+| Module state | No way to read it | `get_module_data` reads `dataToJson` live |
 | Timeouts | Timed-out work still runs later | Cancelled before it starts |
 | `remove_module` | Leaves a gap | Rack's own Delete, which closes the gap when squeeze is on |
 | `quit` | Closes Rack without a save prompt | Not implemented |
