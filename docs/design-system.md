@@ -71,7 +71,7 @@ Colour on a panel means family and nothing else. Signal types are carried by cab
 
 ## Type
 
-One typeface, [Inter Tight](https://fonts.google.com/specimen/Inter+Tight) (SIL Open Font License). Its outlines are baked into the SVG at build time; no font ships with the plugin.
+One typeface, [Inter Tight](https://fonts.google.com/specimen/Inter+Tight) (SIL Open Font License). Panel labels are outlines baked into the SVG at build time. Only displays draw text live, so one weight, SemiBold, ships in `res/fonts/` for them (see [Displays](#displays)).
 
 | Use | Weight and case | Size (px at 75 DPI) | Capital height |
 | --- | --- | --- | --- |
@@ -99,6 +99,26 @@ Rack's stock parts, chosen for a dark panel. Nothing custom yet.
 
 `DarkPJ301MPort` and `ScrewBlack`, not the `Themed*` classes: a themed part turns light when *Use dark panels if available* is off, and these panels are always dark.
 
+## Displays
+
+Designed before any module needs one, and mocked up on Ghisa and Scighera. Nothing here is built yet; the sizes come from the mocks and get tuned when the first display is built.
+
+A display has two halves. The well and its label are panel SVG, made by the generator like everything else. What lights up is a widget drawn live with NanoVG on Rack's light layer, so it stays lit when the room is dimmed and sharp at any zoom.
+
+| Display | Shows | Looks |
+| --- | --- | --- |
+| Readout | A short value: a note, a time, a step | Signage: a large line over a small one naming it (`C♯3` over `DORIAN`, `2.4 s` over `TIME`) |
+| Keyboard | A quantizer's scale | Twelve flat square lights laid out as one octave of keys: dim for a note in the scale, full for the note playing |
+| Bars | A row or column of states, such as a register's bits | Flat rectangular lights, lit or off |
+| Single light | One state, such as Brumista's LINK | `MediumLight<WhiteLight>`, as in [Parts](#parts) |
+
+- **Signage, not LEDs.** A readout is type, as on Noorda's signs: Inter Tight SemiBold, 14 px for the value and 6.5 px capitals for its name. Seven segments can't spell a note or a scale, and a dot matrix holds one line at this size and comes apart at 100% zoom.
+- **White ink**, `#f1f3f4`, like the lights, so colour on a panel still means family. A highlight colour is left open until a module needs one, and is chosen then for that use.
+- **One row.** A readout takes one 48 px row: a well 38 px tall, 10 px in from each side, ground `#151718`, a `#2c2f32` hairline, corners 1.5 like the plate. Half rows wait until a module needs them.
+- **Flat lights for arrays, round for single states.** The keyboard's square light is the first W72 part; bars are the same part, stretched. Off is `#2b2d30`; dim is the ink at about 40%.
+- **A sample in the browser.** The module browser draws a panel with no module behind it, so each display shows a sample value there.
+- The generator gains `readout`, `keyboard` and `bars` kinds with the first module that uses them.
+
 ## How panels get made
 
 The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by `tools/panelgen`, a Go program (Go is already in the toolchain for the MCP server). Nobody edits a panel SVG by hand.
@@ -118,3 +138,5 @@ Kerning is not applied yet: Inter Tight keeps it in its `GPOS` table, which `sfn
 - [ ] What goes on Brumista's panel besides the link light, once milestone 1 defines its states?
 - [ ] Outputs on a panel under 6 HP: the mark sits where the plate would. The generator refuses it until it's designed.
 - [ ] Custom knobs to match the panels, or stock parts for good?
+- [ ] Small screens that plot values (a register's voltages, an envelope): not designed until a module needs one.
+- [ ] The display highlight colour, when a module first needs one.
