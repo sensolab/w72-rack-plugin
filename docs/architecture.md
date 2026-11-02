@@ -80,14 +80,16 @@ The first milestone matches what limen does today, without its problems. Each la
         3. Saving: `save_patch` and `save_patch_as`. Neither replaces an existing file unless the call asks for it.
         4. View: `set_fullscreen` and `zoom_to_modules`, last or alongside saving.
     - `quit` stays out: it closes Rack with no save prompt.
-2. **Seeing state.** Read a module's JSON state live (`dataToJson`), which today needs a save and a parse of the `.vcv` file. Set a cable's colour after the fact.
-    - Done when: a quantizer's scale mask or a mixer's gain trims can be read from a running patch.
-3. **Building blocks.** Load a `.vcvm` preset into a module and add a `.vcvs` selection at a position. Stoermelder PackOne (8FACE, STRIP) is the prior art.
-    - Done when: a saved selection can be dropped into a patch by name.
-4. **Measuring.** Read port voltages and channel counts, with simple statistics over a short window (min, max, mean).
-    - Done when: Claude can check that a quantizer output moves, or that a poly cable carries four channels, without asking you to listen.
-5. **Seeing the rack.** Take a screenshot of the rack or a module, and open a patch.
+2. **Seeing state.** Read what a module shows: parameter values with labels, units and display strings, and instant port voltages with channel counts. Reads stay per module, so a reply stays small.
+    - Done when: a quantizer's output voltage and a mixer's gain trims, as the panel displays them, can be read from a running patch.
+3. **Seeing the rack.** Take a screenshot of a module or the whole rack, rendered in process. It comes right after the state reads because it fills the gaps they leave: moving signals, displays drawn by the widget, lights, layout.
     - Done when: Claude can look at a panel without you taking a screenshot.
+4. **Building blocks.** Load a `.vcvm` preset into a module and add a `.vcvs` selection at a position. Stoermelder PackOne (8FACE, STRIP) is the prior art.
+    - Done when: a saved selection can be dropped into a patch by name.
+5. **Measuring.** Keep windowed voltage statistics (min, max, mean) taken in `process()`, so nothing between two reads is missed.
+    - Done when: Claude can check that a quantizer output moves, or that a poly cable carries four channels, without asking you to listen.
+
+Not yet placed: reading a module's JSON state live (`dataToJson`), setting a cable's colour after the fact, and opening a patch.
 
 Sound modules (Ghisa, Scighera, Gibigiana) come after milestone 1 at the earliest. Their specs come from technique cards.
 
@@ -176,6 +178,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | No executable in `res/`; the binary ships on GitHub Releases | 2026-11-01 |
 | Plugin at the repo root, so the Library can build it | 2026-11-01 |
 | Milestones: parity, seeing state, building blocks, measuring, seeing the rack | 2026-11-01 |
+| Milestones reordered: parity, seeing state (values, voltages), seeing the rack (screenshots), building blocks, measuring (windowed statistics); `dataToJson`, cable colour edits and opening a patch not yet placed | 2026-11-02 |
 | GPL-3.0-or-later for plugin and binary | 2026-11-01 |
 | Pull requests for every change; Conventional Commits | 2026-11-01 |
 | Semantic Versioning, one version for plugin, binary and protocol (`2.MINOR.PATCH`) | 2026-11-01 |
