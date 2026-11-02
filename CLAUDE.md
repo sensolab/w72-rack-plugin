@@ -25,7 +25,7 @@ Panels are generated: edit `panels/<Slug>.json` and run `make panels`, which rew
 - **`protocol/commands.json` is the source of truth** for commands. The C++ dispatch is handwritten; a test checks it against the file. The Go server generates its tool list from it. A change to one side without the others is incomplete.
 - **Main thread for writes.** Anything that touches the scene or the engine's topology runs through the main-thread queue. Every write pushes a Rack history action so Ctrl+Z works.
 - **Never crash Rack.** Validate ports against what the panel exposes, and turn exceptions into error replies.
-- **Every module has a manual page**: `docs/modules/<slug-lowercase>.md`, listed in `docs/modules/README.md`, with the module's `manualUrl` in `plugin.json` pointing to it on `main`.
+- **Every module has a manual page**: `docs/modules/<slug-lowercase>.md`, listed in `docs/modules/README.md`, with the module's `manualUrl` in `plugin.json` pointing to it on `main`. Its panel image is Rack's own render (`docs/modules/<slug-lowercase>.png`, made with `Rack -t 2` as `docs/modules/README.md` describes), never the panel SVG, and is regenerated whenever the panel changes.
 - **Every new cable gets a colour**: the requested one, or `RackWidget::getNextCableColor()`.
 - **Licence:** GPL-3.0-or-later. GPL-3 code from limen, limen-tools or Stoermelder may be reused with attribution in the file header.
 

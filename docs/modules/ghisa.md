@@ -19,7 +19,7 @@ Then press the shape buttons to change the voicing, and turn DEPTH to read the s
 
 ## Panel
 
-![Ghisa panel](../../res/Ghisa.svg)
+![Ghisa panel](ghisa.png)
 
 | Control | What it does |
 | --- | --- |

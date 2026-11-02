@@ -32,7 +32,7 @@ claude mcp add brumista -- /path/to/brumista-mcp -port 7201
 
 ## Panel
 
-![Brumista panel](../../res/Brumista.svg)
+![Brumista panel](brumista.png)
 
 | Control | What it shows |
 | --- | --- |
