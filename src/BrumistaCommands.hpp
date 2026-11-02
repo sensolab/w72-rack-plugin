@@ -8,4 +8,7 @@ namespace brumista {
 // One request line in, one reply out. Server thread.
 std::string handleLine(Server& server, const std::string& line);
 
+// Finishes view changes that take more than one frame. Main thread, every frame.
+void stepView();
+
 } // namespace brumista

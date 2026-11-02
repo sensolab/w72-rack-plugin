@@ -634,9 +634,15 @@ json_t* setFullscreen(json_t* req) {
 	return obj;
 }
 
-// Rack's F4. On the main thread, so the view has moved by the time the reply goes out.
+// Frames left in which stepView() repeats Rack's F4.
+int zoomFrames = 0;
+
+// Rack's F4. One call sets the zoom, but the offset is clamped against the scroll
+// area's old size until it catches up in the next frames, so the fit is repeated
+// there too, as limen does.
 json_t* zoomToModules(json_t*) {
 	APP->scene->rackScroll->zoomToModules();
+	zoomFrames = 2;
 	return json_null();
 }
 
@@ -778,6 +784,13 @@ json_t* batch(json_t* req) {
 }
 
 } // namespace
+
+void stepView() {
+	if (zoomFrames > 0) {
+		zoomFrames--;
+		APP->scene->rackScroll->zoomToModules();
+	}
+}
 
 std::string handleLine(Server& server, const std::string& line) {
 	json_error_t err;

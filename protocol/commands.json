@@ -384,7 +384,7 @@
       "result": null,
       "errors": [],
       "undo": "none; the view isn't part of the patch",
-      "limenDiff": ["Runs on the main thread and replies once the view has moved; limen replies at once and zooms over the next three frames."]
+      "notes": ["Fits once before replying and again over the next two frames: a single fit sets the zoom, but the scroll offset is clamped against the old view until the scroll area catches up. limen also zooms over three frames."]
     }
   ]
 }
