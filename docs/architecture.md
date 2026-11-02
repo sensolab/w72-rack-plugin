@@ -224,7 +224,10 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Ghisa's default shape is buttons 1, 3 and 6 | 2026-11-02 |
 | Ghisa has a poly CHANGE output: per voice, a trigger when that voice's note moved | 2026-11-02 |
 | Ghisa's panel: register display under the band, shape buttons as an unnumbered 2 × 4 grid at 2 HP pitch; rows above the inputs may sit off the 48 px grid | 2026-11-02 |
+| W72's own parts (flat button, flat bars) live in `src/widgets.hpp`: the off state on the panel layer, the lit state on the light layer | 2026-11-02 |
+| Ghisa's menu modes land on the next clock, like the controls; HOLD's light shows the loop, by button or gate | 2026-11-02 |
+| Ghisa's CHANGE can be a gate until the next clock (menu), for envelopes that read a gate; a gate already high drops for 1 ms to retrigger | 2026-11-02 |
 
 ## Open questions
 
-None for now.
+- [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
