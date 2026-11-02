@@ -228,6 +228,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Ghisa's menu modes land on the next clock, like the controls; HOLD's light shows the loop, by button or gate | 2026-11-02 |
 | Ghisa's CHANGE can be a gate until the next clock (menu), for envelopes that read a gate; a gate already high drops for 1 ms to retrigger | 2026-11-02 |
 | Brumista's port is set in its right-click menu (1024 to 65535, default 7200), saved with the patch, and applied at once by rebinding; the MCP binary follows with `-port` | 2026-11-02 |
+| A module's manual page shows Rack's own render of its panel (`Rack -t 2`, saved as `docs/modules/<slug-lowercase>.png`), not the panel SVG, which GitHub draws without knobs, jacks or lights; it is regenerated whenever the panel changes | 2026-11-02 |
 
 ## Open questions
 
