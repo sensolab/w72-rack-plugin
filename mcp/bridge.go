@@ -17,12 +17,16 @@ const (
 	dialTimeout = 2 * time.Second
 	// Brumista waits 2 s for the main thread; the rest is slack for the reply.
 	replyTimeout = 5 * time.Second
-	// For a batch or a save, the 2 s covers only the start: a batch's commands then
-	// run back to back, and a save writes the whole patch archive.
+	// For a batch, a save or a screenshot, the 2 s covers only the start: a batch's
+	// commands then run back to back, a save writes the whole patch archive, and a
+	// screenshot draws and encodes a PNG.
 	longReplyTimeout = 30 * time.Second
 )
 
-var longCommands = map[any]bool{"batch": true, "save_patch": true, "save_patch_as": true}
+var longCommands = map[any]bool{
+	"batch": true, "save_patch": true, "save_patch_as": true,
+	"screenshot_module": true, "screenshot_rack": true,
+}
 
 // Bridge sends commands to Brumista. Each call opens its own connection, checks
 // it with hello and closes it, because Brumista serves one client at a time and

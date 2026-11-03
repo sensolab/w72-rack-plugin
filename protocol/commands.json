@@ -421,6 +421,57 @@
       "errors": [],
       "undo": "none; the view isn't part of the patch",
       "notes": ["Fits once before replying and again over the next two frames: a single fit sets the zoom, but the scroll offset is clamped against the old view until the scroll area catches up. limen also zooms over three frames."]
+    },
+    {
+      "name": "screenshot_module",
+      "description": "A picture of one module as it looks now: panel, knob positions, lights and displays, drawn by Rack offscreen, so the module needn't be in view. Cables and plugs aren't drawn; screenshot_rack shows them.",
+      "thread": "main",
+      "image": "png",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "module id" },
+        "zoom": { "type": "number", "required": false, "default": 2, "description": "pixels per Rack pixel, 0.1 to 4; at 2 a panel is 760 px tall, as Rack's -t 2 draws it" }
+      },
+      "result": { "id": "integer", "width": "integer, px", "height": "integer, px", "zoom": "number", "png": "string, the PNG in base64" },
+      "errors": [
+        "missing id",
+        "zoom must be a number from 0.1 to 4",
+        "module not found",
+        "the image would be <w> x <h> px, over 4096 px a side; lower zoom",
+        "screenshots can't run inside a batch"
+      ],
+      "undo": "none; nothing changes",
+      "notes": [
+        "Drawn as Rack's -t draws its module images, with the module's live state: the panel follows Rack's dark panel setting, and a bypassed module is drawn faded.",
+        "The MCP tool returns the PNG as an image, with the other fields as text."
+      ],
+      "limenDiff": ["New; limen has no such command."]
+    },
+    {
+      "name": "screenshot_rack",
+      "description": "A picture of the rack as Rack draws it: rails, modules, plugs and cables, drawn offscreen, so it doesn't depend on the view. The whole patch, or the modules given in ids and what lies between them.",
+      "thread": "main",
+      "image": "png",
+      "params": {
+        "ids": { "type": "array", "items": { "type": "integer" }, "required": false, "description": "module ids; the picture covers the box around them. Without ids, every module" },
+        "zoom": { "type": "number", "required": false, "description": "pixels per Rack pixel, 0.1 to 4; without it, the long side fits in 1568 px, at most zoom 1" }
+      },
+      "result": { "width": "integer, px", "height": "integer, px", "zoom": "number", "png": "string, the PNG in base64" },
+      "errors": [
+        "zoom must be a number from 0.1 to 4",
+        "ids must be a non-empty array of module ids",
+        "module not found",
+        "the patch has no modules",
+        "the image would be <w> x <h> px, over 4096 px a side; lower zoom",
+        "screenshots can't run inside a batch"
+      ],
+      "undo": "none; nothing changes",
+      "notes": [
+        "The box around the modules grows by 1 HP on each side. A cable that sags below it is cut at the edge.",
+        "Room brightness, cable opacity and a module's selection show as they do in the window.",
+        "A whole patch at the default zoom is an overview; screenshot_module or ids with zoom 1 or more reads a panel's labels.",
+        "The MCP tool returns the PNG as an image, with the other fields as text."
+      ],
+      "limenDiff": ["New; limen has no such command."]
     }
   ]
 }

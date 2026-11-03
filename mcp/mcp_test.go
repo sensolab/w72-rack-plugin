@@ -215,3 +215,27 @@ func TestTrimFloats(t *testing.T) {
 		t.Errorf("got %s\nwant %s", got, want)
 	}
 }
+
+func TestScreenshotIsImage(t *testing.T) {
+	res, err := imageResult(json.RawMessage(`{"id":3,"width":2,"height":1,"zoom":2,"png":"iVBORw=="}`), "png")
+	if err != nil || res.IsError {
+		t.Fatalf("got %v, %v", res, err)
+	}
+	img, ok := res.Content[0].(*mcp.ImageContent)
+	if !ok || img.MIMEType != "image/png" || string(img.Data) != "\x89PNG" {
+		t.Errorf("got image %+v", res.Content[0])
+	}
+	if text := res.Content[1].(*mcp.TextContent).Text; text != `{"height":1,"id":3,"width":2,"zoom":2}` {
+		t.Errorf("got text %s", text)
+	}
+}
+
+func TestScreenshotsAreImages(t *testing.T) {
+	spec, _ := loadSpec()
+	for _, name := range []string{"screenshot_module", "screenshot_rack"} {
+		i := slices.IndexFunc(spec.Commands, func(c Command) bool { return c.Name == name })
+		if i < 0 || spec.Commands[i].Image != "png" {
+			t.Errorf("%s doesn't return a png image", name)
+		}
+	}
+}

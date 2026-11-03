@@ -13,9 +13,9 @@ DISTRIBUTABLES += $(wildcard LICENSE*)
 
 include $(RACK_DIR)/plugin.mk
 
-# Brumista's server uses Winsock.
+# Brumista's server uses Winsock, and its screenshots read pixels back through OpenGL.
 ifdef ARCH_WIN
-	LDFLAGS += -lws2_32
+	LDFLAGS += -lws2_32 -lopengl32
 endif
 
 # Panels: res/<Slug>.svg and src/<Slug>Panel.hpp from panels/<Slug>.json (needs Go).
