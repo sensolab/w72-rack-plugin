@@ -3,6 +3,7 @@
 // Shapes and error strings follow limen (forsitan modulare, GPL-3.0-or-later, by gosub),
 // recorded in protocol/limen/commands.json; differences are noted in protocol/commands.json.
 #include "BrumistaCommands.hpp"
+#include "BrumistaShot.hpp"
 #include "plugin.hpp"
 #include <tag.hpp>
 #include <patch.hpp>
@@ -685,6 +686,83 @@ json_t* zoomToModules(json_t*) {
 	return json_null();
 }
 
+// The request's zoom, in pixels per Rack pixel, or def when absent.
+float requireZoom(json_t* req, float def) {
+	json_t* j = json_object_get(req, "zoom");
+	if (!j)
+		return def;
+	double zoom = json_is_number(j) ? json_number_value(j) : 0;
+	if (!(zoom >= 0.1 && zoom <= 4))
+		throw CommandError("zoom must be a number from 0.1 to 4");
+	return (float) zoom;
+}
+
+// Refused before anything is drawn: a large image holds up Rack's window while it encodes.
+void checkShotSize(math::Vec size, float zoom) {
+	int width = (int) std::ceil(size.x * zoom);
+	int height = (int) std::ceil(size.y * zoom);
+	if (std::max(width, height) > SHOT_MAX_SIDE)
+		throw CommandError(string::f("the image would be %d x %d px, over %d px a side; lower zoom", width, height, SHOT_MAX_SIDE));
+}
+
+json_t* shotJson(const Shot& shot, float zoom) {
+	json_t* obj = json_object();
+	json_object_set_new(obj, "width", json_integer(shot.width));
+	json_object_set_new(obj, "height", json_integer(shot.height));
+	json_object_set_new(obj, "zoom", json_real(zoom));
+	json_object_set_new(obj, "png", json_string(base64(shot.png).c_str()));
+	return obj;
+}
+
+json_t* screenshotModule(json_t* req) {
+	int64_t id = requireInt(req, "id", "missing id");
+	float zoom = requireZoom(req, 2.f);
+	app::ModuleWidget* mw = APP->scene->rack->getModule(id);
+	if (!mw)
+		throw CommandError("module not found");
+	checkShotSize(mw->box.size, zoom);
+	json_t* obj = shotJson(shotModule(mw, zoom), zoom);
+	json_object_set_new(obj, "id", json_integer(id));
+	return obj;
+}
+
+// The default zoom fits the rack's long side in this many pixels, about what a vision
+// model reads at full detail.
+const float RACK_FIT = 1568.f;
+
+json_t* screenshotRack(json_t* req) {
+	app::RackWidget* rack = APP->scene->rack;
+	std::vector<app::ModuleWidget*> mws;
+	json_t* idsJ = json_object_get(req, "ids");
+	if (idsJ) {
+		if (!json_is_array(idsJ) || json_array_size(idsJ) == 0)
+			throw CommandError("ids must be a non-empty array of module ids");
+		size_t i;
+		json_t* idJ;
+		json_array_foreach(idsJ, i, idJ) {
+			if (!json_is_integer(idJ))
+				throw CommandError("ids must be a non-empty array of module ids");
+			app::ModuleWidget* mw = rack->getModule(json_integer_value(idJ));
+			if (!mw)
+				throw CommandError("module not found");
+			mws.push_back(mw);
+		}
+	}
+	else {
+		mws = rack->getModules();
+		if (mws.empty())
+			throw CommandError("the patch has no modules");
+	}
+	math::Rect region = mws.front()->box;
+	for (app::ModuleWidget* mw : mws)
+		region = region.expand(mw->box);
+	region = region.grow(math::Vec(RACK_GRID_WIDTH, RACK_GRID_WIDTH));
+
+	float zoom = requireZoom(req, std::min(1.f, RACK_FIT / std::max(region.size.x, region.size.y)));
+	checkShotSize(region.size, zoom);
+	return shotJson(shotRack(region, zoom), zoom);
+}
+
 json_t* batch(json_t* req);
 
 struct Command {
@@ -717,6 +795,8 @@ const Command COMMANDS[] = {
 	{"save_patch_as", Thread::MAIN, savePatchAs},
 	{"set_fullscreen", Thread::MAIN, setFullscreen},
 	{"zoom_to_modules", Thread::MAIN, zoomToModules},
+	{"screenshot_module", Thread::MAIN, screenshotModule},
+	{"screenshot_rack", Thread::MAIN, screenshotRack},
 };
 
 json_t* hello(json_t*) {
@@ -762,6 +842,9 @@ json_t* runEntry(json_t* entry) {
 		out = errorReply("unknown cmd");
 	else if (command->run == batch)
 		out = errorReply("batch cannot be nested");
+	// An image inside a batch's results would reach the client as text.
+	else if (command->run == screenshotModule || command->run == screenshotRack)
+		out = errorReply("screenshots can't run inside a batch");
 	else
 		out = run(command, entry);
 	json_error_t err;

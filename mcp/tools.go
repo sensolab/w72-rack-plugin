@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,9 @@ type Command struct {
 	Name        string           `json:"name"`
 	Description string           `json:"description"`
 	Params      map[string]Param `json:"params"`
+	// Image names the format of a picture the result carries in a field of the
+	// same name, as base64.
+	Image string `json:"image"`
 }
 
 type Param struct {
@@ -73,7 +77,7 @@ func newServer(spec *Spec, bridge *Bridge) *mcp.Server {
 			Name:        c.Name,
 			Description: c.Description,
 			InputSchema: c.inputSchema(),
-		}, handler(c.Name, bridge))
+		}, handler(c, bridge))
 	}
 	return server
 }
@@ -81,7 +85,7 @@ func newServer(spec *Spec, bridge *Bridge) *mcp.Server {
 // handler forwards a tool call to Brumista. The module validates the
 // arguments; its error replies, like a failed connection, come back as tool
 // errors so the model can read them and correct itself.
-func handler(cmd string, bridge *Bridge) mcp.ToolHandler {
+func handler(c Command, bridge *Bridge) mcp.ToolHandler {
 	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := map[string]json.RawMessage{}
 		if len(req.Params.Arguments) > 0 {
@@ -89,7 +93,7 @@ func handler(cmd string, bridge *Bridge) mcp.ToolHandler {
 				return errorResult(fmt.Errorf("arguments must be a JSON object: %v", err)), nil
 			}
 		}
-		result, err := bridge.Call(ctx, cmd, args)
+		result, err := bridge.Call(ctx, c.Name, args)
 		if err != nil {
 			var me *ModuleError
 			if errors.As(err, &me) {
@@ -97,8 +101,37 @@ func handler(cmd string, bridge *Bridge) mcp.ToolHandler {
 			}
 			return errorResult(err), nil
 		}
+		if c.Image != "" {
+			return imageResult(result, c.Image)
+		}
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(result)}}}, nil
 	}
+}
+
+// imageResult returns the picture in result's field named format as an image
+// the model can see, and the other fields as text.
+func imageResult(result json.RawMessage, format string) (*mcp.CallToolResult, error) {
+	fields := map[string]json.RawMessage{}
+	var encoded string
+	if err := json.Unmarshal(result, &fields); err != nil {
+		return errorResult(fmt.Errorf("Brumista's result isn't an object: %v", err)), nil
+	}
+	if err := json.Unmarshal(fields[format], &encoded); err != nil {
+		return errorResult(fmt.Errorf("Brumista's result has no %s", format)), nil
+	}
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return errorResult(fmt.Errorf("Brumista's %s isn't base64: %v", format, err)), nil
+	}
+	delete(fields, format)
+	text, err := json.Marshal(fields)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResult{Content: []mcp.Content{
+		&mcp.ImageContent{Data: data, MIMEType: "image/" + format},
+		&mcp.TextContent{Text: string(text)},
+	}}, nil
 }
 
 func errorResult(err error) *mcp.CallToolResult {

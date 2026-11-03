@@ -2,7 +2,7 @@
 
 *The old Milanese cab driver: it carries commands into a running Rack, where it's told.*
 
-Brumista is a bridge. It runs a small server inside Rack that lets an MCP client such as Claude Code read the patch and edit it: list modules, ports, parameters and cables, add and move modules, set parameters, connect cables and save. It makes no sound and has no inputs or outputs.
+Brumista is a bridge. It runs a small server inside Rack that lets an MCP client such as Claude Code read the patch and edit it: list modules, ports, parameters and cables, add and move modules, set parameters, connect cables, save, and take screenshots of a module or the rack. It makes no sound and has no inputs or outputs.
 
 - **Family:** trades · **Width:** 3 HP · **Slug:** `Brumista` · **Since:** 2.1.0
 
@@ -53,6 +53,7 @@ Every command is a JSON object on one line, `{"cmd": "<name>", ...params}`, and 
 | Several at once | `batch` |
 | Saving | `save_patch`, `save_patch_as` |
 | View | `set_fullscreen`, `zoom_to_modules` |
+| Screenshots | `screenshot_module`, `screenshot_rack` |
 
 How it behaves:
 
@@ -62,6 +63,7 @@ How it behaves:
 - **Voltages are one instant.** A voltage is a single sample taken when the call runs: right for a pitch CV, a held gate or an offset, meaningless for an audio-rate signal, and a short trigger is easily missed.
 - **Parameters behave like knobs.** `set_param` clamps to the parameter's range, rounds stepped parameters, and replies with the value that resulted.
 - **Ports are checked against the panel.** A cable to a port the module declares but has no jack for is refused instead of crashing Rack.
+- **Screenshots are drawn offscreen.** `screenshot_module` draws one module as Rack's `-t` does, with its live knobs, lights and displays, at zoom 2 unless told otherwise. `screenshot_rack` draws the whole patch, or the box around the modules in `ids`, with rails, plugs and cables. Neither depends on where the view is, and neither moves it. The MCP tools return the PNG as an image the model sees. Images are capped at 4096 px a side, and a large one holds up Rack's window for a moment while it encodes; the sound keeps running.
 - **Saves don't overwrite by accident.** Paths must be absolute and get `.vcv` when missing. An existing file is replaced only when the call sets `overwrite`. `save_patch` with no path is Rack's Save; `save_patch_as` is Save as.
 - **A timeout means nothing happened.** Commands that touch the patch run on Rack's main thread, which has 2 s to start them. A command still waiting when that runs out is cancelled, never run later.
 - **Brumista won't remove itself.** `remove_module` refuses a Brumista module, since the server runs inside it.
@@ -91,6 +93,7 @@ Where Brumista departs from limen:
 | `list_cables` | No colour | Includes each cable's colour |
 | `list_params`, `list_ports` | Value, name, range, unit; port names | Adds display strings, defaults, switch labels, channel counts and voltages |
 | Module state | No way to read it | `get_module_data` reads `dataToJson` live |
+| Screenshots | None | `screenshot_module` and `screenshot_rack`, drawn offscreen |
 | Timeouts | Timed-out work still runs later | Cancelled before it starts |
 | `remove_module` | Leaves a gap | Rack's own Delete, which closes the gap when squeeze is on |
 | `quit` | Closes Rack without a save prompt | Not implemented |
