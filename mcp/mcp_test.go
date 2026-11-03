@@ -207,3 +207,11 @@ func TestVersionMatchesPlugin(t *testing.T) {
 		t.Errorf("plugin.json is %s, mcp/version.go is %s", p.Version, version)
 	}
 }
+
+func TestTrimFloats(t *testing.T) {
+	in := `{"value":0.30000001192092896,"n":16,"name":"a 0.123456789012 \"x\"","v":[-4.999999523162842,1e-07,0.5,-0.0]}`
+	want := `{"value":0.3,"n":16,"name":"a 0.123456789012 \"x\"","v":[-5,1e-07,0.5,-0]}`
+	if got := string(trimFloats(json.RawMessage(in))); got != want {
+		t.Errorf("got %s\nwant %s", got, want)
+	}
+}

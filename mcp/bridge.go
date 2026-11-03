@@ -120,7 +120,7 @@ func (b *Bridge) roundTrip(ctx context.Context, conn net.Conn, r *bufio.Reader, 
 	if len(rep.Result) == 0 {
 		return json.RawMessage("null"), nil
 	}
-	return rep.Result, nil
+	return trimFloats(rep.Result), nil
 }
 
 // checkHello refuses anything that isn't Brumista (limen answers hello too, on
