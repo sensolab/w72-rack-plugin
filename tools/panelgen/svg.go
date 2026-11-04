@@ -68,8 +68,18 @@ func (w *svgWriter) well(id string, b Box) {
 		id, mm(b.X+hair/2), mm(b.Y+hair/2), mm(b.W-hair), mm(b.H-hair), mm(wellRadius), mm(wellRadius), colWell, colWellEdge, mm(hair))
 }
 
-func (w *svgWriter) path(id, d, fill string) {
-	w.line(`<path id="%s" fill="%s" d="%s"/>`, id, fill, d)
+// text writes a string's paths: one path, or a group when the string needs
+// several (see shapes).
+func (w *svgWriter) text(id string, ds []string, fill string) {
+	if len(ds) == 1 {
+		w.line(`<path id="%s" fill="%s" d="%s"/>`, id, fill, ds[0])
+		return
+	}
+	w.line(`<g id="%s">`, id)
+	for _, d := range ds {
+		w.line(`  <path fill="%s" d="%s"/>`, fill, d)
+	}
+	w.line(`</g>`)
 }
 
 // panelSVG draws the panel: ground, band and title, labels, plate, mark.
@@ -97,7 +107,7 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	w.path("title", d, colTitle)
+	w.text("title", d, colTitle)
 
 	// Output plate, behind the output labels.
 	if span, ok := plateSpan(m, placed); ok {
@@ -139,7 +149,7 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		w.path("label-"+p.ID, d, fill)
+		w.text("label-"+p.ID, d, fill)
 	}
 
 	// The mark: between the bottom screws from 6 HP, above the single screw below.
