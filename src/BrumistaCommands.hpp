@@ -5,8 +5,9 @@
 
 namespace brumista {
 
-// One request line in, one reply out. Server thread.
-std::string handleLine(Server& server, const std::string& line);
+// One request line in, one reply out. Server thread. edits says whether the line named a
+// command that changes the patch.
+std::string handleLine(Server& server, const std::string& line, bool& edits);
 
 // Finishes view changes that take more than one frame. Main thread, every frame.
 void stepView();
