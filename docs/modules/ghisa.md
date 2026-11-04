@@ -56,7 +56,7 @@ In the module browser the panel shows a sample: the shape 1·2·4·6·8 at DEPTH
 | Bass | *Lowest*: the lowest tapped voltage. *Root*: the tap that best explains the others as a chord built on it (thirds and fifths above it), scored as cvly `bss`'s Harmonic mode does; a tie goes to the lower note. | Lowest |
 | Bass octave | *Off*, or fold the bass into the octave above C1, C2 or C3, so it stays in a bass register whatever the melody's range. | Off |
 | Chord range | *Off*, or fold CHORD into a window starting at C2, C3, C4 or C5 (see *Chord width*), so the chord stays in one register whatever the melody's range. | Off |
-| Chord width | *1 octave* (C4 to B4 above C4) or *2 octaves* (C4 to B5). Has no effect while *Chord range* is off. | 1 octave |
+| Chord width | How wide the *Chord range* window is: *1 octave* (above C4, that is C4 to B4) or *2 octaves* (C4 to B5). Has no effect while *Chord range* is off. | 1 octave |
 | Chord order | *By stage*: channels in button order. *By pitch*: low to high. | By stage |
 | Change | *Trigger*: 1 ms, 10 V. *Gate until next clock*: high from the clock where the note changed to the next clock, for envelopes that read a gate; a note that changes on two clocks in a row drops the gate for 1 ms in between, so the envelope starts again. | Trigger |
 
