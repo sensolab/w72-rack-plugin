@@ -19,6 +19,7 @@
       "internal error: <message>"
     ],
     "threads": "commands marked main touch the engine or the scene: they are queued and run in Brumista's widget step(), on the main thread. The server thread waits 2 s. A command still queued when the wait ends is cancelled and never runs; one the main thread has started is waited for until it finishes. Commands marked server read plugin data that doesn't change while Rack runs.",
+    "edits": "commands marked edits change the patch, and a batch counts as one whatever it holds. Brumista's CMD light flashes full for them and dim for every other request.",
     "limenDiff": [
       "Port 7200, not 7000.",
       "Every read that touches the engine or the scene runs on the main thread; limen reads params, ports, cables and module info from the server thread.",
@@ -204,6 +205,7 @@
       "name": "set_param",
       "description": "Set a parameter's value. The value is clamped to the parameter's range and rounded on stepped parameters, as turning the knob would; the reply reads it back.",
       "thread": "main",
+      "edits": true,
       "params": {
         "id": { "type": "integer", "required": true, "description": "module id" },
         "param": { "type": "integer", "required": true, "description": "parameter index" },
@@ -222,6 +224,7 @@
       "name": "add_module",
       "description": "Create a module and place it at a grid position, or next to an existing module when no position is given. Returns where it landed.",
       "thread": "main",
+      "edits": true,
       "params": {
         "plugin": { "type": "string", "required": true, "description": "plugin slug (list_plugins)" },
         "model": { "type": "string", "required": true, "description": "model slug (list_models)" },
@@ -247,6 +250,7 @@
       "name": "remove_module",
       "description": "Remove a module and its cables, as Rack's Delete does.",
       "thread": "main",
+      "edits": true,
       "params": {
         "id": { "type": "integer", "required": true, "description": "module id" }
       },
@@ -262,6 +266,7 @@
       "name": "move_module",
       "description": "Move a module to a grid position and report where it landed.",
       "thread": "main",
+      "edits": true,
       "params": {
         "id": { "type": "integer", "required": true, "description": "module id" },
         "x": { "type": "number", "required": true, "description": "grid column in HP" },
@@ -282,6 +287,7 @@
       "name": "add_cable",
       "description": "Connect an output to an input with a coloured cable. Without a colour, the cable takes Rack's next cable colour, as a dragged cable does.",
       "thread": "main",
+      "edits": true,
       "params": {
         "outputModule": { "type": "integer", "required": true, "description": "source module id" },
         "outputPort": { "type": "integer", "required": true, "description": "output index (list_ports)" },
@@ -311,6 +317,7 @@
       "name": "remove_cable",
       "description": "Remove a cable.",
       "thread": "main",
+      "edits": true,
       "params": {
         "id": { "type": "integer", "required": true, "description": "cable id (list_cables)" }
       },
@@ -322,6 +329,7 @@
       "name": "batch",
       "description": "Run a list of commands in order in one round trip. The whole batch is one step in Rack's Edit > Undo.",
       "thread": "main",
+      "edits": true,
       "params": {
         "commands": { "type": "array", "items": { "type": "object" }, "required": true, "description": "request objects, each with its own cmd and params, as they would be sent alone" },
         "stopOnError": { "type": "boolean", "required": false, "default": true, "description": "stop after the first failing command" }

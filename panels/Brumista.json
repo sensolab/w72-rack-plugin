@@ -4,6 +4,7 @@
   "family": "trades",
   "hp": 3,
   "controls": [
-    { "id": "LINK_LIGHT", "kind": "light", "label": "LINK", "row": 4 }
+    { "id": "LINK_LIGHT", "kind": "light", "label": "LINK", "row": 4 },
+    { "id": "CMD_LIGHT", "kind": "light", "label": "CMD", "row": 3 }
   ]
 }

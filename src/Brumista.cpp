@@ -1,6 +1,7 @@
 // Brumista: the bridge module. A TCP server on 127.0.0.1 (port 7200 unless the menu sets another)
 // that lets Claude read a running Rack.
-// The link light is off while the port is unavailable, dim while listening, and lit with a client.
+// LINK is off when stopped, blinks slowly while the port is taken, is dim while listening, and
+// lit with a client. CMD flashes once per command: dim for a read, full for an edit.
 #include "plugin.hpp"
 #include "BrumistaPanel.hpp"
 #include "BrumistaCommands.hpp"
@@ -10,13 +11,32 @@ static const int DEFAULT_PORT = 7200;
 static const int MIN_PORT = 1024;
 static const int MAX_PORT = 65535;
 
+static const float DIM = 0.25f;
+// Seconds.
+static const float BLINK_PERIOD = 1.f;
+static const float FLASH_TIME = 0.1f;
+
 struct Brumista : Module {
 	enum ParamId { PARAMS_LEN };
 	enum InputId { INPUTS_LEN };
 	enum OutputId { OUTPUTS_LEN };
-	enum LightId { LINK_LIGHT, LIGHTS_LEN };
+	enum LightId { LINK_LIGHT, CMD_LIGHT, LIGHTS_LEN };
 
-	brumista::Server server{DEFAULT_PORT, [this](const std::string& line) { return brumista::handleLine(server, line); }};
+	// Set by the server thread after each command, taken by process().
+	std::atomic<bool> readSeen{false};
+	std::atomic<bool> editSeen{false};
+
+	brumista::Server server{DEFAULT_PORT, [this](const std::string& line) {
+		bool edits;
+		std::string reply = brumista::handleLine(server, line, edits);
+		(edits ? editSeen : readSeen).store(true);
+		return reply;
+	}};
+
+	float blinkPhase = 0.f;
+	// Separate pulses, so a run of reads after an edit doesn't stretch the full flash.
+	dsp::PulseGenerator readFlash;
+	dsp::PulseGenerator editFlash;
 
 	Brumista() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -34,7 +54,25 @@ struct Brumista : Module {
 	void process(const ProcessArgs& args) override {
 		using Status = brumista::Server::Status;
 		Status status = server.getStatus();
-		lights[LINK_LIGHT].setBrightness(status == Status::CONNECTED ? 1.f : status == Status::LISTENING ? 0.25f : 0.f);
+		blinkPhase += args.sampleTime / BLINK_PERIOD;
+		if (blinkPhase >= 1.f)
+			blinkPhase -= 1.f;
+		float link = 0.f;
+		if (status == Status::CONNECTED)
+			link = 1.f;
+		else if (status == Status::LISTENING)
+			link = DIM;
+		else if (status == Status::WAITING_FOR_PORT)
+			link = blinkPhase < 0.5f ? DIM : 0.f;
+		lights[LINK_LIGHT].setBrightness(link);
+
+		if (readSeen.exchange(false))
+			readFlash.trigger(FLASH_TIME);
+		if (editSeen.exchange(false))
+			editFlash.trigger(FLASH_TIME);
+		bool read = readFlash.process(args.sampleTime);
+		bool edit = editFlash.process(args.sampleTime);
+		lights[CMD_LIGHT].setBrightness(edit ? 1.f : read ? DIM : 0.f);
 	}
 
 	json_t* dataToJson() override {
@@ -87,6 +125,7 @@ struct BrumistaWidget : ModuleWidget {
 			addChild(createWidget<ScrewBlack>(pos));
 
 		addChild(createLightCentered<MediumLight<WhiteLight>>(BrumistaPanel::LINK_LIGHT, module, Brumista::LINK_LIGHT));
+		addChild(createLightCentered<MediumLight<WhiteLight>>(BrumistaPanel::CMD_LIGHT, module, Brumista::CMD_LIGHT));
 	}
 
 	// Commands that touch the patch run here, on the main thread.

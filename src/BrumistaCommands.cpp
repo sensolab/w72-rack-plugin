@@ -18,6 +18,9 @@ namespace {
 // queue; the rest read plugin data that doesn't change while Rack runs.
 enum class Thread { SERVER, MAIN };
 
+// Commands that change the patch flash Brumista's CMD light full; the rest flash it dim.
+enum class Effect { READ, EDIT };
+
 const auto MAIN_TIMEOUT = std::chrono::seconds(2);
 
 struct CommandError : std::runtime_error {
@@ -768,35 +771,36 @@ json_t* batch(json_t* req);
 struct Command {
 	const char* name;
 	Thread thread;
+	Effect effect;
 	json_t* (*run)(json_t* req);
 };
 
 // One line per command, in protocol/commands.json's order; tools/check-commands.sh reads it.
 const Command COMMANDS[] = {
-	{"hello", Thread::SERVER, hello},
-	{"list_plugins", Thread::SERVER, listPlugins},
-	{"list_models", Thread::SERVER, listModels},
-	{"list_modules", Thread::MAIN, listModules},
-	{"get_module", Thread::MAIN, getModule},
-	{"get_module_info", Thread::MAIN, getModuleInfo},
-	{"list_ports", Thread::MAIN, listPorts},
-	{"list_params", Thread::MAIN, listParams},
-	{"get_param", Thread::MAIN, getParam},
-	{"get_module_data", Thread::MAIN, getModuleData},
-	{"list_cables", Thread::MAIN, listCables},
-	{"set_param", Thread::MAIN, setParam},
-	{"add_module", Thread::MAIN, addModule},
-	{"remove_module", Thread::MAIN, removeModule},
-	{"move_module", Thread::MAIN, moveModule},
-	{"add_cable", Thread::MAIN, addCable},
-	{"remove_cable", Thread::MAIN, removeCable},
-	{"batch", Thread::MAIN, batch},
-	{"save_patch", Thread::MAIN, savePatch},
-	{"save_patch_as", Thread::MAIN, savePatchAs},
-	{"set_fullscreen", Thread::MAIN, setFullscreen},
-	{"zoom_to_modules", Thread::MAIN, zoomToModules},
-	{"screenshot_module", Thread::MAIN, screenshotModule},
-	{"screenshot_rack", Thread::MAIN, screenshotRack},
+	{"hello", Thread::SERVER, Effect::READ, hello},
+	{"list_plugins", Thread::SERVER, Effect::READ, listPlugins},
+	{"list_models", Thread::SERVER, Effect::READ, listModels},
+	{"list_modules", Thread::MAIN, Effect::READ, listModules},
+	{"get_module", Thread::MAIN, Effect::READ, getModule},
+	{"get_module_info", Thread::MAIN, Effect::READ, getModuleInfo},
+	{"list_ports", Thread::MAIN, Effect::READ, listPorts},
+	{"list_params", Thread::MAIN, Effect::READ, listParams},
+	{"get_param", Thread::MAIN, Effect::READ, getParam},
+	{"get_module_data", Thread::MAIN, Effect::READ, getModuleData},
+	{"list_cables", Thread::MAIN, Effect::READ, listCables},
+	{"set_param", Thread::MAIN, Effect::EDIT, setParam},
+	{"add_module", Thread::MAIN, Effect::EDIT, addModule},
+	{"remove_module", Thread::MAIN, Effect::EDIT, removeModule},
+	{"move_module", Thread::MAIN, Effect::EDIT, moveModule},
+	{"add_cable", Thread::MAIN, Effect::EDIT, addCable},
+	{"remove_cable", Thread::MAIN, Effect::EDIT, removeCable},
+	{"batch", Thread::MAIN, Effect::EDIT, batch},
+	{"save_patch", Thread::MAIN, Effect::READ, savePatch},
+	{"save_patch_as", Thread::MAIN, Effect::READ, savePatchAs},
+	{"set_fullscreen", Thread::MAIN, Effect::READ, setFullscreen},
+	{"zoom_to_modules", Thread::MAIN, Effect::READ, zoomToModules},
+	{"screenshot_module", Thread::MAIN, Effect::READ, screenshotModule},
+	{"screenshot_rack", Thread::MAIN, Effect::READ, screenshotRack},
 };
 
 json_t* hello(json_t*) {
@@ -915,7 +919,8 @@ void stepView() {
 	}
 }
 
-std::string handleLine(Server& server, const std::string& line) {
+std::string handleLine(Server& server, const std::string& line, bool& edits) {
+	edits = false;
 	json_error_t err;
 	json_t* req = json_loads(line.c_str(), 0, &err);
 	if (!req)
@@ -923,6 +928,8 @@ std::string handleLine(Server& server, const std::string& line) {
 	std::string out;
 	json_t* cmd = json_object_get(req, "cmd");
 	const Command* command = json_is_string(cmd) ? findCommand(json_string_value(cmd)) : nullptr;
+	if (command)
+		edits = command->effect == Effect::EDIT;
 	if (!json_is_string(cmd))
 		out = errorReply("missing cmd");
 	else if (!command)
