@@ -32,7 +32,7 @@ jobs:
         include:
           - { os: ubuntu-latest, sdk: lin-x64 }
           - { os: macos-15-intel, sdk: mac-x64 }
-          - { os: macos-latest, sdk: mac-arm64 }
+          - { os: macos-15, sdk: mac-arm64 }
     steps:
       - uses: actions/checkout@v4
 
