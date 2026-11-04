@@ -214,3 +214,63 @@ func TestGhisaPanel(t *testing.T) {
 		t.Error("the button grid has no label")
 	}
 }
+
+// rackHole is Rack's own test for whether a contour of a path is a hole
+// (svgDraw in src/window/Svg.cpp): count how often a line from the
+// contour's first point to just past its top-left corner crosses the
+// path's other contours, on-curve point to on-curve point.
+func rackHole(c contour, shape []contour, self int) bool {
+	cross := func(p0, p1, p2, p3 [2]float64) float64 {
+		b := [2]float64{p2[0] - p0[0], p2[1] - p0[1]}
+		d := [2]float64{p1[0] - p0[0], p1[1] - p0[1]}
+		e := [2]float64{p3[0] - p2[0], p3[1] - p2[1]}
+		m := d[0]*e[1] - d[1]*e[0]
+		if m == 0 {
+			return -1
+		}
+		return -(d[0]*b[1] - d[1]*b[0]) / m
+	}
+	minX, minY, _, _ := c.bounds()
+	p0, p1 := c.ends[0], [2]float64{minX - 1, minY - 1}
+	n := 0
+	for i, o := range shape {
+		if i == self {
+			continue
+		}
+		for j := range o.ends {
+			p2, p3 := o.ends[j], o.ends[(j+1)%len(o.ends)]
+			if a, b := cross(p0, p1, p2, p3), cross(p2, p3, p0, p1); 0 <= a && a < 1 && 0 <= b {
+				n++
+			}
+		}
+	}
+	return n%2 == 1
+}
+
+// TestRackSeesHoles checks that Rack takes exactly the counters for holes,
+// in every glyph a panel can set, at every size the panels use.
+func TestRackSeesHoles(t *testing.T) {
+	f := testFaces(t)
+	set := "ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 abcdefghijklmnopqrstuvwxyz àèéìòù -+/&%#"
+	for _, face := range []*Face{f.SemiBold, f.Bold} {
+		for _, size := range []float64{labelSize, titleSizeSmall, titleSize} {
+			for _, s := range strings.Fields(set) {
+				cs, err := Text{face, size, labelTracking, s}.contours(0, 20)
+				if err != nil {
+					t.Fatal(err)
+				}
+				layers, err := shapes(cs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, l := range layers {
+					for i, c := range l {
+						if got, want := rackHole(c, l, i), c.area() < 0; got != want {
+							t.Errorf("%q at %g px: Rack takes a contour at (%.1f, %.1f) for a hole=%v", s, size, c.ends[0][0], c.ends[0][1], got)
+						}
+					}
+				}
+			}
+		}
+	}
+}
