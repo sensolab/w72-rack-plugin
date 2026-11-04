@@ -137,7 +137,7 @@ Kerning is not applied yet: Inter Tight keeps it in its `GPOS` table, which `sfn
 ## Open questions
 
 - [x] Which language for the generator? Go, not Python with fontTools as Sapphire does, so there's no second toolchain.
-- [ ] What goes on Brumista's panel besides the link light, once milestone 1 defines its states?
+- [x] What goes on Brumista's panel besides the link light? A CMD light that flashes per command, dim for reads and full for patch edits, and a slow LINK blink while the port is taken (see the Decisions table in [architecture.md](architecture.md)).
 - [ ] Outputs on a panel under 6 HP: the mark sits where the plate would. The generator refuses it until it's designed.
 - [ ] Custom knobs to match the panels, or stock parts for good?
 - [ ] Small screens that plot values (a register's voltages, an envelope): not designed until a module needs one.
