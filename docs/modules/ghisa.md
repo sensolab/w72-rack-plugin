@@ -32,7 +32,7 @@ Then press the shape buttons to change the voicing, and turn DEPTH to read the s
 | DEPTH (input) | Adds to the knob, 1.25 V per stage, so 0 to 10 V covers the range. The sum is rounded to a whole stage and clamped to 0 to 8, so a negative CV holds DEPTH at the knob's floor. |
 | HOLD (input) | A gate: while it's high, the register loops. |
 | BASS CLK | BASS's own clock, normalled to CLOCK. Unpatched, BASS moves with the chord. Patched, BASS changes only on its rising edges and holds in between (see below). |
-| CHORD | Poly: one channel per lit button, holding that tap's voltage. |
+| CHORD | Poly: one channel per lit button, holding that tap's voltage, folded into the *Chord range* if one is set. |
 | CHANGE | Poly: one channel per CHORD channel, firing on a clock when that channel's note changed. |
 | BASS | One voltage from the tapped stages, chosen by the *Bass* mode. |
 
@@ -44,7 +44,8 @@ In the module browser the panel shows a sample: the shape 1·2·4·6·8 at DEPTH
 - **Everything lands on the clock.** A new shape, a new DEPTH and a new menu choice all take effect at the next clock, together with the shift, so the chord only ever changes in time.
 - **BASS CLK.** With a clock patched here, BASS is read only on its rising edges, from the chord that is sounding at that moment, and held until the next one; the *Bass* and *Bass octave* choices wait for that edge too. A bass edge that lands on a main clock reads after the shift, so the bass names the chord that starts with it. Every cable in Rack delays a signal by one sample, so a main clock that arrives up to 1 ms after the bass edge counts as the same edge: BASS reads again after that shift. A bass voice triggered by the same bass clock may hear the old note for that sample or two.
 - **HOLD.** While the button is on or the HOLD gate is high, each clock feeds stage 16 back into stage 1 instead of sampling IN. The register loops its last 16 values and the chord repeats every 16 clocks, whatever the shape or DEPTH.
-- **CHANGE.** On a clock, a channel fires when its voltage moved by more than 1 mV, or when it is new because the shape grew. Channels are compared as they leave CHORD, so with *Chord order* set to pitch, a channel follows the *n*-th lowest note.
+- **Chord range.** With a range set, each tap is moved by whole octaves into the window, one or two octaves wide from the C it names. Every tap keeps its pitch class, so a wide melody gives a close voicing, with inversions as the taps move. *By pitch* orders the notes after the fold, so channel *n* is the *n*-th lowest note that sounds. Two taps an octave apart fold onto the same note. BASS reads the taps before the fold, so *Lowest* is still the melody's real low note; *Bass octave* keeps it in a bass register.
+- **CHANGE.** On a clock, a channel fires when its voltage moved by more than 1 mV, or when it is new because the shape grew. Channels are compared as they leave CHORD: with *Chord order* set to pitch, a channel follows the *n*-th lowest note, and with a *Chord range* set, a tap that jumps by exactly an octave lands on the same note and doesn't strike its voice again.
 - **An empty shape.** With no button lit, CHORD carries one channel at 0 V and CHANGE stays low: Rack keeps a patched output at one channel at least.
 - **Saved with the patch.** The register and the menu choices are saved, so a patch reopens with the chord it closed on.
 
@@ -54,11 +55,14 @@ In the module browser the panel shows a sample: the shape 1·2·4·6·8 at DEPTH
 | --- | --- | --- |
 | Bass | *Lowest*: the lowest tapped voltage. *Root*: the tap that best explains the others as a chord built on it (thirds and fifths above it), scored as cvly `bss`'s Harmonic mode does; a tie goes to the lower note. | Lowest |
 | Bass octave | *Off*, or fold the bass into the octave above C1, C2 or C3, so it stays in a bass register whatever the melody's range. | Off |
+| Chord range | *Off*, or fold CHORD into a window starting at C2, C3, C4 or C5 (see *Chord width*), so the chord stays in one register whatever the melody's range. | Off |
+| Chord width | How wide the *Chord range* window is: *1 octave* (above C4, that is C4 to B4) or *2 octaves* (C4 to B5). Has no effect while *Chord range* is off. | 1 octave |
 | Chord order | *By stage*: channels in button order. *By pitch*: low to high. | By stage |
 | Change | *Trigger*: 1 ms, 10 V. *Gate until next clock*: high from the clock where the note changed to the next clock, for envelopes that read a gate; a note that changes on two clocks in a row drops the gate for 1 ms in between, so the envelope starts again. | Trigger |
 
 ## In a patch
 
+- **A wide melody, a close pad.** A melody that spans several octaves spreads the chord across the keyboard. Set *Chord range* to C3 or C4 and the pad stays in its register, with no folding module after CHORD; leave BASS on the raw taps with *Bass octave* for the bass.
 - **Self-voicing pad.** A quantized melody into IN and its clock into CLOCK, CHORD and CHANGE into a poly voice, BASS into a bass voice, and a slower clock (the beat, or a division of the melody's clock) into BASS CLK and the bass voice's envelope. The pad moves on the melody's clock, the bass on the beat.
 - **A phrase and its echo.** Patch a clock division into HOLD whose high half lasts 16 of Ghisa's clocks, for instance a /16 output at 50 % width when Ghisa runs on eighths at x2. The register takes 16 fresh notes, then loops them once, and starts again.
 - **Moving the voicing.** A slow random or stepped CV into DEPTH reads the same shape from deeper memory, so the pad drifts back through what the melody played. Set the knob near the middle (3 or 4) so a bipolar CV swings around it instead of sitting at 0 half the time.
@@ -86,5 +90,7 @@ What Ghisa saves beyond its parameters, as Brumista's `get_module_data` reads it
 | `register` | 16 voltages, stage 1 first |
 | `bass` | `lowest` or `root` |
 | `bassOctave` | 0 for off, 1 to 3 for C1 to C3 |
+| `chordRange` | 0 for off, 1 to 4 for C2 to C5 |
+| `chordRangeWidth` | 1 or 2 octaves |
 | `chordOrder` | `stage` or `pitch` |
 | `change` | `trigger` or `gate` |

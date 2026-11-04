@@ -233,6 +233,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Screenshots are drawn offscreen with Rack's own widgets (`FramebufferWidget`, as `-t` does), not read from the window: a module alone at zoom 2, or the rack's box around all or chosen modules, fitted to 1568 px unless a zoom is given; PNG as base64, an MCP image in the binary | 2026-11-03 |
 | Brumista's panel shows two round lights. LINK: off when stopped, slow blink while the port is taken, dim when listening, full with a client. CMD: a short flash per command, dim for a read, full for one that changes the patch. Modem lights with nothing behind them (separate RX/TX, OH, AA, HS, speed) and a port readout (too wide for 3 HP; the port stays in the menu) are left out; an error light waits until it's missed | 2026-11-04 |
 | Ghisa's BASS CLOCK input (`BASS CLK`, normalled to CLOCK) holds BASS between its own edges, read from the sounding chord. A bass edge on a main clock reads after the shift, and a main clock within 1 ms after a bass edge counts as the same edge (Rack's one-sample cable delay). Panel: DEPTH and HOLD jacks under their controls, IN, CLOCK and BASS CLK above CHORD, CHANGE and BASS | 2026-11-04 |
+| Ghisa's *Chord range* (off, or above C2 to C5) and *Chord width* (1 or 2 octaves) fold CHORD by whole octaves; *By pitch* orders after the fold, CHANGE compares the folded voltages, and BASS reads the taps before the fold | 2026-11-04 |
 
 ## Open questions
 
