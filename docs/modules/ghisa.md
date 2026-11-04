@@ -13,7 +13,7 @@ Fed a quantized melody, Ghisa makes the chord from what the melody just played.
 1. Patch a quantized melody into **IN** and its clock into **CLOCK**. Ghisa has no quantizer: the one upstream decides the harmony, and every tap stays in its scale.
 2. Patch **CHORD** into the V/Oct input of a polyphonic voice. A fresh Ghisa taps stages 1, 3 and 6 (now, two clocks ago and five clocks ago), so the chord has three notes.
 3. Patch **CHANGE** into that voice's envelope, in place of the clock. Each voice now sounds only on the clocks where its note moves, and a note the next chord keeps goes on ringing. If the envelope reads a gate rather than a trigger, set *Change* to *Gate until next clock* in the right-click menu.
-4. Patch **BASS** into a mono voice for a bass under the chord.
+4. Patch **BASS** into a mono voice for a bass under the chord. To have the bass move slower than the chord, on the beat or once a bar, patch that slower clock into **BASS CLK**.
 
 Then press the shape buttons to change the voicing, and turn DEPTH to read the same shape from further back.
 
@@ -28,9 +28,10 @@ Then press the shape buttons to change the voicing, and turn DEPTH to read the s
 | DEPTH | Where the window starts, from 0 to 8 stages back. At 0 the window is stages 1 to 8; at 8 it is stages 9 to 16. |
 | HOLD | Loops the register (see below). Lit while it loops, by the button or the gate. |
 | IN | The voltage to record. Any voltage: pitch, modulation or slow CV. Reads the first channel. |
-| CLOCK | Each rising edge shifts the register and updates every output. |
+| CLOCK | Each rising edge shifts the register and updates every output (BASS too, unless BASS CLK is patched). |
 | DEPTH (input) | Adds to the knob, 1.25 V per stage, so 0 to 10 V covers the range. The sum is rounded to a whole stage and clamped to 0 to 8, so a negative CV holds DEPTH at the knob's floor. |
 | HOLD (input) | A gate: while it's high, the register loops. |
+| BASS CLK | BASS's own clock, normalled to CLOCK. Unpatched, BASS moves with the chord. Patched, BASS changes only on its rising edges and holds in between (see below). |
 | CHORD | Poly: one channel per lit button, holding that tap's voltage. |
 | CHANGE | Poly: one channel per CHORD channel, firing on a clock when that channel's note changed. |
 | BASS | One voltage from the tapped stages, chosen by the *Bass* mode. |
@@ -41,6 +42,7 @@ In the module browser the panel shows a sample: the shape 1·2·4·6·8 at DEPTH
 
 - **The register.** On each rising edge at CLOCK, every stage passes its voltage one stage down and stage 1 samples IN. Stage 1 is the newest; stage 16 is sixteen clocks old.
 - **Everything lands on the clock.** A new shape, a new DEPTH and a new menu choice all take effect at the next clock, together with the shift, so the chord only ever changes in time.
+- **BASS CLK.** With a clock patched here, BASS is read only on its rising edges, from the chord that is sounding at that moment, and held until the next one; the *Bass* and *Bass octave* choices wait for that edge too. A bass edge that lands on a main clock reads after the shift, so the bass names the chord that starts with it. Every cable in Rack delays a signal by one sample, so a main clock that arrives up to 1 ms after the bass edge counts as the same edge: BASS reads again after that shift. A bass voice triggered by the same bass clock may hear the old note for that sample or two.
 - **HOLD.** While the button is on or the HOLD gate is high, each clock feeds stage 16 back into stage 1 instead of sampling IN. The register loops its last 16 values and the chord repeats every 16 clocks, whatever the shape or DEPTH.
 - **CHANGE.** On a clock, a channel fires when its voltage moved by more than 1 mV, or when it is new because the shape grew. Channels are compared as they leave CHORD, so with *Chord order* set to pitch, a channel follows the *n*-th lowest note.
 - **An empty shape.** With no button lit, CHORD carries one channel at 0 V and CHANGE stays low: Rack keeps a patched output at one channel at least.
@@ -57,7 +59,7 @@ In the module browser the panel shows a sample: the shape 1·2·4·6·8 at DEPTH
 
 ## In a patch
 
-- **Self-voicing pad.** A quantized melody into IN and its clock into CLOCK, CHORD and CHANGE into a poly voice, BASS through a sample and hold on a slower clock into a bass voice. The pad moves on the melody's clock, the bass on the beat.
+- **Self-voicing pad.** A quantized melody into IN and its clock into CLOCK, CHORD and CHANGE into a poly voice, BASS into a bass voice, and a slower clock (the beat, or a division of the melody's clock) into BASS CLK and the bass voice's envelope. The pad moves on the melody's clock, the bass on the beat.
 - **A phrase and its echo.** Patch a clock division into HOLD whose high half lasts 16 of Ghisa's clocks, for instance a /16 output at 50 % width when Ghisa runs on eighths at x2. The register takes 16 fresh notes, then loops them once, and starts again.
 - **Moving the voicing.** A slow random or stepped CV into DEPTH reads the same shape from deeper memory, so the pad drifts back through what the melody played. Set the knob near the middle (3 or 4) so a bipolar CV swings around it instead of sitting at 0 half the time.
 - **Avoid the collapse.** If the melody repeats, taps a multiple of its period apart read the same note and the chord thins. A source alternating between two notes collapses taps 1, 3 and 5 into one. Move a button to an even stage, use a loop length that shares no factor with the tap spacing, or move DEPTH.

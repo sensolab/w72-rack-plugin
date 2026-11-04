@@ -1,7 +1,8 @@
 // Ghisa: a 16-stage shift register whose taps are a control. Eight shape buttons
 // pick stages from an eight-stage window that DEPTH slides through the register;
 // the taps leave as a poly CHORD, a per-voice CHANGE trigger or gate and a mono BASS.
-// Everything the outputs read is latched on the clock.
+// Everything the outputs read is latched on the clock; BASS CLOCK, when patched,
+// gives BASS a clock of its own.
 //
 // The Root bass scores intervals as cvly bss's Harmonic mode does
 // (cvly-modules by Lyqst, GPL-3.0, https://github.com/Lyqst/cvly-modules).
@@ -15,6 +16,9 @@ static const int STAGES = 16;
 static const int TAPS = 8;
 static const int MAX_DEPTH = STAGES - TAPS;
 static const float VOLTS_PER_STAGE = 1.25f;
+// A main clock this soon after a bass clock counts as the same edge: every cable
+// in Rack delays by a sample, so two clocks from one source rarely arrive together.
+static const float BASS_GRACE = 1e-3f;
 
 // Pitch class of a V/oct voltage, 0 (C) to 11.
 static int pitchClass(float v) {
@@ -60,7 +64,8 @@ static bool isString(json_t* j, const char* value) {
 
 struct Ghisa : Module {
 	enum ParamId { ENUMS(SHAPE_PARAM, TAPS), DEPTH_PARAM, HOLD_PARAM, PARAMS_LEN };
-	enum InputId { IN_INPUT, CLOCK_INPUT, DEPTH_INPUT, HOLD_INPUT, INPUTS_LEN };
+	// New inputs go at the end: patches store cables by input index.
+	enum InputId { IN_INPUT, CLOCK_INPUT, DEPTH_INPUT, HOLD_INPUT, BASS_CLOCK_INPUT, INPUTS_LEN };
 	enum OutputId { CHORD_OUTPUT, CHANGE_OUTPUT, BASS_OUTPUT, OUTPUTS_LEN };
 	enum LightId { LIGHTS_LEN };
 
@@ -88,6 +93,9 @@ struct Ghisa : Module {
 	bool holding = false;
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger holdGate;
+	dsp::SchmittTrigger bassClockTrigger;
+	// Time left in which a main clock re-reads the bass after its shift.
+	float bassGrace = 0.f;
 	// A trigger's 1 ms pulse; in gate mode, the 1 ms gap that retriggers a gate already high.
 	dsp::PulseGenerator changePulse[TAPS];
 	bool changeGate[TAPS] = {};
@@ -107,6 +115,7 @@ struct Ghisa : Module {
 		configInput(CLOCK_INPUT, "Clock");
 		configInput(DEPTH_INPUT, "Depth")->description = "1.25 V per stage, added to the knob";
 		configInput(HOLD_INPUT, "Hold")->description = "While high, stage 16 feeds stage 1";
+		configInput(BASS_CLOCK_INPUT, "Bass clock")->description = "Normalled to CLOCK. When patched, BASS changes only on its rising edges";
 		configOutput(CHORD_OUTPUT, "Chord");
 		configOutput(CHANGE_OUTPUT, "Change")->description = "Per channel, a trigger (or a gate until the next clock) when that channel's voltage changed";
 		configOutput(BASS_OUTPUT, "Bass");
@@ -130,9 +139,20 @@ struct Ghisa : Module {
 		return floorV + x - std::floor(x + 1e-4f);
 	}
 
+	// BASS from the chord that is sounding, by the Bass mode and octave.
+	float bassOf() {
+		if (channels == 0)
+			return 0.f;
+		float sorted[TAPS];
+		std::copy(chord, chord + channels, sorted);
+		sortLowToHigh(sorted, channels);
+		return foldBass(bassMode == BASS_ROOT ? rootOf(sorted, channels) : sorted[0]);
+	}
+
 	// Reads the shape and DEPTH and taps the register. On a clock, CHANGE fires for
 	// each channel that is new or whose voltage moved by more than 1 mV: a trigger,
-	// or a gate held until the next clock.
+	// or a gate held until the next clock. BASS follows, unless BASS CLOCK is patched
+	// (it's still read when the module loads or resets, so it never starts empty).
 	void latch(bool clocked) {
 		latchPending = false;
 		for (int k = 0; k < TAPS; k++)
@@ -164,17 +184,16 @@ struct Ghisa : Module {
 		std::copy(next, next + n, chord);
 		channels = n;
 
-		if (n == 0)
-			bass = 0.f;
-		else
-			bass = foldBass(bassMode == BASS_ROOT ? rootOf(sorted, n) : sorted[0]);
+		if (!clocked || !inputs[BASS_CLOCK_INPUT].isConnected())
+			bass = bassOf();
 	}
 
 	void process(const ProcessArgs& args) override {
 		holdGate.process(inputs[HOLD_INPUT].getVoltage(), 0.1f, 1.f);
 		holding = params[HOLD_PARAM].getValue() > 0.5f || holdGate.isHigh();
 
-		if (clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 1.f)) {
+		bool clocked = clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 1.f);
+		if (clocked) {
 			float in = holding ? reg[STAGES - 1] : inputs[IN_INPUT].getVoltage();
 			std::copy_backward(reg, reg + STAGES - 1, reg + STAGES);
 			reg[0] = in;
@@ -182,6 +201,28 @@ struct Ghisa : Module {
 		}
 		else if (latchPending) {
 			latch(false);
+		}
+
+		// BASS CLOCK holds BASS between its edges. An edge on the same sample as a
+		// clock reads after the shift; a clock that follows within BASS_GRACE
+		// counts as the same edge, and BASS reads again after its shift.
+		if (inputs[BASS_CLOCK_INPUT].isConnected()) {
+			if (bassClockTrigger.process(inputs[BASS_CLOCK_INPUT].getVoltage(), 0.1f, 1.f)) {
+				bass = bassOf();
+				bassGrace = clocked ? 0.f : BASS_GRACE;
+			}
+			else if (bassGrace > 0.f) {
+				if (clocked) {
+					bass = bassOf();
+					bassGrace = 0.f;
+				}
+				else {
+					bassGrace -= args.sampleTime;
+				}
+			}
+		}
+		else {
+			bassGrace = 0.f;
 		}
 
 		// Rack keeps a connected output at one channel at least, so an empty shape gives one channel at 0 V.
@@ -281,6 +322,7 @@ struct GhisaWidget : ModuleWidget {
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::CLOCK, module, Ghisa::CLOCK_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::DEPTH_CV, module, Ghisa::DEPTH_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::HOLD_GATE, module, Ghisa::HOLD_INPUT));
+		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::BASS_CLOCK, module, Ghisa::BASS_CLOCK_INPUT));
 
 		addOutput(createOutputCentered<DarkPJ301MPort>(GhisaPanel::CHORD, module, Ghisa::CHORD_OUTPUT));
 		addOutput(createOutputCentered<DarkPJ301MPort>(GhisaPanel::CHANGE, module, Ghisa::CHANGE_OUTPUT));
