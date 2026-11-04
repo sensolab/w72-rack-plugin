@@ -6,6 +6,7 @@ namespace BrumistaPanel {
 
 // Centres of the controls, in px.
 static const rack::math::Vec LINK_LIGHT = rack::math::Vec(22.5f, 153.5f);
+static const rack::math::Vec CMD_LIGHT = rack::math::Vec(22.5f, 201.5f);
 
 // Top-left corners of the screws, in px.
 static const rack::math::Vec SCREWS[] = {
