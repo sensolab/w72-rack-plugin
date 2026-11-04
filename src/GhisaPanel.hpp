@@ -5,12 +5,13 @@
 namespace GhisaPanel {
 
 // Centres of the controls, in px.
-static const rack::math::Vec DEPTH = rack::math::Vec(30.0f, 210.0f);
-static const rack::math::Vec HOLD = rack::math::Vec(90.0f, 210.0f);
-static const rack::math::Vec IN = rack::math::Vec(15.0f, 297.5f);
-static const rack::math::Vec CLOCK = rack::math::Vec(45.0f, 297.5f);
-static const rack::math::Vec DEPTH_CV = rack::math::Vec(75.0f, 297.5f);
-static const rack::math::Vec HOLD_GATE = rack::math::Vec(105.0f, 297.5f);
+static const rack::math::Vec DEPTH = rack::math::Vec(30.0f, 203.5f);
+static const rack::math::Vec HOLD = rack::math::Vec(90.0f, 203.5f);
+static const rack::math::Vec DEPTH_CV = rack::math::Vec(30.0f, 255.5f);
+static const rack::math::Vec HOLD_GATE = rack::math::Vec(90.0f, 255.5f);
+static const rack::math::Vec IN = rack::math::Vec(20.0f, 297.5f);
+static const rack::math::Vec CLOCK = rack::math::Vec(60.0f, 297.5f);
+static const rack::math::Vec BASS_CLOCK = rack::math::Vec(100.0f, 297.5f);
 static const rack::math::Vec CHORD = rack::math::Vec(20.0f, 345.5f);
 static const rack::math::Vec CHANGE = rack::math::Vec(60.0f, 345.5f);
 static const rack::math::Vec BASS = rack::math::Vec(100.0f, 345.5f);
