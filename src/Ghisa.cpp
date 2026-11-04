@@ -57,6 +57,13 @@ static void sortLowToHigh(float* v, int n) {
 	}
 }
 
+// Folds a V/oct voltage by whole octaves into the window of `octaves` octaves
+// starting at floorV. The small offset keeps an exact C on its own octave's floor.
+static float foldInto(float v, float floorV, int octaves) {
+	float x = v - floorV;
+	return floorV + x - octaves * std::floor((x + 1e-4f) / octaves);
+}
+
 static bool isString(json_t* j, const char* value) {
 	const char* s = json_string_value(j);
 	return s && std::string(s) == value;
@@ -80,13 +87,19 @@ struct Ghisa : Module {
 	bool shape[TAPS] = {};
 	int depth = 0;
 	float chord[TAPS] = {};
+	// The sounding chord's taps before the fold, in stage order: BASS reads these.
+	float taps[TAPS] = {};
 	int channels = 0;
 	float bass = 0.f;
 	bool latchPending = true;
 
 	// Right-click modes. Bass octave is 0 for off, or 1 to 3 to fold above C1 to C3.
+	// Chord range is 0 for off, or 1 to 4 to fold above C2 to C5; chord width is 0
+	// for one octave, 1 for two.
 	int bassMode = BASS_LOWEST;
 	int bassOctave = 0;
+	int chordRange = 0;
+	int chordWidth = 0;
 	int chordOrder = ORDER_STAGE;
 	int changeMode = CHANGE_TRIGGER;
 
@@ -125,32 +138,37 @@ struct Ghisa : Module {
 		std::fill(reg, reg + STAGES, 0.f);
 		bassMode = BASS_LOWEST;
 		bassOctave = 0;
+		chordRange = 0;
+		chordWidth = 0;
 		chordOrder = ORDER_STAGE;
 		changeMode = CHANGE_TRIGGER;
 		latchPending = true;
 	}
 
+	// C4 is 0 V, so C1 is -3 V.
 	float foldBass(float v) {
-		if (bassOctave == 0)
-			return v;
-		// C4 is 0 V, so C1 is -3 V. The small offset keeps an exact C on its own octave's floor.
-		float floorV = bassOctave - 4.f;
-		float x = v - floorV;
-		return floorV + x - std::floor(x + 1e-4f);
+		return bassOctave == 0 ? v : foldInto(v, bassOctave - 4.f, 1);
 	}
 
-	// BASS from the chord that is sounding, by the Bass mode and octave.
+	// C2 is -2 V.
+	float foldChord(float v) {
+		return chordRange == 0 ? v : foldInto(v, chordRange - 3.f, chordWidth + 1);
+	}
+
+	// BASS from the taps of the chord that is sounding, before the chord's fold,
+	// by the Bass mode and octave.
 	float bassOf() {
 		if (channels == 0)
 			return 0.f;
 		float sorted[TAPS];
-		std::copy(chord, chord + channels, sorted);
+		std::copy(taps, taps + channels, sorted);
 		sortLowToHigh(sorted, channels);
 		return foldBass(bassMode == BASS_ROOT ? rootOf(sorted, channels) : sorted[0]);
 	}
 
-	// Reads the shape and DEPTH and taps the register. On a clock, CHANGE fires for
-	// each channel that is new or whose voltage moved by more than 1 mV: a trigger,
+	// Reads the shape and DEPTH, taps the register and folds the taps by the chord
+	// range. On a clock, CHANGE fires for each channel that is new or whose folded
+	// voltage moved by more than 1 mV: a trigger,
 	// or a gate held until the next clock. BASS follows, unless BASS CLOCK is patched
 	// (it's still read when the module loads or resets, so it never starts empty).
 	void latch(bool clocked) {
@@ -160,17 +178,18 @@ struct Ghisa : Module {
 		float d = params[DEPTH_PARAM].getValue() + inputs[DEPTH_INPUT].getVoltage() / VOLTS_PER_STAGE;
 		depth = clamp((int) std::round(d), 0, MAX_DEPTH);
 
-		float next[TAPS];
+		float raw[TAPS];
 		int n = 0;
 		for (int k = 0; k < TAPS; k++) {
 			if (shape[k])
-				next[n++] = reg[depth + k];
+				raw[n++] = reg[depth + k];
 		}
-		float sorted[TAPS];
-		std::copy(next, next + n, sorted);
-		sortLowToHigh(sorted, n);
+		// By pitch orders after the fold, so channel N is the Nth lowest note that sounds.
+		float next[TAPS];
+		for (int c = 0; c < n; c++)
+			next[c] = foldChord(raw[c]);
 		if (chordOrder == ORDER_PITCH)
-			std::copy(sorted, sorted + n, next);
+			sortLowToHigh(next, n);
 
 		gateMode = changeMode == CHANGE_GATE;
 		if (clocked) {
@@ -182,6 +201,7 @@ struct Ghisa : Module {
 			}
 		}
 		std::copy(next, next + n, chord);
+		std::copy(raw, raw + n, taps);
 		channels = n;
 
 		if (!clocked || !inputs[BASS_CLOCK_INPUT].isConnected())
@@ -247,6 +267,8 @@ struct Ghisa : Module {
 		json_object_set_new(rootJ, "register", regJ);
 		json_object_set_new(rootJ, "bass", json_string(bassMode == BASS_ROOT ? "root" : "lowest"));
 		json_object_set_new(rootJ, "bassOctave", json_integer(bassOctave));
+		json_object_set_new(rootJ, "chordRange", json_integer(chordRange));
+		json_object_set_new(rootJ, "chordRangeWidth", json_integer(chordWidth + 1));
 		json_object_set_new(rootJ, "chordOrder", json_string(chordOrder == ORDER_PITCH ? "pitch" : "stage"));
 		json_object_set_new(rootJ, "change", json_string(changeMode == CHANGE_GATE ? "gate" : "trigger"));
 		return rootJ;
@@ -260,6 +282,10 @@ struct Ghisa : Module {
 			bassMode = isString(j, "root") ? BASS_ROOT : BASS_LOWEST;
 		if (json_t* j = json_object_get(rootJ, "bassOctave"))
 			bassOctave = clamp((int) json_integer_value(j), 0, 3);
+		if (json_t* j = json_object_get(rootJ, "chordRange"))
+			chordRange = clamp((int) json_integer_value(j), 0, 4);
+		if (json_t* j = json_object_get(rootJ, "chordRangeWidth"))
+			chordWidth = clamp((int) json_integer_value(j), 1, 2) - 1;
 		if (json_t* j = json_object_get(rootJ, "chordOrder"))
 			chordOrder = isString(j, "pitch") ? ORDER_PITCH : ORDER_STAGE;
 		if (json_t* j = json_object_get(rootJ, "change"))
@@ -336,6 +362,8 @@ struct GhisaWidget : ModuleWidget {
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createIndexPtrSubmenuItem("Bass", {"Lowest", "Root"}, &m->bassMode));
 		menu->addChild(createIndexPtrSubmenuItem("Bass octave", {"Off", "Above C1", "Above C2", "Above C3"}, &m->bassOctave));
+		menu->addChild(createIndexPtrSubmenuItem("Chord range", {"Off", "Above C2", "Above C3", "Above C4", "Above C5"}, &m->chordRange));
+		menu->addChild(createIndexPtrSubmenuItem("Chord width", {"1 octave", "2 octaves"}, &m->chordWidth));
 		menu->addChild(createIndexPtrSubmenuItem("Chord order", {"By stage", "By pitch"}, &m->chordOrder));
 		menu->addChild(createIndexPtrSubmenuItem("Change", {"Trigger", "Gate until next clock"}, &m->changeMode));
 	}
