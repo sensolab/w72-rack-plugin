@@ -42,13 +42,13 @@ Rules for names and slugs:
 
 ## Glossary
 
-Five names are approved (Brumista, Ghisa, Moleta, Scighera, Gibigiana), and the rest are candidates. Spellings follow common use; classical Milanese orthography varies.
+Two names are shipped modules in the VCV Library (Brumista, Ghisa), three are approved for modules to come (Moleta, in design, then Scighera and Gibigiana), and the rest are candidates. Spellings follow common use; classical Milanese orthography varies.
 
 | Name | Meaning | Module role | Status |
 | --- | --- | --- | --- |
-| Brumista | The old cab driver, from the brougham carriage | The bridge: carries Claude's commands into a running Rack, where it's told | Approved |
-| Ghisa | The Milanese traffic warden, nicknamed after the old helmet | A shift register whose taps are a control: chords and a bass from the melody's recent past ([design](modules/ghisa.md)) | Approved |
-| Moleta | The itinerant knife grinder (also Molèta, Molètta), pedalling a steady wheel that throws sparks at random | A master clock whose outputs each have a ratio, a chance and a length ([design](modules/moleta.md)) | Approved |
+| Brumista | The old cab driver, from the brougham carriage | The bridge: carries Claude's commands into a running Rack, where it's told ([manual](modules/brumista.md)) | Shipped ([Library](https://library.vcvrack.com/W72/Brumista)) |
+| Ghisa | The Milanese traffic warden, nicknamed after the old helmet | A shift register whose taps are a control: chords and a bass from the melody's recent past ([manual](modules/ghisa.md)) | Shipped ([Library](https://library.vcvrack.com/W72/Ghisa)) |
+| Moleta | The itinerant knife grinder (also Molèta, Molètta), pedalling a steady wheel that throws sparks at random | A master clock whose outputs each have a ratio, a chance and a length ([design](modules/moleta.md)) | Approved, in design |
 | Scighera | The thick Po Valley fog | Diffusion, reverb, smeared noise | Approved |
 | Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | Shimmer, moving reflection or delay | Approved |
 | Magutt | The bricklayer or labourer who builds what the architect drew | Passed over for the bridge: Claude builds the patch you design | Candidate |
