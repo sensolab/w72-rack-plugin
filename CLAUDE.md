@@ -1,6 +1,6 @@
 # W72 — VCV Rack plugin
 
-W72 is a VCV Rack plugin (slug `W72`) with modules named in Milanese dialect. The first module is a bridge: a TCP server inside Rack that lets Claude read and patch a running Rack, paired with a Go MCP server in `mcp/`.
+W72 is a VCV Rack plugin (slug `W72`) with modules named in Milanese dialect. Four modules ship: Brumista, a bridge (a TCP server inside Rack that lets Claude read and patch a running Rack, paired with a Go MCP server in `mcp/`); Ghisa, a shift register whose taps are a control; Moleta, a probability master clock; and its expander Moleta +.
 
 Read these before starting any task:
 
@@ -12,7 +12,7 @@ The repository is meant to be public. Keep machine paths, personal notes and cre
 
 ## Layout
 
-The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so the VCV Library can build it. `mcp/` (Go), `protocol/`, `panels/` and `tools/panelgen/` (Go) sit beside it and stay out of the plugin package (`DISTRIBUTABLES`).
+The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so the VCV Library can build it. `mcp/` (Go), `protocol/`, `panels/`, `tests/` (host tests of Moleta's engine) and `tools/panelgen/` (Go) sit beside it and stay out of the plugin package (`DISTRIBUTABLES`). `res/` holds the generated panels and the one Inter Tight weight the readouts draw (`res/fonts/`). Moleta's DSP is a header with no Rack includes (`src/MoletaEngine.hpp`), shared with Moleta +, so it can be tested without Rack.
 
 Panels are generated: edit `panels/<Slug>.json` and run `make panels`, which rewrites `res/<Slug>.svg` and `src/<Slug>Panel.hpp`. Never edit either by hand.
 
@@ -39,7 +39,7 @@ If the rackmaster plugin is available in the session, use it first:
 
 ## Where work runs
 
-- **Cloud threads:** design, docs, the Go MCP server, and C++ that a compile check can verify.
+- **Cloud threads:** design, docs, the Go MCP server, C++ that a compile check can verify, and `make test-engine` (Moleta's engine, host compiler only).
 - **Local threads only:** the Windows build (`make install` with MSYS2 and the Rack SDK) and any test against a running Rack. A cloud thread must not claim a Rack test passed.
 
 Close Rack before `make install` on Windows: a loaded plugin `.dll` is locked.
@@ -50,12 +50,15 @@ Close Rack before `make install` on Windows: a loaded plugin `.dll` is locked.
 - **Conventional Commits** for commit messages and PR titles: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `build:`, `ci:`, `chore:`, with an optional scope (`feat(bridge): add cable colours`, `fix(mcp): …`). A breaking protocol change carries `!` and a `BREAKING CHANGE:` footer.
 - Keep commits focused; stage explicit paths, not `git add -A`.
 - Files use LF line endings (`.gitattributes` enforces it). On Windows, check that tools didn't write CRLF.
+- Keep links to Claude sessions out of PR and issue bodies and commit messages: they are public. A plain `Generated with Claude Code` footer or `Co-Authored-By` trailer is fine.
+- An implementation plan is a working note, not repo content: keep it outside the repo and out of commits.
 
 ## Versioning
 
 - **Semantic Versioning.** One version for the plugin, the MCP binary and the protocol; they move together.
 - Rack requires the plugin's major version to match Rack's (2.x for Rack 2), so W72 versions are `2.MINOR.PATCH`: a new command or module is a minor bump, a fix is a patch. A breaking protocol change is called out in the release notes and the `hello` handshake, since the major version is pinned.
 - Version bumps (`plugin.json`, binary, protocol version) go in their own `chore(release): X.Y.Z` commit.
+- A release: merge the `chore(release): X.Y.Z` PR once CI is green, tag `vX.Y.Z` on its merge commit (an annotated tag, message `W72 X.Y.Z`) so the release workflow publishes the binaries, put a short summary above the generated release notes, comment on the Library issue (below), and close the milestone.
 
 ## VCV Library
 
@@ -63,4 +66,4 @@ W72 is in the VCV Library (accepted 2026-11-05). After each release, comment the
 
 ## CI
 
-Lightweight, on GitHub Actions, once there is code to check: build and test the Go server, run the `commands.json` check, and compile the plugin on Linux against the Rack SDK. CI never replaces a local test against a running Rack.
+Lightweight, on GitHub Actions: build and test the Go server, run the `commands.json` check, check the generated panels, run the host tests of Moleta's engine, and compile the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. A change that only touches docs skips this workflow. A tag `vX.Y.Z` runs the release workflow. CI never replaces a local test against a running Rack.
