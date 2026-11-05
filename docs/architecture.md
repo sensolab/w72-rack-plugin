@@ -4,7 +4,7 @@
 
 ## At a glance
 
-W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list.
+W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown three modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +); the diagram is the bridge only.
 
 ```mermaid
 flowchart LR
@@ -28,9 +28,11 @@ One GitHub repository, `w72-rack-plugin`, holds the plugin, the MCP binary and t
 w72-rack-plugin/
   plugin.json             the Rack plugin, slug W72
   Makefile
-  src/                    C++: the bridge module, later the sound modules
-  res/                    panels (SVG), generated
+  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, and W72's own parts
+                          (widgets.hpp; MoletaEngine.hpp, the DSP with no Rack includes)
+  res/                    panels (SVG), generated; fonts/ holds the readout's Inter Tight weight
   panels/                 one description per panel
+  tests/                  host tests of Moleta's engine (not in the plugin package)
   tools/panelgen/         the panel generator, Go (not in the plugin package)
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
@@ -93,7 +95,9 @@ The first milestone matches what limen does today, without its problems. Each la
 6. **Opening patches.** Open a patch. It replaces the whole scene, so it refuses to run over an unsaved patch unless the call says so.
     - Done when: Claude can switch to a saved patch without losing unsaved work by accident.
 
-Sound modules (Ghisa, Scighera, Gibigiana) come after milestone 1 at the earliest. Their specs come from technique cards.
+Milestones 1 to 3 are done, the last of them (screenshots) in 2.5.0; 4 to 6 are open.
+
+Further modules come in parallel with these: Ghisa (2.3.0) and Moleta with its expander (2.8.0) have shipped, and Scighera and Gibigiana are next. Their specs come from technique cards.
 
 ## The MCP binary
 
@@ -129,6 +133,14 @@ Cross-compiling from Linux (VCV's `rack-plugin-toolchain`, or mingw-w64 with the
 
 Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, runs the host tests of Moleta's engine (`make test-engine`, no SDK needed), and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
 
+### Releasing
+
+1. A `chore(release): X.Y.Z` pull request bumps `plugin.json` and `mcp/version.go`; merge it once CI is green. A change that only touches docs skips the workflow, so it has no checks to wait for.
+2. Tag `vX.Y.Z` on the merge commit (annotated, message `W72 X.Y.Z`). The release workflow builds `brumista-mcp` for five platforms and publishes it with `SHA256SUMS`.
+3. Put a short summary of what is new above the generated release notes.
+4. Comment the version and commit on the Library issue (VCVRack/library#1010); the Library rebuilds from that commit and lists the new version some time later.
+5. Close the milestone. To use the new build locally, install the plugin and rebuild the MCP binary from the tag.
+
 ## Where work runs
 
 Development runs as a Claude Code Project: a coordinator plus threads. Work that needs Rack or the Windows build runs in local threads on the development machine, and everything else can run in the cloud.
@@ -138,6 +150,7 @@ Development runs as a Claude Code Project: a coordinator plus threads. Work that
 | Design, specs, docs, reviews | Cloud | Needs only the repo |
 | Go MCP binary: code, tests, cross-builds | Cloud | Builds anywhere |
 | C++ code that a compile check can verify | Cloud | A Linux compile catches most errors |
+| Moleta's engine tests (`make test-engine`) | Cloud | Host compiler only, no Rack SDK |
 | Windows build and `make install` | Local (Remote Control) | Needs MSYS2 and the Rack folder |
 | Live tests against a running Rack | Local (Remote Control) | Needs Rack, limen and rackmaster |
 
@@ -221,7 +234,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Ghisa's shape and DEPTH changes take effect on the next clock | 2026-11-02 |
 | Ghisa builds in the bass tap (`bss`'s job): a BASS output beside the poly CHORD | 2026-11-02 |
 | A module's working modes go in its right-click menu, not on the panel | 2026-11-02 |
-| Ghisa's HOLD is a button and a gate input; while either is on, stage 16 feeds stage 1, so the loop is always 16 clocks | 2026-11-02 |
+| Ghisa's HOLD is a button and a gate input; while either is on, stage 16 feeds stage 1, so the loop is always 16 clocks (until *Hold loop length*, below) | 2026-11-02 |
 | Ghisa's default shape is buttons 1, 3 and 6 | 2026-11-02 |
 | Ghisa has a poly CHANGE output: per voice, a trigger when that voice's note moved | 2026-11-02 |
 | Ghisa's panel: register display under the band, shape buttons as an unnumbered 2 × 4 grid at 2 HP pitch; rows above the inputs may sit off the 48 px grid | 2026-11-02 |
@@ -235,7 +248,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Ghisa's BASS CLOCK input (`BASS CLK`, normalled to CLOCK) holds BASS between its own edges, read from the sounding chord. A bass edge on a main clock reads after the shift, and a main clock within 1 ms after a bass edge counts as the same edge (Rack's one-sample cable delay). Panel: DEPTH and HOLD jacks under their controls, IN, CLOCK and BASS CLK above CHORD, CHANGE and BASS | 2026-11-04 |
 | Ghisa's *Chord range* (off, or above C2 to C5) and *Chord width* (1 or 2 octaves) fold CHORD by whole octaves; *By pitch* orders after the fold, CHANGE compares the folded voltages, and BASS reads the taps before the fold | 2026-11-04 |
 | Moleta is a master clock (BPM, RUN, RESET) that follows a CLOCK input when one is patched (rising edges only; 1, 4 or 24 pulses per beat in the menu, default 1). Besides its outputs it has a coin-free BEAT, a RESET out and a CLICK audio out; no swing, no BPM CV | 2026-11-05 |
-| Moleta has four outputs, each with RATIO, CHANCE and LENGTH; an expander may add four more later without changing the base, which then delays its outputs one sample to match Rack's expander latency | 2026-11-05 |
+| Moleta has four outputs, each with RATIO, CHANCE and LENGTH; an expander (Moleta +, shipped in 2.8.0) adds four more without changing the base, which then delays its outputs one sample to match Rack's expander latency | 2026-11-05 |
 | Moleta's RATIO steps through one curated list (/16 to ×16 with 2/3, 3/4, 4/3, 3/2 and odd ratios); the patch saves the ratio, not the step | 2026-11-05 |
 | Moleta's LENGTH: fully left is a trigger, then 5% to 95% of the output's own period | 2026-11-05 |
 | Moleta's coin: a CHANCE knob per output plus one shared DENSITY CV; a REPEAT knob loops each output's last 16 (or 8) flips, storing the random numbers so CHANCE still acts on a locked loop; *Follow the output above* is a per-output menu option, off by default | 2026-11-05 |

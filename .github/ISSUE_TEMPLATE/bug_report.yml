@@ -7,7 +7,7 @@ body:
     attributes:
       label: W72 version
       description: Shown in Rack's plugin manager, or by `brumista-mcp -version`.
-      placeholder: "2.3.0"
+      placeholder: "2.8.0"
     validations:
       required: true
   - type: input
@@ -25,6 +25,8 @@ body:
         - Brumista (module)
         - brumista-mcp (MCP server)
         - Ghisa
+        - Moleta
+        - Moleta +
         - Docs
         - Other
     validations:
