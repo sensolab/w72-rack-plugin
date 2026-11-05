@@ -33,7 +33,7 @@
       "name": "Moleta +",
       "description": "Expander that adds four outputs to the Moleta on its left, each with a ratio, a chance and a length",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/moletaplus.md",
-      "tags": ["Clock generator", "Clock modulator", "Random"]
+      "tags": ["Clock generator", "Clock modulator", "Expander", "Random"]
     }
   ]
 }
