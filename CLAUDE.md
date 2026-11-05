@@ -57,6 +57,10 @@ Close Rack before `make install` on Windows: a loaded plugin `.dll` is locked.
 - Rack requires the plugin's major version to match Rack's (2.x for Rack 2), so W72 versions are `2.MINOR.PATCH`: a new command or module is a minor bump, a fix is a patch. A breaking protocol change is called out in the release notes and the `hello` handshake, since the major version is pinned.
 - Version bumps (`plugin.json`, binary, protocol version) go in their own `chore(release): X.Y.Z` commit.
 
+## VCV Library
+
+W72 is in the VCV Library (accepted 2026-11-05). After each release, comment the new version and commit hash on the Library submission issue (VCVRack/library#1010); the Library rebuilds from that commit. Brumista's MCP binary is not part of the Library package: it ships on GitHub Releases from the `v2.x.y` tag.
+
 ## CI
 
 Lightweight, on GitHub Actions, once there is code to check: build and test the Go server, run the `commands.json` check, and compile the plugin on Linux against the Rack SDK. CI never replaces a local test against a running Rack.
