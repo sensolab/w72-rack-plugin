@@ -83,4 +83,39 @@ struct FlatBars : widget::TransparentWidget {
 	}
 };
 
+// A row of signage values in a readout well: Inter Tight SemiBold in display ink,
+// centred on each cell's baseline point. The panel draws the well and the names;
+// this draws only the values, on the light layer. The points are in panel px, as
+// the header lists them.
+struct Readout : widget::TransparentWidget {
+	std::vector<math::Vec> baselines;
+	float fontSize;
+
+	Readout(math::Rect well, const math::Vec* points, int count, float fontSize) : fontSize(fontSize) {
+		box = well;
+		for (int i = 0; i < count; i++)
+			baselines.push_back(points[i].minus(well.pos));
+	}
+
+	virtual std::string text(int i) = 0;
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer == 1) {
+			// A missing font draws nothing rather than failing.
+			std::shared_ptr<window::Font> font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/InterTight-SemiBold.ttf"));
+			if (font && font->handle >= 0) {
+				nvgFontFaceId(args.vg, font->handle);
+				nvgFontSize(args.vg, fontSize);
+				nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+				nvgFillColor(args.vg, INK);
+				for (int i = 0; i < (int) baselines.size(); i++) {
+					std::string s = text(i);
+					nvgText(args.vg, baselines[i].x, baselines[i].y, s.c_str(), NULL);
+				}
+			}
+		}
+		widget::TransparentWidget::drawLayer(args, layer);
+	}
+};
+
 } // namespace w72
