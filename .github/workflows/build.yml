@@ -64,6 +64,15 @@ jobs:
       - name: Check the dispatch table against protocol/commands.json
         run: tools/check-commands.sh
 
+  # Moleta's engine has no Rack includes, so its tests build with the host compiler alone.
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Host tests of the Moleta engine
+        run: make test-engine
+
   panels:
     runs-on: ubuntu-latest
     defaults:

@@ -11,7 +11,10 @@ SOURCES += $(wildcard src/*.cpp)
 DISTRIBUTABLES += res
 DISTRIBUTABLES += $(wildcard LICENSE*)
 
+# The engine's host test needs no SDK, so it runs without one.
+ifneq ($(MAKECMDGOALS),test-engine)
 include $(RACK_DIR)/plugin.mk
+endif
 
 # Brumista's server uses Winsock, and its screenshots read pixels back through OpenGL.
 ifdef ARCH_WIN
@@ -22,3 +25,12 @@ endif
 .PHONY: panels
 panels:
 	cd tools/panelgen && go run . -root ../..
+
+# Host tests of Moleta's engine (src/MoletaEngine.hpp has no Rack includes),
+# with the plain host compiler. Builds into build/, outside the plugin package.
+HOST_CXX ?= g++
+.PHONY: test-engine
+test-engine:
+	mkdir -p build/tests
+	$(HOST_CXX) -std=c++11 -O2 -Wall -Wextra -o build/tests/moleta_engine_test tests/moleta_engine_test.cpp
+	build/tests/moleta_engine_test
