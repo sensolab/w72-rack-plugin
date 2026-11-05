@@ -2,7 +2,7 @@
 
 *The old Milanese cab driver: it carries commands into a running Rack, where it's told.*
 
-Brumista is a bridge. It runs a small server inside Rack that lets an MCP client such as Claude Code read the patch and edit it: list modules, ports, parameters and cables, add and move modules, set parameters, connect cables, save, and take screenshots of a module or the rack. It makes no sound and has no inputs or outputs.
+Brumista is a bridge. It runs a small server inside Rack that lets an MCP-capable agent (Claude Code, for one) read the patch and edit it: list modules, ports, parameters and cables, add and move modules, set parameters, connect cables, save, and take screenshots of a module or the rack. It makes no sound and has no inputs or outputs.
 
 - **Family:** trades · **Width:** 3 HP · **Slug:** `Brumista` · **Since:** 2.1.0
 
@@ -10,7 +10,7 @@ Brumista is a bridge. It runs a small server inside Rack that lets an MCP client
 
 1. Add Brumista to the patch. It starts listening on `127.0.0.1:7200` at once.
 2. Get `brumista-mcp` for your platform from [GitHub Releases](https://github.com/sensolab/w72-rack-plugin/releases), or build it from `mcp/` with Go (`go build -o bin/brumista-mcp .`).
-3. Register it with Claude Code:
+3. Register it with your agent as a stdio MCP server; for Claude Code:
 
    ```
    claude mcp add brumista -- /path/to/brumista-mcp
