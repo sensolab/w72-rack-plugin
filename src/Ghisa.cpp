@@ -19,6 +19,9 @@ static const float VOLTS_PER_STAGE = 1.25f;
 // A main clock this soon after a bass clock counts as the same edge: every cable
 // in Rack delays by a sample, so two clocks from one source rarely arrive together.
 static const float BASS_GRACE = 1e-3f;
+// Choices for HOLD's loop length, in stages.
+static const int HOLD_LENGTHS[] = {16, 12, 8, 6, 4, 3};
+static const int HOLD_LENGTHS_LEN = sizeof(HOLD_LENGTHS) / sizeof(HOLD_LENGTHS[0]);
 
 // Pitch class of a V/oct voltage, 0 (C) to 11.
 static int pitchClass(float v) {
@@ -102,6 +105,8 @@ struct Ghisa : Module {
 	int chordWidth = 0;
 	int chordOrder = ORDER_STAGE;
 	int changeMode = CHANGE_TRIGGER;
+	// An index into HOLD_LENGTHS: how many stages HOLD loops.
+	int holdLength = 0;
 
 	bool holding = false;
 	dsp::SchmittTrigger clockTrigger;
@@ -127,7 +132,7 @@ struct Ghisa : Module {
 		configInput(IN_INPUT, "In");
 		configInput(CLOCK_INPUT, "Clock");
 		configInput(DEPTH_INPUT, "Depth")->description = "1.25 V per stage, added to the knob";
-		configInput(HOLD_INPUT, "Hold")->description = "While high, stage 16 feeds stage 1";
+		configInput(HOLD_INPUT, "Hold")->description = "While high, the last stage of the loop feeds stage 1 (stage 16 unless Hold loop length says less)";
 		configInput(BASS_CLOCK_INPUT, "Bass clock")->description = "Normalled to CLOCK. When patched, BASS changes only on its rising edges";
 		configOutput(CHORD_OUTPUT, "Chord");
 		configOutput(CHANGE_OUTPUT, "Change")->description = "Per channel, a trigger (or a gate until the next clock) when that channel's voltage changed";
@@ -142,6 +147,7 @@ struct Ghisa : Module {
 		chordWidth = 0;
 		chordOrder = ORDER_STAGE;
 		changeMode = CHANGE_TRIGGER;
+		holdLength = 0;
 		latchPending = true;
 	}
 
@@ -214,7 +220,7 @@ struct Ghisa : Module {
 
 		bool clocked = clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 1.f);
 		if (clocked) {
-			float in = holding ? reg[STAGES - 1] : inputs[IN_INPUT].getVoltage();
+			float in = holding ? reg[HOLD_LENGTHS[holdLength] - 1] : inputs[IN_INPUT].getVoltage();
 			std::copy_backward(reg, reg + STAGES - 1, reg + STAGES);
 			reg[0] = in;
 			latch(true);
@@ -271,6 +277,7 @@ struct Ghisa : Module {
 		json_object_set_new(rootJ, "chordRangeWidth", json_integer(chordWidth + 1));
 		json_object_set_new(rootJ, "chordOrder", json_string(chordOrder == ORDER_PITCH ? "pitch" : "stage"));
 		json_object_set_new(rootJ, "change", json_string(changeMode == CHANGE_GATE ? "gate" : "trigger"));
+		json_object_set_new(rootJ, "holdLength", json_integer(HOLD_LENGTHS[holdLength]));
 		return rootJ;
 	}
 
@@ -290,6 +297,13 @@ struct Ghisa : Module {
 			chordOrder = isString(j, "pitch") ? ORDER_PITCH : ORDER_STAGE;
 		if (json_t* j = json_object_get(rootJ, "change"))
 			changeMode = isString(j, "gate") ? CHANGE_GATE : CHANGE_TRIGGER;
+		if (json_t* j = json_object_get(rootJ, "holdLength")) {
+			holdLength = 0;
+			for (int i = 0; i < HOLD_LENGTHS_LEN; i++) {
+				if (HOLD_LENGTHS[i] == json_integer_value(j))
+					holdLength = i;
+			}
+		}
 		latchPending = true;
 	}
 };
@@ -366,6 +380,7 @@ struct GhisaWidget : ModuleWidget {
 		menu->addChild(createIndexPtrSubmenuItem("Chord width", {"1 octave", "2 octaves"}, &m->chordWidth));
 		menu->addChild(createIndexPtrSubmenuItem("Chord order", {"By stage", "By pitch"}, &m->chordOrder));
 		menu->addChild(createIndexPtrSubmenuItem("Change", {"Trigger", "Gate until next clock"}, &m->changeMode));
+		menu->addChild(createIndexPtrSubmenuItem("Hold loop length", {"16 stages", "12 stages", "8 stages", "6 stages", "4 stages", "3 stages"}, &m->holdLength));
 	}
 };
 

@@ -244,7 +244,8 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | W72 holds sound modules as well as studio tools, in one plugin; Scighera is the likely module after Moleta | 2026-11-05 |
 | W72 accepted into the VCV Library; each release is followed by a comment on the Library issue with the new version and commit | 2026-11-05 |
 | Moleta's fresh-module ratios are ×2, /2, /3 and /4 on outputs 1 to 4: a fast output first and slower ones after, with /3 as the one odd ratio. Chosen from the divider settings used across existing patches (×2, /3, /4, ×4, /2, /8 most common); tuned by ear | 2026-11-05 |
+| Ghisa's *Hold loop length* (16, 12, 8, 6, 4 or 3 stages, default 16) changes only HOLD's feedback source: stage *N* feeds stage 1 and the stages above *N* keep shifting, so after at most 16 - *N* clocks they hold periodic copies of the loop and every lit button keeps sounding. Nothing is indexed modulo *N*, so releasing HOLD doesn't jump; saved as `holdLength`, the stage count | 2026-11-05 |
 
 ## Open questions
 
-- [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
+- [x] Ghisa: a right-click choice of HOLD's loop length, if 16 alone proves limiting. It did: *Hold loop length* offers 16, 12, 8, 6, 4 and 3 stages (see the Decisions table); a deepest-tapped-stage length stays out.
