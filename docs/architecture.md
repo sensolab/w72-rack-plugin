@@ -243,8 +243,8 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Moleta's panel: 18 HP, master section left, four strips right with outputs side by side on the plate, a readout row of BPM and the four ratios, seven columns 37 px apart and 24 px in from the edges | 2026-11-05 |
 | W72 holds sound modules as well as studio tools, in one plugin; Scighera is the likely module after Moleta | 2026-11-05 |
 | W72 accepted into the VCV Library; each release is followed by a comment on the Library issue with the new version and commit | 2026-11-05 |
+| Moleta's fresh-module ratios are ×2, /2, /3 and /4 on outputs 1 to 4: a fast output first and slower ones after, with /3 as the one odd ratio. Chosen from the divider settings used across existing patches (×2, /3, /4, ×4, /2, /8 most common); tuned by ear | 2026-11-05 |
 
 ## Open questions
 
 - [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
-- [ ] Moleta: the default ratios for a fresh module.
