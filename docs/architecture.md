@@ -241,6 +241,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Moleta's coin: a CHANCE knob per output plus one shared DENSITY CV; a REPEAT knob loops each output's last 16 (or 8) flips, storing the random numbers so CHANCE still acts on a locked loop; *Follow the output above* is a per-output menu option, off by default | 2026-11-05 |
 | When Moleta follows a moving clock, multiplied and fractional outputs realign on the edge where their cycle restarts, drop a pulse still pending then, and stop after about two missed periods | 2026-11-05 |
 | Moleta's panel: 18 HP, master section left, four strips right with outputs side by side on the plate, a readout row of BPM and the four ratios, seven columns 37 px apart and 24 px in from the edges | 2026-11-05 |
+| W72 holds sound modules as well as studio tools, in one plugin; Scighera is the likely module after Moleta | 2026-11-05 |
 
 ## Open questions
 
