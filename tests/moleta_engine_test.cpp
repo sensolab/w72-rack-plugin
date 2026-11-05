@@ -134,6 +134,10 @@ static void testTable() {
 	CHECK(std::string(RATIOS[DEFAULT_RATIOS[1]].name) == "/2", "default 2 is /2");
 	CHECK(std::string(RATIOS[DEFAULT_RATIOS[2]].name) == "/3", "default 3 is /3");
 	CHECK(std::string(RATIOS[DEFAULT_RATIOS[3]].name) == "/4", "default 4 is /4");
+	CHECK(std::string(RATIOS[PLUS_DEFAULT_RATIOS[0]].name) == "×4", "default 5 is ×4");
+	CHECK(std::string(RATIOS[PLUS_DEFAULT_RATIOS[1]].name) == "×1", "default 6 is ×1");
+	CHECK(std::string(RATIOS[PLUS_DEFAULT_RATIOS[2]].name) == "/8", "default 7 is /8");
+	CHECK(std::string(RATIOS[PLUS_DEFAULT_RATIOS[3]].name) == "3/2", "default 8 is 3/2");
 	for (int i = 0; i < RATIO_COUNT; i++)
 		CHECK(nearestRatio(RATIOS[i].p, RATIOS[i].q) == i, "a listed ratio maps back to its own step (%s)", RATIOS[i].name);
 	CHECK(nearestRatio(4, 2) == ratioIndex("×2"), "4/2 lands on ×2");
