@@ -274,3 +274,81 @@ func TestRackSeesHoles(t *testing.T) {
 		}
 	}
 }
+
+func intp(i int) *int { return &i }
+
+func TestNamedColumns(t *testing.T) {
+	m := &Module{Slug: "T", Name: "T", Family: "trades", HP: 18, Columns: &Columns{Inset: 24, Pitch: 37}, Controls: []Control{
+		{ID: "K", Kind: Knob, Row: 3, Col: intp(3)},
+		{ID: "J", Kind: Input, Row: 3, Col: intp(0)},
+		{ID: "O", Kind: Output, Row: 0, Col: intp(6)},
+	}}
+	if err := m.check(); err != nil {
+		t.Fatal(err)
+	}
+	p := m.place()
+	if p[0].X != 135 || p[1].X != 24 || p[2].X != 246 {
+		t.Errorf("x = %v, %v, %v; want 135, 24, 246", p[0].X, p[1].X, p[2].X)
+	}
+	if span, ok := plateSpan(m, p); !ok || span != [2]float64{6, 264} {
+		t.Errorf("plate %v, want [6 264]", span)
+	}
+	bad := map[string]func(*Module){
+		"no columns":       func(m *Module) { m.Columns = nil },
+		"off the panel":    func(m *Module) { m.Controls[0].Col = intp(7) },
+		"mixed row":        func(m *Module) { m.Controls[1].Col = nil },
+		"display in a col": func(m *Module) { m.Controls[0] = Control{ID: "K", Kind: Bars, Count: 4, Row: 6, Col: intp(1)} },
+	}
+	for name, f := range bad {
+		c := *m
+		c.Controls = append([]Control(nil), m.Controls...)
+		f(&c)
+		if c.check() == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestMoletaPanels(t *testing.T) {
+	for _, tc := range []struct {
+		file    string
+		hp      int
+		cells   int
+		outputs int
+	}{{"Moleta.json", 18, 5, 7}, {"MoletaPlus.json", 11, 4, 4}} {
+		m, err := loadModule(filepath.Join("..", "..", "panels", tc.file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m.HP != tc.hp {
+			t.Errorf("%s: %d HP, want %d", tc.file, m.HP, tc.hp)
+		}
+		svg, err := panelSVG(m, testFaces(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		hdr := panelHeader(m)
+		if !strings.Contains(svg, `id="well-READOUT"`) || strings.Count(hdr, "_SAMPLE") != 1 {
+			t.Errorf("%s: readout well or samples missing", tc.file)
+		}
+		cells, outs := 0, 0
+		for _, p := range m.place() {
+			if p.Kind == Readout {
+				cells = len(p.Cells)
+				// The widget draws every cell's value in the well, between its edges.
+				w := m.well(p)
+				for _, c := range p.Cells {
+					if x := m.colX(c.Col); x < w.X || x > w.X+w.W {
+						t.Errorf("%s: cell %d outside the well", tc.file, c.Col)
+					}
+				}
+			}
+			if p.Kind == Output {
+				outs++
+			}
+		}
+		if cells != tc.cells || outs != tc.outputs {
+			t.Errorf("%s: %d cells, %d outputs; want %d, %d", tc.file, cells, outs, tc.cells, tc.outputs)
+		}
+	}
+}

@@ -106,6 +106,68 @@ func (m *Module) keyPitch() float64 { return (m.wellWidth() - 2*wellInset) / 7 }
 
 func (m *Module) keySize() float64 { return min(m.keyPitch()-keyGap, keyMaxSize) }
 
+// checkColumns validates a control's column, and a readout's cells and rules.
+func (m *Module) checkColumns(c Control) error {
+	inPanel := func(col int) error {
+		if m.Columns == nil {
+			return fmt.Errorf("%s: columns are not set for this module", c.ID)
+		}
+		if x := m.colX(col); col < 0 || x < wellMargin || x > m.width()-wellMargin {
+			return fmt.Errorf("%s: column %d is off the panel", c.ID, col)
+		}
+		return nil
+	}
+	if c.Col != nil {
+		if err := inPanel(*c.Col); err != nil {
+			return err
+		}
+		if c.Kind == ButtonGrid || isDisplay(c.Kind) {
+			return fmt.Errorf("%s: a display or button grid takes its whole row, not a column", c.ID)
+		}
+	}
+	if c.Kind != Readout {
+		if len(c.Cells) != 0 || len(c.Rules) != 0 {
+			return fmt.Errorf("%s: cells and rules belong to a readout", c.ID)
+		}
+		return nil
+	}
+	if c.Label != "" {
+		return fmt.Errorf("%s: a readout names its cells, not itself", c.ID)
+	}
+	if len(c.Cells) == 0 {
+		return fmt.Errorf("%s: a readout needs cells", c.ID)
+	}
+	last := -1
+	for _, cell := range c.Cells {
+		if err := inPanel(cell.Col); err != nil {
+			return err
+		}
+		if cell.Col <= last {
+			return fmt.Errorf("%s: cells go left to right, one per column", c.ID)
+		}
+		last = cell.Col
+		if cell.Sample == "" {
+			return fmt.Errorf("%s: cell %d has no sample value", c.ID, cell.Col)
+		}
+	}
+	for _, r := range c.Rules {
+		if r < c.Cells[0].Col || r >= last {
+			return fmt.Errorf("%s: rule after column %d is outside the cells", c.ID, r)
+		}
+	}
+	return nil
+}
+
+// Readout cell layout, from the mock: the value's baseline and its name's
+// baseline, down from the well's top, and the rule's extent.
+const (
+	cellValueBase = 21.0
+	cellNameBase  = 32.0
+	cellRuleTop   = 6.0
+	cellRuleEnd   = 32.0
+	cellValueSize = 14.0
+)
+
 // well is the box a display draws in, and a button its bezel.
 func (m *Module) well(p Placed) Box {
 	switch {
