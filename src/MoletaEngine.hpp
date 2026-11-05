@@ -24,6 +24,8 @@ static const Ratio RATIOS[RATIO_COUNT] = {
 };
 // Outputs 1 to 4 of a fresh Moleta: ×2, /2, /3, /4.
 static const int DEFAULT_RATIOS[4] = {13, 7, 6, 5};
+// Outputs 5 to 8 of a fresh Moleta+: ×4, ×1, /8, 3/2, the other common ratios and one odd one.
+static const int PLUS_DEFAULT_RATIOS[4] = {15, 10, 1, 12};
 
 inline int clampRatio(int i) {
 	return std::max(0, std::min(i, RATIO_COUNT - 1));

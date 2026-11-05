@@ -13,10 +13,9 @@ static const int PULSES_PER_BEAT[] = {1, 4, 24};
 static const int BEATS_PER_BAR[] = {2, 3, 4, 5, 6, 7, 8, 12};
 static const int COIN_LOOPS[] = {8, 16};
 
-// The expander's model, once Moleta+ is registered (#52). While it is null nothing
-// on the right counts as an expander, and the outputs are never delayed.
+// The expander's model: only a Moleta+ on the right counts as an expander.
 static Model* expanderModel() {
-	return nullptr;
+	return modelMoletaPlus;
 }
 
 static float uniform() {
