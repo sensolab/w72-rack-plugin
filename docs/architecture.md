@@ -243,8 +243,10 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Moleta's panel: 18 HP, master section left, four strips right with outputs side by side on the plate, a readout row of BPM and the four ratios, seven columns 37 px apart and 24 px in from the edges | 2026-11-05 |
 | W72 holds sound modules as well as studio tools, in one plugin; Scighera is the likely module after Moleta | 2026-11-05 |
 | W72 accepted into the VCV Library; each release is followed by a comment on the Library issue with the new version and commit | 2026-11-05 |
-| Moleta's fresh-module ratios are ×2, /2, /3 and /4 on outputs 1 to 4: a fast output first and slower ones after, with /3 as the one odd ratio. Chosen from the divider settings used across existing patches (×2, /3, /4, ×4, /2, /8 most common); tuned by ear | 2026-11-05 |
+| Moleta's fresh-module ratios are Ã—2, /2, /3 and /4 on outputs 1 to 4: a fast output first and slower ones after, with /3 as the one odd ratio. Chosen from the divider settings used across existing patches (Ã—2, /3, /4, Ã—4, /2, /8 most common); tuned by ear | 2026-11-05 |
+| Ghisa's *Hold loop length* (16, 12, 8, 6, 4 or 3 stages, default 16) changes only HOLD's feedback source: stage *N* feeds stage 1 and the stages above *N* keep shifting, so after at most 16 - *N* clocks they hold periodic copies of the loop and every lit button keeps sounding. Nothing is indexed modulo *N*, so releasing HOLD doesn't jump; saved as `holdLength`, the stage count | 2026-11-05 |
+| Ghisa's *Duplicate notes* (*Keep*, *Skip*, *Octave up*) runs after the chord fold and before *By pitch*, so notes that only become equal once folded are caught; "equal" is 1 mV, the tolerance CHANGE already used. *Skip* shrinks the channel count; *Octave up* raises each repeat until it is unique (uncapped, may leave the chord range window). BASS keeps reading the raw taps, so it doesn't depend on the choice; CHANGE needs no new logic, and *Skip* with *By pitch* keeps its channel numbering steady. Saved as `duplicates` | 2026-11-05 |
 
 ## Open questions
 
-- [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
+- [x] Ghisa: a right-click choice of HOLD's loop length, if 16 alone proves limiting. It did: *Hold loop length* offers 16, 12, 8, 6, 4 and 3 stages (see the Decisions table); a deepest-tapped-stage length stays out.
