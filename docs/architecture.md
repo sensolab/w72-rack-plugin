@@ -234,7 +234,15 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Brumista's panel shows two round lights. LINK: off when stopped, slow blink while the port is taken, dim when listening, full with a client. CMD: a short flash per command, dim for a read, full for one that changes the patch. Modem lights with nothing behind them (separate RX/TX, OH, AA, HS, speed) and a port readout (too wide for 3 HP; the port stays in the menu) are left out; an error light waits until it's missed | 2026-11-04 |
 | Ghisa's BASS CLOCK input (`BASS CLK`, normalled to CLOCK) holds BASS between its own edges, read from the sounding chord. A bass edge on a main clock reads after the shift, and a main clock within 1 ms after a bass edge counts as the same edge (Rack's one-sample cable delay). Panel: DEPTH and HOLD jacks under their controls, IN, CLOCK and BASS CLK above CHORD, CHANGE and BASS | 2026-11-04 |
 | Ghisa's *Chord range* (off, or above C2 to C5) and *Chord width* (1 or 2 octaves) fold CHORD by whole octaves; *By pitch* orders after the fold, CHANGE compares the folded voltages, and BASS reads the taps before the fold | 2026-11-04 |
+| Moleta is a master clock (BPM, RUN, RESET) that follows a CLOCK input when one is patched (rising edges only; 1, 4 or 24 pulses per beat in the menu, default 1). Besides its outputs it has a coin-free BEAT, a RESET out and a CLICK audio out; no swing, no BPM CV | 2026-11-05 |
+| Moleta has four outputs, each with RATIO, CHANCE and LENGTH; an expander may add four more later without changing the base, which then delays its outputs one sample to match Rack's expander latency | 2026-11-05 |
+| Moleta's RATIO steps through one curated list (/16 to ×16 with 2/3, 3/4, 4/3, 3/2 and odd ratios); the patch saves the ratio, not the step | 2026-11-05 |
+| Moleta's LENGTH: fully left is a trigger, then 5% to 95% of the output's own period | 2026-11-05 |
+| Moleta's coin: a CHANCE knob per output plus one shared DENSITY CV; a REPEAT knob loops each output's last 16 (or 8) flips, storing the random numbers so CHANCE still acts on a locked loop; *Follow the output above* is a per-output menu option, off by default | 2026-11-05 |
+| When Moleta follows a moving clock, multiplied and fractional outputs realign on the edge where their cycle restarts, drop a pulse still pending then, and stop after about two missed periods | 2026-11-05 |
+| Moleta's panel: 18 HP, master section left, four strips right with outputs side by side on the plate, a readout row of BPM and the four ratios, seven columns 37 px apart and 24 px in from the edges | 2026-11-05 |
 
 ## Open questions
 
 - [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
+- [ ] Moleta: the default ratios for a fresh module.

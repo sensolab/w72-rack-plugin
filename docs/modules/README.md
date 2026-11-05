@@ -11,4 +11,10 @@ Each module's `manualUrl` in `plugin.json` points to its page here on `main` (`h
 
 The panel images are Rack's own renders, not the panel SVGs (GitHub can't draw Rack's knobs, jacks and lights). Regenerate them after a panel change with `Rack -u <empty folder> -t 2`, with only the W72 `.vcvplugin` in that folder's `plugins-<os>-<arch>/`; Rack writes `screenshots/W72/<Slug>.png`, which becomes `<slug-lowercase>.png` here.
 
+Designed, not built yet:
+
+| Module | Family | HP | What it does |
+| --- | --- | --- | --- |
+| [Moleta](moleta.md) | Trades | 18 | Master clock whose four outputs each have a ratio (fractions included), a chance and a length; the coin flips can loop |
+
 Scighera and Gibigiana are approved names for modules still to come; the glossary in [concept.md](../concept.md#glossary) has the candidates.

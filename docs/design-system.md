@@ -63,7 +63,7 @@ The family bands:
 
 | Family | Band | White title contrast | Modules |
 | --- | --- | --- | --- |
-| Trades | terracotta `#b8643f` | about 4.3:1 | Brumista, Ghisa, Magutt |
+| Trades | terracotta `#b8643f` | about 4.3:1 | Brumista, Ghisa, Moleta, Magutt |
 | Weather and light | fog blue `#557589` | about 4.9:1 | Scighera, Gibigiana, Galaverna, Fiòca, Merla, Giazz |
 | Kitchen | saffron `#9c6a12` | about 4.7:1 | Cassoeula, Michetta |
 
