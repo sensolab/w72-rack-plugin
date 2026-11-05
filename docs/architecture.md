@@ -252,7 +252,9 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Moleta sends Moleta+ a message each sample (the clock's tick with its beat count, T, REPEAT, DENSITY and the loop length), pushed into the expander's `leftExpander`; while one is attached, all seven base outputs are delayed one sample | 2026-11-05 |
 | Moleta's readout keeps the name BPM while it shows the measured tempo of CLOCK: the name is baked into the panel and nothing paints over it | 2026-11-05 |
 | Moleta's DSP is a header with no Rack includes (`src/MoletaEngine.hpp`), tested on the host by `make test-engine` and a CI job, with the random source injected | 2026-11-05 |
+| Ghisa's *Hold loop length* (16, 12, 8, 6, 4 or 3 stages, default 16) changes only HOLD's feedback source: stage *N* feeds stage 1 and the stages above *N* keep shifting, so after at most 16 - *N* clocks they hold periodic copies of the loop and every lit button keeps sounding. Nothing is indexed modulo *N*, so releasing HOLD doesn't jump; saved as `holdLength`, the stage count | 2026-11-05 |
+| Ghisa's *Duplicate notes* (*Keep*, *Skip*, *Octave up*) runs after the chord fold and before *By pitch*, so notes that only become equal once folded are caught; "equal" is 1 mV, the tolerance CHANGE already used. *Skip* shrinks the channel count; *Octave up* raises each repeat until it is unique (uncapped, may leave the chord range window). BASS keeps reading the raw taps, so it doesn't depend on the choice; CHANGE needs no new logic, and *Skip* with *By pitch* keeps its channel numbering steady. Saved as `duplicates` | 2026-11-05 |
 
 ## Open questions
 
-- [ ] Ghisa: a right-click choice of HOLD's loop length (16, 8, or the deepest tapped stage), if 16 alone proves limiting.
+- [x] Ghisa: a right-click choice of HOLD's loop length, if 16 alone proves limiting. It did: *Hold loop length* offers 16, 12, 8, 6, 4 and 3 stages (see the Decisions table); a deepest-tapped-stage length stays out.

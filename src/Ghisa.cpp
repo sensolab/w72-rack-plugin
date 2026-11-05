@@ -16,9 +16,14 @@ static const int STAGES = 16;
 static const int TAPS = 8;
 static const int MAX_DEPTH = STAGES - TAPS;
 static const float VOLTS_PER_STAGE = 1.25f;
+// Two voltages this close are the same note, for CHANGE and for Duplicate notes.
+static const float SAME_VOLTAGE = 1e-3f;
 // A main clock this soon after a bass clock counts as the same edge: every cable
 // in Rack delays by a sample, so two clocks from one source rarely arrive together.
 static const float BASS_GRACE = 1e-3f;
+// Choices for HOLD's loop length, in stages.
+static const int HOLD_LENGTHS[] = {16, 12, 8, 6, 4, 3};
+static const int HOLD_LENGTHS_LEN = sizeof(HOLD_LENGTHS) / sizeof(HOLD_LENGTHS[0]);
 
 // Pitch class of a V/oct voltage, 0 (C) to 11.
 static int pitchClass(float v) {
@@ -57,6 +62,36 @@ static void sortLowToHigh(float* v, int n) {
 	}
 }
 
+static bool sameNote(float a, float b) {
+	return std::fabs(a - b) <= SAME_VOLTAGE;
+}
+
+// Drops each note that equals an earlier one, keeping the order; returns the new count.
+static int skipDuplicates(float* v, int n) {
+	int kept = 0;
+	for (int i = 0; i < n; i++) {
+		bool seen = false;
+		for (int j = 0; j < kept; j++)
+			seen = seen || sameNote(v[i], v[j]);
+		if (!seen)
+			v[kept++] = v[i];
+	}
+	return kept;
+}
+
+// Raises each note that equals an earlier one by whole octaves until it matches none,
+// so a bumped note that lands on another keeps climbing.
+static void raiseDuplicates(float* v, int n) {
+	for (int i = 1; i < n; i++) {
+		for (int j = 0; j < i; j++) {
+			if (sameNote(v[i], v[j])) {
+				v[i] += 1.f;
+				j = -1;
+			}
+		}
+	}
+}
+
 // Folds a V/oct voltage by whole octaves into the window of `octaves` octaves
 // starting at floorV. The small offset keeps an exact C on its own octave's floor.
 static float foldInto(float v, float floorV, int octaves) {
@@ -78,6 +113,7 @@ struct Ghisa : Module {
 
 	enum BassMode { BASS_LOWEST, BASS_ROOT };
 	enum ChordOrder { ORDER_STAGE, ORDER_PITCH };
+	enum DuplicateMode { DUP_KEEP, DUP_SKIP, DUP_OCTAVE };
 	enum ChangeMode { CHANGE_TRIGGER, CHANGE_GATE };
 
 	// Stage 1 is reg[0], the newest.
@@ -88,7 +124,9 @@ struct Ghisa : Module {
 	int depth = 0;
 	float chord[TAPS] = {};
 	// The sounding chord's taps before the fold, in stage order: BASS reads these.
+	// With Duplicate notes on Skip there can be fewer channels than taps.
 	float taps[TAPS] = {};
+	int tapCount = 0;
 	int channels = 0;
 	float bass = 0.f;
 	bool latchPending = true;
@@ -101,7 +139,10 @@ struct Ghisa : Module {
 	int chordRange = 0;
 	int chordWidth = 0;
 	int chordOrder = ORDER_STAGE;
+	int duplicates = DUP_KEEP;
 	int changeMode = CHANGE_TRIGGER;
+	// An index into HOLD_LENGTHS: how many stages HOLD loops.
+	int holdLength = 0;
 
 	bool holding = false;
 	dsp::SchmittTrigger clockTrigger;
@@ -127,7 +168,7 @@ struct Ghisa : Module {
 		configInput(IN_INPUT, "In");
 		configInput(CLOCK_INPUT, "Clock");
 		configInput(DEPTH_INPUT, "Depth")->description = "1.25 V per stage, added to the knob";
-		configInput(HOLD_INPUT, "Hold")->description = "While high, stage 16 feeds stage 1";
+		configInput(HOLD_INPUT, "Hold")->description = "While high, the last stage of the loop feeds stage 1 (stage 16 unless Hold loop length says less)";
 		configInput(BASS_CLOCK_INPUT, "Bass clock")->description = "Normalled to CLOCK. When patched, BASS changes only on its rising edges";
 		configOutput(CHORD_OUTPUT, "Chord");
 		configOutput(CHANGE_OUTPUT, "Change")->description = "Per channel, a trigger (or a gate until the next clock) when that channel's voltage changed";
@@ -141,7 +182,9 @@ struct Ghisa : Module {
 		chordRange = 0;
 		chordWidth = 0;
 		chordOrder = ORDER_STAGE;
+		duplicates = DUP_KEEP;
 		changeMode = CHANGE_TRIGGER;
+		holdLength = 0;
 		latchPending = true;
 	}
 
@@ -158,17 +201,17 @@ struct Ghisa : Module {
 	// BASS from the taps of the chord that is sounding, before the chord's fold,
 	// by the Bass mode and octave.
 	float bassOf() {
-		if (channels == 0)
+		if (tapCount == 0)
 			return 0.f;
 		float sorted[TAPS];
-		std::copy(taps, taps + channels, sorted);
-		sortLowToHigh(sorted, channels);
-		return foldBass(bassMode == BASS_ROOT ? rootOf(sorted, channels) : sorted[0]);
+		std::copy(taps, taps + tapCount, sorted);
+		sortLowToHigh(sorted, tapCount);
+		return foldBass(bassMode == BASS_ROOT ? rootOf(sorted, tapCount) : sorted[0]);
 	}
 
-	// Reads the shape and DEPTH, taps the register and folds the taps by the chord
-	// range. On a clock, CHANGE fires for each channel that is new or whose folded
-	// voltage moved by more than 1 mV: a trigger,
+	// Reads the shape and DEPTH, taps the register, folds the taps by the chord
+	// range and handles duplicate notes. On a clock, CHANGE fires for each channel
+	// that is new or whose voltage moved by more than 1 mV: a trigger,
 	// or a gate held until the next clock. BASS follows, unless BASS CLOCK is patched
 	// (it's still read when the module loads or resets, so it never starts empty).
 	void latch(bool clocked) {
@@ -184,25 +227,33 @@ struct Ghisa : Module {
 			if (shape[k])
 				raw[n++] = reg[depth + k];
 		}
-		// By pitch orders after the fold, so channel N is the Nth lowest note that sounds.
+		// Duplicates go after the fold, which can make two taps equal, and before By
+		// pitch, which orders after both, so channel N is the Nth lowest note that sounds.
+		// n counts the taps and stays so; the chord can end up with fewer channels.
 		float next[TAPS];
 		for (int c = 0; c < n; c++)
 			next[c] = foldChord(raw[c]);
+		int count = n;
+		if (duplicates == DUP_SKIP)
+			count = skipDuplicates(next, n);
+		else if (duplicates == DUP_OCTAVE)
+			raiseDuplicates(next, n);
 		if (chordOrder == ORDER_PITCH)
-			sortLowToHigh(next, n);
+			sortLowToHigh(next, count);
 
 		gateMode = changeMode == CHANGE_GATE;
 		if (clocked) {
 			for (int c = 0; c < TAPS; c++) {
-				bool changed = c < n && (c >= channels || std::fabs(next[c] - chord[c]) > 1e-3f);
+				bool changed = c < count && (c >= channels || !sameNote(next[c], chord[c]));
 				if (changed && (!gateMode || changeGate[c]))
 					changePulse[c].trigger(1e-3f);
 				changeGate[c] = changed && gateMode;
 			}
 		}
-		std::copy(next, next + n, chord);
+		std::copy(next, next + count, chord);
 		std::copy(raw, raw + n, taps);
-		channels = n;
+		tapCount = n;
+		channels = count;
 
 		if (!clocked || !inputs[BASS_CLOCK_INPUT].isConnected())
 			bass = bassOf();
@@ -214,7 +265,7 @@ struct Ghisa : Module {
 
 		bool clocked = clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 1.f);
 		if (clocked) {
-			float in = holding ? reg[STAGES - 1] : inputs[IN_INPUT].getVoltage();
+			float in = holding ? reg[HOLD_LENGTHS[holdLength] - 1] : inputs[IN_INPUT].getVoltage();
 			std::copy_backward(reg, reg + STAGES - 1, reg + STAGES);
 			reg[0] = in;
 			latch(true);
@@ -270,7 +321,9 @@ struct Ghisa : Module {
 		json_object_set_new(rootJ, "chordRange", json_integer(chordRange));
 		json_object_set_new(rootJ, "chordRangeWidth", json_integer(chordWidth + 1));
 		json_object_set_new(rootJ, "chordOrder", json_string(chordOrder == ORDER_PITCH ? "pitch" : "stage"));
+		json_object_set_new(rootJ, "duplicates", json_string(duplicates == DUP_SKIP ? "skip" : duplicates == DUP_OCTAVE ? "octave" : "keep"));
 		json_object_set_new(rootJ, "change", json_string(changeMode == CHANGE_GATE ? "gate" : "trigger"));
+		json_object_set_new(rootJ, "holdLength", json_integer(HOLD_LENGTHS[holdLength]));
 		return rootJ;
 	}
 
@@ -288,8 +341,17 @@ struct Ghisa : Module {
 			chordWidth = clamp((int) json_integer_value(j), 1, 2) - 1;
 		if (json_t* j = json_object_get(rootJ, "chordOrder"))
 			chordOrder = isString(j, "pitch") ? ORDER_PITCH : ORDER_STAGE;
+		if (json_t* j = json_object_get(rootJ, "duplicates"))
+			duplicates = isString(j, "skip") ? DUP_SKIP : isString(j, "octave") ? DUP_OCTAVE : DUP_KEEP;
 		if (json_t* j = json_object_get(rootJ, "change"))
 			changeMode = isString(j, "gate") ? CHANGE_GATE : CHANGE_TRIGGER;
+		if (json_t* j = json_object_get(rootJ, "holdLength")) {
+			holdLength = 0;
+			for (int i = 0; i < HOLD_LENGTHS_LEN; i++) {
+				if (HOLD_LENGTHS[i] == json_integer_value(j))
+					holdLength = i;
+			}
+		}
 		latchPending = true;
 	}
 };
@@ -365,7 +427,9 @@ struct GhisaWidget : ModuleWidget {
 		menu->addChild(createIndexPtrSubmenuItem("Chord range", {"Off", "Above C2", "Above C3", "Above C4", "Above C5"}, &m->chordRange));
 		menu->addChild(createIndexPtrSubmenuItem("Chord width", {"1 octave", "2 octaves"}, &m->chordWidth));
 		menu->addChild(createIndexPtrSubmenuItem("Chord order", {"By stage", "By pitch"}, &m->chordOrder));
+		menu->addChild(createIndexPtrSubmenuItem("Duplicate notes", {"Keep", "Skip", "Octave up"}, &m->duplicates));
 		menu->addChild(createIndexPtrSubmenuItem("Change", {"Trigger", "Gate until next clock"}, &m->changeMode));
+		menu->addChild(createIndexPtrSubmenuItem("Hold loop length", {"16 stages", "12 stages", "8 stages", "6 stages", "4 stages", "3 stages"}, &m->holdLength));
 	}
 };
 
