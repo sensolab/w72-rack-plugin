@@ -67,13 +67,13 @@ The master section is on the left: RUN and RESET buttons either side of the BPM 
 - **Readout row** under the band: BPM, then each strip's ratio over its number. Moleta is the first module with a readout.
 - **Seven columns, 37 px apart and 24 px in from the edges**, not the equal shares of the full width the grid uses elsewhere: at 18 HP equal shares put the outer knobs and the outer readout values against the edge. Seven outputs on the plate are what set the width.
 - **Off the row grid.** The knob rows sit at 116, 182 and 248 px, spread between the readout and the inputs. The inputs and the plate keep their rows.
-- The generator gains a `readout` kind with one cell per column, and a way to place controls in named columns of a row, leaving the rest empty.
+- The generator has a `readout` kind with one cell per column, and `columns` with a `col` per control to place them in named columns of a row, leaving the rest empty. `panels/Moleta.json` and `panels/MoletaPlus.json` describe both panels, and `make panels` writes their SVGs and headers.
 
 ## Expander
 
 ![Moleta with its expander](moleta-expander-mock.png)
 
-An 11 HP expander placed to the right adds outputs 5 to 8, with the same strips and their ratios on its own readout row. It shares the clock, RESET and the coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays its own outputs by one sample while an expander is attached, keeping all eight in line. Its name and slug are chosen when it's built; the mock says "Moleta +".
+An 11 HP expander placed to the right adds outputs 5 to 8, with the same strips and their ratios on its own readout row. It shares the clock, RESET and the coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays its own outputs by one sample while an expander is attached, keeping all eight in line. The panel description calls it "Moleta +" with the slug `MoletaPlus`; the slug becomes permanent when it ships.
 
 Until then, a second Moleta following the first's BEAT gives eight outputs.
 
