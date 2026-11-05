@@ -73,6 +73,8 @@ const (
 	Bars Kind = "bars"
 	// Keyboard is a display: twelve flat square lights laid out as one octave.
 	Keyboard Kind = "keyboard"
+	// Readout is a display: signage text in cells, one per column, in a well.
+	Readout Kind = "readout"
 )
 
 var diameters = map[Kind]float64{
@@ -86,7 +88,7 @@ var diameters = map[Kind]float64{
 }
 
 // Displays and the button grid have no diameter: they size from their own fields.
-func isDisplay(k Kind) bool { return k == Bars || k == Keyboard }
+func isDisplay(k Kind) bool { return k == Bars || k == Keyboard || k == Readout }
 func knownKind(k Kind) bool {
 	_, ok := diameters[k]
 	return ok || isDisplay(k) || k == ButtonGrid
@@ -94,11 +96,29 @@ func knownKind(k Kind) bool {
 
 // Module is one panel description, read from panels/<Slug>.json.
 type Module struct {
-	Slug     string    `json:"slug"`
-	Name     string    `json:"name"`
-	Family   string    `json:"family"`
-	HP       int       `json:"hp"`
+	Slug   string `json:"slug"`
+	Name   string `json:"name"`
+	Family string `json:"family"`
+	HP     int    `json:"hp"`
+	// Columns, when set, gives controls a named column (Control.Col) instead of
+	// an equal share of the width.
+	Columns  *Columns  `json:"columns,omitempty"`
 	Controls []Control `json:"controls"`
+}
+
+// Columns is a fixed grid of columns: the first centre Inset px from the left
+// edge, then one every Pitch px.
+type Columns struct {
+	Inset float64 `json:"inset"`
+	Pitch float64 `json:"pitch"`
+}
+
+// Cell is one value of a readout, over the column it sits in. Label is its
+// small name, drawn in the panel; Sample is what the module browser shows.
+type Cell struct {
+	Col    int    `json:"col"`
+	Label  string `json:"label"`
+	Sample string `json:"sample"`
 }
 
 // Control is a knob, jack or light. Row 0 is the output row at the bottom;
@@ -118,6 +138,13 @@ type Control struct {
 	// Cols and Rows size a button grid.
 	Cols int `json:"cols,omitempty"`
 	Rows int `json:"rows,omitempty"`
+	// Col places the control in a column of Module.Columns (counted from 0)
+	// instead of sharing its row's width. A row holds either kind, not both.
+	Col *int `json:"col,omitempty"`
+	// Cells and Rules belong to a readout. A rule is a hairline between column
+	// n and column n+1.
+	Cells []Cell `json:"cells,omitempty"`
+	Rules []int  `json:"rules,omitempty"`
 }
 
 // Placed is a control with its centre in px.
@@ -159,8 +186,12 @@ func (m *Module) check() error {
 	if m.HP < 3 {
 		return fmt.Errorf("hp %d is below 3", m.HP)
 	}
+	if m.Columns != nil && (m.Columns.Pitch <= 0 || m.Columns.Inset < 0) {
+		return fmt.Errorf("columns need a positive pitch and an inset of 0 or more")
+	}
 	ids := map[string]bool{}
 	large := 0
+	rowCol := map[int]int{}
 	jacks := map[int]int{}
 	rowCount := map[int]int{}
 	rowHasWide := map[int]bool{}
@@ -177,6 +208,12 @@ func (m *Module) check() error {
 		}
 		if err := m.checkPart(c); err != nil {
 			return err
+		}
+		if err := m.checkColumns(c); err != nil {
+			return err
+		}
+		if c.Col != nil {
+			rowCol[c.Row]++
 		}
 		if c.Kind == Output && c.Row != 0 {
 			return fmt.Errorf("%s: outputs go in row 0, on the plate", c.ID)
@@ -198,6 +235,11 @@ func (m *Module) check() error {
 	if large > 1 {
 		return fmt.Errorf("at most one knob-large per module")
 	}
+	for row, n := range rowCol {
+		if n != rowCount[row] {
+			return fmt.Errorf("row %d mixes controls in columns with controls sharing the width", row)
+		}
+	}
 	for row, n := range rowCount {
 		if n > 1 && rowHasWide[row] {
 			return fmt.Errorf("row %d holds a display or button grid, which takes the whole row", row)
@@ -213,18 +255,27 @@ func (m *Module) check() error {
 
 func (m *Module) width() float64 { return pxPerHP * float64(m.HP) }
 
+// colX is the centre of a column of Module.Columns, in px.
+func (m *Module) colX(col int) float64 { return m.Columns.Inset + m.Columns.Pitch*float64(col) }
+
 func rowY(row int) float64 { return outputRowY - rowPitch*float64(row) }
 
 // place gives every control its centre: x from its column, y from its row.
 func (m *Module) place() []Placed {
 	count := map[int]int{}
 	for _, c := range m.Controls {
-		count[c.Row]++
+		if c.Col == nil {
+			count[c.Row]++
+		}
 	}
 	seen := map[int]int{}
 	w := m.width()
 	out := make([]Placed, 0, len(m.Controls))
 	for _, c := range m.Controls {
+		if c.Col != nil {
+			out = append(out, Placed{c, m.colX(*c.Col), rowY(c.Row) + c.Dy})
+			continue
+		}
 		i := seen[c.Row] + 1
 		seen[c.Row] = i
 		n := count[c.Row]

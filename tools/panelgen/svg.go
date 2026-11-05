@@ -125,6 +125,28 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 		}
 	}
 
+	// Readout cells: each one's small name under its value; a rule between
+	// the groups the description separates.
+	for _, p := range placed {
+		if p.Kind != Readout {
+			continue
+		}
+		wb := m.well(p)
+		for _, cell := range p.Cells {
+			t := Text{faces.SemiBold, labelSize, labelTracking, strings.ToUpper(cell.Label)}
+			d, err := t.PathCentered(m.colX(cell.Col), wb.Y+cellNameBase)
+			if err != nil {
+				return "", err
+			}
+			w.text(fmt.Sprintf("label-%s-%d", p.ID, cell.Col), d, colLabel)
+		}
+		for _, r := range p.Rules {
+			x := (m.colX(r) + m.colX(r+1)) / 2
+			w.line(`<rect id="rule-%s-%d" x="%s" y="%s" width="%s" height="%s" fill="%s"/>`,
+				p.ID, r, mm(x-0.5), mm(wb.Y+cellRuleTop), mm(1), mm(cellRuleEnd-cellRuleTop), colWellEdge)
+		}
+	}
+
 	// Labels: above what they name, below a light or a button, inside a display's well.
 	for _, p := range placed {
 		if p.Label == "" {
@@ -188,6 +210,14 @@ func plateSpan(m *Module, placed []Placed) ([2]float64, bool) {
 		if p.Row == 0 {
 			n++
 		}
+	}
+	if m.Columns != nil {
+		for _, p := range placed {
+			if p.Kind == Output {
+				return [2]float64{plateMargin, m.width() - plateMargin}, true
+			}
+		}
+		return [2]float64{}, false
 	}
 	lo, hi, ok := 0.0, 0.0, false
 	col := m.width() / float64(max(n, 1))

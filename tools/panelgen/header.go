@@ -17,6 +17,21 @@ func panelHeader(m *Module) string {
 	var vecs, others strings.Builder
 	for _, p := range placed {
 		switch {
+		case p.Kind == Readout:
+			w := m.well(p)
+			fmt.Fprintf(&others, "static const rack::math::Rect %s_WELL = %s;\n", p.ID, rect(w))
+			fmt.Fprintf(&others, "// %s: centre of each cell's value baseline (px), and the value the module browser shows.\n", p.ID)
+			fmt.Fprintf(&others, "static const float %s_VALUE_SIZE = %sf;\n", p.ID, fnum(cellValueSize))
+			fmt.Fprintf(&others, "static const rack::math::Vec %s[] = {\n", p.ID)
+			for _, c := range p.Cells {
+				fmt.Fprintf(&others, "\track::math::Vec(%sf, %sf),\n", fnum(m.colX(c.Col)), fnum(w.Y+cellValueBase))
+			}
+			others.WriteString("};\n")
+			fmt.Fprintf(&others, "static const char* const %s_SAMPLE[] = {\n", p.ID)
+			for _, c := range p.Cells {
+				fmt.Fprintf(&others, "\t%q,\n", c.Sample)
+			}
+			others.WriteString("};\n\n")
 		case isDisplay(p.Kind):
 			w := m.well(p)
 			fmt.Fprintf(&others, "static const rack::math::Rect %s_WELL = %s;\n", p.ID, rect(w))

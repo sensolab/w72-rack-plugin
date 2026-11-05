@@ -102,7 +102,7 @@ Rack's stock parts, chosen for a dark panel, and the flat button, the first cust
 
 ## Displays
 
-Designed before any module needs one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; `src/widgets.hpp` draws the flat button and the bars (Ghisa is the first to use them), and the keyboard and readout wait for their first module. The sizes come from the mocks and get tuned by eye.
+Designed before any module needs one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; `src/widgets.hpp` draws the flat button and the bars (Ghisa is the first to use them), and the keyboard waits for its first module, and the readout has Moleta. The sizes come from the mocks and get tuned by eye.
 
 A display has two halves. The well and its label are panel SVG, made by the generator like everything else. What lights up is a widget drawn live with NanoVG on Rack's light layer, so it stays lit when the room is dimmed and sharp at any zoom.
 
@@ -118,14 +118,16 @@ A display has two halves. The well and its label are panel SVG, made by the gene
 - **One row.** A readout takes one 48 px row: a well 38 px tall, 10 px in from each side, ground `#151718`, a `#2c2f32` hairline, corners 1.5 like the plate. Half rows wait until a module needs them.
 - **Flat lights for arrays, round for single states.** The keyboard's square light is the first W72 part; bars are the same part, stretched. Off is `#2b2d30`; dim is the ink at about 40%.
 - **A sample in the browser.** The module browser draws a panel with no module behind it, so each display shows a sample value there.
-- **Generator kinds.** `bars` (`count`) and `keyboard` are displays: a well 38 px tall and 10 px in from each side, with the label inside it at the foot. `button` is a 14 px bezel with its label below. `button-grid` (`cols`, `rows`) is buttons at a 30 px (2 HP) pitch both ways, centred, with no label. The generator draws the wells and bezels; the header lists the boxes and centres the widget draws its lights in (bars left to right, keyboard C to B, grids row by row). `readout` waits for the first module that needs live text.
+- **Generator kinds.** `bars` (`count`) and `keyboard` are displays: a well 38 px tall and 10 px in from each side, with the label inside it at the foot. `button` is a 14 px bezel with its label below. `button-grid` (`cols`, `rows`) is buttons at a 30 px (2 HP) pitch both ways, centred, with no label. The generator draws the wells and bezels; the header lists the boxes and centres the widget draws its lights in (bars left to right, keyboard C to B, grids row by row). `readout` (`cells`, `rules`) is a well with one cell per column: each cell's name is an outline in the panel, below the value, and the widget draws the value live, 14 px, centred on the column. The header lists each cell's value baseline and a sample value for the module browser. `rules` are hairlines between groups of cells.
 - **Off the grid.** A control takes `dy`, a nudge in px of up to half a row, and a display or button may sit in the top row, with its top 6 px under the band. A display or grid takes its whole row.
 
 ## How panels get made
 
 The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by `tools/panelgen`, a Go program (Go is already in the toolchain for the MCP server). Nobody edits a panel SVG by hand.
 
-1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`, `button`, `button-grid`, `bars`, `keyboard`), a label and a row, and optionally a `dy` nudge.
+1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`, `button`, `button-grid`, `bars`, `keyboard`, `readout`), a label and a row, and optionally a `dy` nudge.
+
+   A module may also set `columns` (`inset`, `pitch`, in px), a fixed grid of columns; a control then takes `col` (from 0) instead of sharing its row's width, and a row holds one kind or the other. Moleta uses it: seven columns 37 px apart, 24 px in from the edges, which the equal shares of an 18 HP row can't give. With columns, the output plate runs the panel's width less its margins.
 2. **Rows count from the bottom.** Row 0 is the output row on the plate (y = 345.5 px), and each row up is 48 px higher. Controls in a row share its width equally, in the order they are listed, so a description never holds a coordinate.
 3. `make panels` writes `res/<Slug>.svg` in mm (ground, band and title, labels, plate, mark) and `src/<Slug>Panel.hpp`, which holds each control's centre and the screws' corners in px. The module widget places its parts from that header, so the widget and the SVG can't disagree.
 4. Every label is turned into outlines from the static Inter Tight SemiBold and Bold files in `tools/panelgen/fonts/` (read with `golang.org/x/image/font/sfnt`). They stay out of the plugin package. Rack ignores fill rules and takes a contour for a hole by counting crossings, so Inter Tight's overlapping outlines (the stem and bowl of D, the legs and bar of A) would lose a sliver. The generator keeps each outline with its own counters and puts overlapping outlines in separate paths, and a test replays Rack's hole check on every glyph.
