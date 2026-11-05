@@ -20,6 +20,13 @@
       "description": "Shift register whose taps are a control: a drawn shape, slid through the register by CV, read as a chord and a bass",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/ghisa.md",
       "tags": ["Sample and hold", "Polyphonic"]
+    },
+    {
+      "slug": "Moleta",
+      "name": "Moleta",
+      "description": "Master clock whose four outputs each have a ratio (fractions included), a chance and a length; the coin flips can loop",
+      "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/moleta.md",
+      "tags": ["Clock generator", "Clock modulator", "Random"]
     }
   ]
 }
