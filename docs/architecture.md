@@ -127,7 +127,7 @@ The build loop:
 
 Cross-compiling from Linux (VCV's `rack-plugin-toolchain`, or mingw-w64 with the `-posix` g++) is the alternative. It's worth it only to check Linux and macOS builds ahead of a Library update, and the Library builds those itself. CI already compiles Linux and macOS.
 
-Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
+Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, runs the host tests of Moleta's engine (`make test-engine`, no SDK needed), and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
 
 ## Where work runs
 
@@ -244,6 +244,14 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | W72 holds sound modules as well as studio tools, in one plugin; Scighera is the likely module after Moleta | 2026-11-05 |
 | W72 accepted into the VCV Library; each release is followed by a comment on the Library issue with the new version and commit | 2026-11-05 |
 | Moleta's fresh-module ratios are ×2, /2, /3 and /4 on outputs 1 to 4: a fast output first and slower ones after, with /3 as the one odd ratio. Chosen from the divider settings used across existing patches (×2, /3, /4, ×4, /2, /8 most common); tuned by ear | 2026-11-05 |
+| Moleta's ratios are p pulses per q beats. One output engine, shared by Moleta and Moleta+, restarts each output's cycle on the beats whose count since the reset is a multiple of q, with a pulse, and spreads the other pulses at the rate of the measured period T; it waits at the cycle's end when the clock is late | 2026-11-05 |
+| Moleta's RUN turned on restarts the cycles and the coin loops like RESET, without firing the RESET output; stopped, every output is silent and the internal clock frozen | 2026-11-05 |
+| Moleta's LENGTH has a trigger step at the bottom (1 ms), then a gate of 5% to 95% of T × q / p, taken when the pulse fires; a pulse on a gate still high drops the output for one sample | 2026-11-05 |
+| Moleta's REPEAT redraws the coin slot at the pointer with probability 1 − REPEAT; the pointer advances whether or not the pulse passed | 2026-11-05 |
+| *Follow the output above* reads the final result of the output above (its coin and its own follow), so chains cascade; outputs are evaluated in index order each sample, and a chain starts as passed after a reset | 2026-11-05 |
+| Moleta sends Moleta+ a message each sample (the clock's tick with its beat count, T, REPEAT, DENSITY and the loop length), pushed into the expander's `leftExpander`; while one is attached, all seven base outputs are delayed one sample | 2026-11-05 |
+| Moleta's readout keeps the name BPM while it shows the measured tempo of CLOCK: the name is baked into the panel and nothing paints over it | 2026-11-05 |
+| Moleta's DSP is a header with no Rack includes (`src/MoletaEngine.hpp`), tested on the host by `make test-engine` and a CI job, with the random source injected | 2026-11-05 |
 
 ## Open questions
 

@@ -2,19 +2,82 @@
 
 *The itinerant knife grinder: he pedals his wheel at a steady pace, and the sparks fly off it wherever they like.*
 
-> **Designed, not built.** This page is the design. It becomes the manual when Moleta ships, and gets its `manualUrl` then.
+Moleta is a master clock whose outputs are each a ratio, a chance and a length. It runs on its own BPM, or follows a clock patched into CLOCK. Each of its four outputs divides or multiplies the beat by a ratio from a short list (fractions such as 3/2 included), lets each pulse through with its own probability, and sends a trigger or a gate of a set length. A REPEAT knob makes the coin flips loop, so the thinned rhythm becomes a phrase.
 
-Moleta is a master clock whose outputs are each a ratio, a chance and a length. It runs on its own BPM, or follows a clock patched into CLOCK. Each of its four outputs divides or multiplies the beat by a ratio from a short list (fractions such as 3/2 included), lets each pulse through with its own probability, and sends a trigger or a gate of a set length. A REPEAT knob makes the coin flips loop, so the thinned rhythm becomes a phrase. An expander adds four more outputs.
+- **Family:** trades · **Width:** 18 HP · **Slug:** `Moleta` · **Since:** 2.8.0
 
-- **Family:** trades · **Width:** 18 HP · **Slug:** `Moleta` · **Since:** not released
+## Getting started
 
-## Why
+1. Patch output **1** into a voice's clock or envelope. A fresh Moleta is a plain clock at 120 BPM: outputs 1 to 4 run at ×2, /2, /3 and /4, every pulse passes, and each is a gate half its own period long.
+2. Turn **CHANCE** down on an output to thin its pulses. Turn **LENGTH** fully left for 1 ms triggers, or right for longer gates.
+3. When a thinned rhythm sounds right, turn **REPEAT** fully right: the pattern locks into a loop of 16 pulses per output.
+4. To follow another clock, patch it into **CLOCK**; set *Clock input* in the right-click menu if it runs at 4 or 24 pulses per beat.
+
+## Panel
+
+![Moleta panel](moleta.png)
+
+| Control | What it does |
+| --- | --- |
+| Readout | BPM, then each output's ratio over its number. While CLOCK is patched, the BPM cell shows the measured tempo (`---` until two beats have arrived); its name stays BPM. |
+| RUN | Latching button, lit while running. Stopped, every output is silent and the internal clock is frozen. Turning it on restarts the cycles and the coin loops, as RESET does, without firing the RESET output. |
+| BPM | The internal tempo, 30 to 300 BPM, shown with one decimal. A change takes effect at once. Ignored while CLOCK is patched. |
+| RESET | Momentary button. Restarts every output's cycle, the coin loops and the bar count, and fires the RESET output. |
+| REPEAT | How often the coin loops are redrawn (see below). One knob for all outputs. |
+| DENSITY | CV added to every CHANCE, 10% per volt, so ±5 V moves each by half its range. Reads the first channel. |
+| RATIO 1 to 4 | Each output's ratio, in 21 steps: /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16. |
+| CHANCE 1 to 4 | The probability that a pulse passes, 0 to 100%. |
+| LENGTH 1 to 4 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |
+| RUN (input) | A trigger toggles RUN, like the button. |
+| CLOCK | A clock to follow: rising edges only, so a square LFO at any width works. Unpatched, BPM sets the tempo. |
+| RESET (input) | A trigger resets, like the button. |
+| CLICK | Audio: a metronome click on every beat, higher and louder on beat 1 of the bar. Generated only while patched. |
+| BEAT | A 1 ms, 10 V trigger on every beat, with no coin. |
+| RESET (output) | A 1 ms, 10 V trigger whenever Moleta resets, by button or input, even while stopped. |
+| 1 to 4 | The pulses that passed, 10 V, as triggers or gates by LENGTH. |
+
+In the module browser the readout shows a sample: 120.0, ×2, 3/2, /4 and ×3.
+
+## How it works
+
+- **Tempo.** The internal clock runs a continuous beat phase from BPM. A cable in CLOCK makes Moleta follow it: every first, fourth or 24th rising edge is a beat (*Clock input*), the first edge after connecting, a RESET or RUN being beat 0. The beat period T is the time between the last two beats, so it is unknown until the second one. Pulling the cable hands back to BPM, whose next beat comes one BPM period after the last external beat.
+- **Ratios.** A ratio is p pulses every q beats: ×3 is three a beat, /4 one every four beats, 3/2 three every two beats. Each output runs a cycle of q beats, restarted on the beats whose count since the reset is a multiple of q, with a pulse there; the other p − 1 pulses are spread over the cycle at the rate of T. Dividers therefore count beats and stay exact at any rate.
+- **Following a moving clock.** Multipliers and fractions spread their pulses over the last measured period and realign on the beat where their cycle restarts (every beat for ×N, every q beats for p/q), so a modulated LFO stretches the rhythm but never lets it drift. A pulse still pending when that beat arrives is dropped, not fired late. If the clock runs slower than predicted, an output waits at the end of its cycle. Before T is known, only the cycle restarts fire. If no beat comes for two periods, the outputs stop until the clock comes back, and the beat that ends such a gap isn't taken as a measure of T.
+- **CHANCE and the coin loop.** Each output keeps a loop of 16 stored random numbers (8 with *Coin loop*) and a pointer. On each due pulse the number at the pointer is redrawn with probability 1 − REPEAT, the pulse passes if the number is below CHANCE plus DENSITY (clamped to 0 to 100%), and the pointer moves on either way. Fully left every pulse flips a fresh coin; fully right the loop is locked and the pattern repeats every 16 (or 8) pulses. Because the loop stores numbers rather than results, lowering CHANCE on a locked pattern only removes pulses from the same phrase, and raising it puts them back. RESET and RUN start every loop from its first number.
+- **LENGTH.** A gate's length is a share of the output's own period, T × q / p, taken when the pulse fires (at 50%, a ×2 output's gate lasts a quarter of a beat), so it follows the tempo. It stops at 95%, so back-to-back pulses retrigger; if a moving clock brings a pulse while the previous gate is still high, the output drops for one sample first. Before T is known, every pulse is a trigger.
+- **Follow the output above.** With this menu option, output 2, 3 or 4 passes a pulse only while the latest pulse of the output above it passed, after that output's own coin and follow, so a chain cascades. Outputs are worked out in order each sample, so pulses that land together see the result above from the same sample. After a reset, the chain starts as passed. A dropped /4 then silences the ×2 pulses inside it, so rests fall on whole bars and beats.
+- **CLICK.** A short sine burst, 880 Hz at 2.5 V on ordinary beats and 1760 Hz at 5 V on beat 1 of the bar (*Beats per bar*), decaying in a few tens of milliseconds.
+- **Saved with the patch.** The ratios, each output's coin loop (its numbers and pointer) and the menu choices, so a locked phrase reopens as it was.
+
+## Right-click menu
+
+| Item | Choices | Default |
+| --- | --- | --- |
+| Clock input | 1, 4 or 24 pulses per beat on CLOCK | 1 |
+| Beats per bar | 2, 3, 4, 5, 6, 7, 8 or 12, for the CLICK accent | 4 |
+| Coin loop | 8 or 16 flips | 16 |
+| Follow the output above | Per output, 2 to 4: on or off | Off |
+
+## In a patch
+
+- **Thinned clocks:** ×2 at 70% into an arpeggiator's clock, /4 at 60% with a long LENGTH into an envelope in gate mode, ×1 as a trigger into S&H. What used to take a Clocker and three Chances.
+- **A phrase to live in:** turn REPEAT right until the drop pattern stops changing, then nudge CHANCE to thin or fill it without losing its shape.
+- **Breathing rests:** output 1 at /4 and 60%, output 2 at ×2 with *Follow the output above*: whole bars fall silent together.
+- **Following an LFO:** a slow square LFO into CLOCK, its rate modulated; 3/2 and ×3 stretch with it.
+
+## Expander
+
+![Moleta with its expander](moleta-expander-mock.png)
+
+An 11 HP expander placed to the right will add outputs 5 to 8, with the same strips and their ratios on its own readout row. It shares the clock, RESET and the coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays all its own outputs by one sample while an expander is attached, keeping all eight in line; with nothing attached there is no delay. The panel description calls it "Moleta +" with the slug `MoletaPlus`; it is not released yet.
+
+Until then, a second Moleta following the first's BEAT gives eight outputs.
+
+## Background
 
 It folds a pair of modules that is patched again and again into one. In a survey of 175 saved patches, a clock output wired into a Bernoulli gate appears in 29 of them, most often SickoCV Clocker into Count Modula Chances, with up to four Chances in one patch. The Chances are used to drop pulses, not to route them: only output A is patched on 59 of 62, and the probability CV is patched once. The probability is set by ear and left.
 
 Two more things push the same way. Clocker has no fractional ratios, so a patch that wants 3/2 moves to CVfunk Syncro, which has no probability either. And Clocker's width stays at its 50% default on 215 of 232 outputs, while what the pulses feed (S&H, envelopes, an arpeggiator) cares whether it gets a trigger or a gate.
-
-## Prior art
 
 No module in an index of about 4,000 has a ratio, a probability and a length on every output; each of these has two of the three at most.
 
@@ -28,61 +91,22 @@ No module in an index of about 4,000 has a ratio, a probability and a length on 
 | Tyche Kron | One output, density with seeded variants | Four outputs; the coin loops by a knob |
 | ALM Pamela's Workout (hardware) | Ratio, width and probability per output on one master clock | The nearest ancestor, with a screen and menus; Moleta keeps each output to three knobs |
 
-## How it works
+The panel has seven columns 37 px apart and 24 px in from the edges, not the equal shares of the full width the grid uses elsewhere: at 18 HP equal shares put the outer knobs and readout values against the edge. Its knob rows sit off the row grid, at 116, 182 and 248 px. `panels/Moleta.json` describes it.
 
-- **Tempo.** BPM sets the internal clock, shown on the readout. A cable in CLOCK makes Moleta follow it: only rising edges count, so a square LFO at any width works, and the readout shows the measured tempo with CLOCK as its name. Pulling the cable hands back to BPM. The right-click menu sets how many pulses make a beat on CLOCK (1, 4 or 24; default 1).
-- **RUN and RESET.** Each is a button and a trigger input. RUN toggles; while stopped, nothing leaves the outputs. RESET restarts every output's cycle and the coin loops together, and fires the RESET output.
-- **Ratio.** Each output's RATIO knob steps through /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16, shown on the readout above its strip. A fresh Moleta starts at ×2, /2, /3 and /4 on outputs 1 to 4. The patch saves the ratio itself, not the knob's step, so the list can grow without changing saved patches.
-- **Following a moving clock.** Dividers count edges, so they stay exact at any rate. Multipliers and fractions spread their pulses over the last measured period, and realign on the input edge where their cycle restarts (every edge for ×N, every q edges for p/q), so a modulated LFO stretches the rhythm but never lets it drift. A pulse still pending when that edge arrives is dropped. If the input stops, the outputs stop after about two missed periods instead of running on.
-- **CHANCE.** The probability that a pulse passes, per output. DENSITY is one CV input added to all four (10% per volt, so ±5 V moves every CHANCE by half its range), clamped to 0 to 100%.
-- **REPEAT.** One knob for the module. Fully left, every pulse flips a fresh coin. Turning it right makes each output replay its last 16 coin flips (8 in the menu), re-flipping fewer of them, until fully right the pattern is locked. The loop stores each flip's random number, not its result, so CHANCE and DENSITY still act on a locked pattern: lowering them removes pulses from the same phrase, raising them adds them back. The loops are saved with the patch, and RESET restarts them.
-- **LENGTH.** Fully left sends a 1 ms trigger. Further right it sends a gate from 5% to 95% of that output's own period (at 50%, a ×2 output's gate lasts a quarter of a beat), so the length follows the tempo and a moving clock. It stops short of 100%, so every pulse retriggers.
-- **Follow the output above.** A right-click option on outputs 2 to 4, off by default: the output can only pass a pulse while the last pulse of the output above it passed. A dropped /4 then silences the ×2 pulses inside it, so rests fall on whole bars and beats.
-- **A fresh Moleta is a plain clock:** CHANCE at 100%, REPEAT fully left, LENGTH at 50%.
+## Saved state
 
-## Outputs
+What Moleta saves beyond its parameters, as Brumista's `get_module_data` reads it:
 
-| Output | Carries |
+| Key | Holds |
 | --- | --- |
-| 1 to 4 | The pulses that passed, as triggers or gates by LENGTH |
-| BEAT | Every beat, ×1, with no coin, for the rest of the patch |
-| RESET | A trigger whenever Moleta resets, by button or input |
-| CLICK | An audible metronome click, on whenever patched, with an accent on beat 1 of the bar |
+| `ratios` | Four objects `{"p", "q"}`, outputs 1 to 4: the ratio itself. On load, each RATIO knob goes to the step with that ratio, or the nearest one. |
+| `coins` | Four objects, outputs 1 to 4: `slots`, the 16 stored numbers (0 to 1), and `pointer`, the next slot |
+| `clockInput` | 1, 4 or 24 pulses per beat |
+| `beatsPerBar` | 2 to 8, or 12 |
+| `coinLoop` | 8 or 16 |
+| `follow` | Three booleans, outputs 2 to 4 |
 
-## Right-click menu
-
-| Item | Choices | Default |
-| --- | --- | --- |
-| Clock input | 1, 4 or 24 pulses per beat | 1 |
-| Beats per bar | For the CLICK accent | 4 |
-| Coin loop | 8 or 16 flips | 16 |
-| Follow the output above | Per output, 2 to 4: on or off | Off |
-
-## Panel
-
-![Moleta panel mock](moleta-mock.png)
-
-The master section is on the left: RUN and RESET buttons either side of the BPM knob, REPEAT and DENSITY on the CHANCE row (so the coin's controls read as one line), the RUN, CLOCK and RESET inputs, and CLICK, BEAT and RESET on the plate. On the right, four strips of RATIO, CHANCE and LENGTH over outputs 1 to 4.
-
-- **Readout row** under the band: BPM, then each strip's ratio over its number. Moleta is the first module with a readout.
-- **Seven columns, 37 px apart and 24 px in from the edges**, not the equal shares of the full width the grid uses elsewhere: at 18 HP equal shares put the outer knobs and the outer readout values against the edge. Seven outputs on the plate are what set the width.
-- **Off the row grid.** The knob rows sit at 116, 182 and 248 px, spread between the readout and the inputs. The inputs and the plate keep their rows.
-- The generator has a `readout` kind with one cell per column, and `columns` with a `col` per control to place them in named columns of a row, leaving the rest empty. `panels/Moleta.json` and `panels/MoletaPlus.json` describe both panels, and `make panels` writes their SVGs and headers.
-
-## Expander
-
-![Moleta with its expander](moleta-expander-mock.png)
-
-An 11 HP expander placed to the right adds outputs 5 to 8, with the same strips and their ratios on its own readout row. It shares the clock, RESET and the coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays its own outputs by one sample while an expander is attached, keeping all eight in line. The panel description calls it "Moleta +" with the slug `MoletaPlus`; the slug becomes permanent when it ships.
-
-Until then, a second Moleta following the first's BEAT gives eight outputs.
-
-## In a patch
-
-- **Thinned clocks:** ×2 at 70% into an arpeggiator's clock, /4 at 60% with a long LENGTH into an envelope in gate mode, ×1 as a trigger into S&H. What used to take a Clocker and three Chances.
-- **A phrase to live in:** turn REPEAT right until the drop pattern stops changing, then nudge CHANCE to thin or fill it without losing its shape.
-- **Breathing rests:** output 1 at /4 and 60%, output 2 at ×2 with *Follow the output above*: whole bars fall silent together.
-- **Following an LFO:** a slow square LFO into CLOCK, its rate modulated; 3/2 and ×3 stretch with it.
+A missing or unknown value loads as its default.
 
 ## Open questions
 
