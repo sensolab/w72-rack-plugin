@@ -25,7 +25,7 @@ make          # builds the plugin
 make install  # copies it into Rack's user plugins folder
 ```
 
-`make test-engine` runs the host tests of Moleta's engine with the plain host compiler; it needs no Rack SDK.
+`make test-engine` runs the host tests of Moleta's engine and Brumista's engine watch with the plain host compiler; it needs no Rack SDK.
 
 Panels are generated. Edit `panels/<Slug>.json` and run `make panels` (needs Go), which rewrites `res/<Slug>.svg` and `src/<Slug>Panel.hpp`. Do not edit those by hand.
 

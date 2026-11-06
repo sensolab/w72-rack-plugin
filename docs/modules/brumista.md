@@ -58,6 +58,7 @@ Every command is a JSON object on one line, `{"cmd": "<name>", ...params}`, and 
 
 How it behaves:
 
+- **`hello` says when Rack's engine has stopped.** Rack's engine stops when the primary audio module has no device to drive it: an Audio module left on No device, for one. Brumista goes on answering, but modules don't process, a knob turned by hand sets a target the engine never reaches, and voltages and displays stand still. `hello` reports `engine` (whether it runs, the sample rate, the primary module) and adds a `warning` while it is stopped, naming the module to fix. The MCP binary's instructions tell agents to call `hello` first.
 - **Every edit can be undone.** Each write records one step in Rack's Edit > Undo, so Ctrl+Z takes it back like a hand edit. A `batch` is a single step, whatever it holds. Saving and the view commands aren't edits and record nothing.
 - **Cables always have a colour.** `add_cable` uses the colour it's given (`#rrggbb` or `#rrggbbaa`), or Rack's next cable colour, as a dragged cable would. `list_cables` reports each cable's colour.
 - **Reads show what the panel shows.** `list_params` gives each parameter's value as the module displays it (`"440.0 Hz"`, or a switch's label), its default and a switch's labels. `list_ports` gives each port's channel count and voltages. `get_module_data` reads the state a module saves beyond its parameters, such as a quantizer's scale mask.
