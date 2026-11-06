@@ -12,4 +12,8 @@ std::string handleLine(Server& server, const std::string& line, bool& edits);
 // Finishes view changes that take more than one frame. Main thread, every frame.
 void stepView();
 
+// Watches Rack's engine for hello: whether it runs, and which module drives it. Main
+// thread, every frame.
+void watchEngine();
+
 } // namespace brumista

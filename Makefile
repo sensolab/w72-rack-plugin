@@ -26,11 +26,14 @@ endif
 panels:
 	cd tools/panelgen && go run . -root ../..
 
-# Host tests of Moleta's engine (src/MoletaEngine.hpp has no Rack includes),
-# with the plain host compiler. Builds into build/, outside the plugin package.
+# Host tests of Moleta's engine and Brumista's engine watch (src/MoletaEngine.hpp and
+# src/BrumistaEngineWatch.hpp have no Rack includes), with the plain host compiler.
+# Builds into build/, outside the plugin package.
 HOST_CXX ?= g++
 .PHONY: test-engine
 test-engine:
 	mkdir -p build/tests
 	$(HOST_CXX) -std=c++11 -O2 -Wall -Wextra -o build/tests/moleta_engine_test tests/moleta_engine_test.cpp
 	build/tests/moleta_engine_test
+	$(HOST_CXX) -std=c++11 -O2 -Wall -Wextra -o build/tests/engine_watch_test tests/engine_watch_test.cpp
+	build/tests/engine_watch_test

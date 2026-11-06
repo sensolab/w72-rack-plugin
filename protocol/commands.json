@@ -31,12 +31,25 @@
   "commands": [
     {
       "name": "hello",
-      "description": "Brumista's version and the commands it supports. The version is the plugin's, which the protocol and the MCP binary share.",
+      "description": "Call this first. Brumista's version, the commands it supports and whether Rack's engine is running. The version is the plugin's, which the protocol and the MCP binary share. A warning in the reply means the engine has stopped: modules don't process and knob changes don't take effect until it runs again.",
       "thread": "server",
       "params": {},
-      "result": { "server": "\"Brumista\"", "version": "string, semver", "commands": ["string"] },
+      "result": {
+        "server": "\"Brumista\"",
+        "version": "string, semver",
+        "commands": ["string"],
+        "engine": {
+          "running": "boolean, false once the engine's frame counter has stood still for half a second",
+          "sampleRate": "number, Hz",
+          "primary?": { "id": "integer, module id", "name": "string, the primary module, which drives the engine" }
+        },
+        "warning?": "string, present while the engine isn't running: what that means, and how to start it again"
+      },
       "errors": [],
-      "limenDiff": ["limen replies { protocol: 2, commands }; Brumista names itself and reports its semver version instead of an integer."]
+      "limenDiff": [
+        "limen replies { protocol: 2, commands }; Brumista names itself and reports its semver version instead of an integer.",
+        "limen doesn't report the engine. Brumista adds engine, and a warning while it isn't running, since every command still answers then."
+      ]
     },
     {
       "name": "list_plugins",
