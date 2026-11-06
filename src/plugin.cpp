@@ -8,4 +8,5 @@ void init(Plugin* p) {
 	p->addModel(modelGhisa);
 	p->addModel(modelMoleta);
 	p->addModel(modelMoletaPlus);
+	p->addModel(modelGibigiana);
 }

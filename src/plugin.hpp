@@ -9,3 +9,4 @@ extern Model* modelBrumista;
 extern Model* modelGhisa;
 extern Model* modelMoleta;
 extern Model* modelMoletaPlus;
+extern Model* modelGibigiana;
