@@ -32,7 +32,7 @@ w72-rack-plugin/
                           (widgets.hpp; MoletaEngine.hpp, the DSP with no Rack includes)
   res/                    panels (SVG), generated; fonts/ holds the readout's Inter Tight weight
   panels/                 one description per panel
-  tests/                  host tests of Moleta's engine (not in the plugin package)
+  tests/                  host tests of Moleta's engine and Brumista's engine watch (not in the plugin package)
   tools/panelgen/         the panel generator, Go (not in the plugin package)
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
@@ -70,6 +70,7 @@ Brumista is a TCP server inside Rack. Commands that touch the patch run on Rack'
 - **Reading state on the main thread.** `list_params`, `list_ports` and `get_module_data` read per module, in the main-thread task, as Rack's tooltips do: a read takes no engine lock, so the audio thread never waits on it. A param's `display` is the module's own `getDisplayValueString()` plus its unit, from the `ParamQuantity`, so it shows a smoothed knob's target, as the tooltip does; `value` stays the engine's raw value. A port's channel count is read once and capped at 16 before its voltages, since the engine writes the two apart. Voltages are instant samples; anything faster waits for windowed statistics in Measuring. `get_module_data` returns the module's `dataToJson()`, the `data` a patch file holds for it.
 - **Parameters as a knob sets them.** `set_param` goes through the `ParamQuantity`, which clamps to the range and rounds stepped parameters, and replies with the value that resulted.
 - **Screenshots drawn offscreen.** `screenshot_module` and `screenshot_rack` draw on the main thread, between frames, into a `FramebufferWidget` sized for the image, and read it back with `glReadPixels`, as Rack's `-t` does for its module images. A module is drawn alone (panel, then the light layer), with its live state; the rack is drawn by `RackWidget::draw` clipped to the box around the modules, so plugs, cables and room brightness come out as in the window, wherever the view is. The PNG is encoded by a static copy of `stb_image_write` (Rack's copy offers plugins only file output), sent as base64 in the reply, and turned into an MCP image by the binary, which marks such commands with `image` in `commands.json`. Images are capped at 4096 px a side; a batch refuses screenshots, since an image in its results would reach the client as text.
+- **Watching the engine.** Rack's engine stops when the primary audio module has no device to drive it, and every command still answers then, so a stopped engine is easy to misread as a module's bug. Brumista's widget `step()` samples the engine's frame counter every frame; once it has stood still for half a second, `hello` reports `engine.running: false` and a `warning` naming the primary module. The watch reads the engine, not Brumista's own `process()`, which a bypassed Brumista skips, and rests only on what it has seen, so a window held up by a file dialog doesn't make a running engine look stopped (`src/BrumistaEngineWatch.hpp`, host-tested). The MCP binary's server instructions tell agents to call `hello` first.
 - **Validate before acting.** Port indices are checked against what the panel actually exposes, and every command is wrapped so an exception becomes an error reply instead of a Rack crash. Through limen, a cable to a port with no panel jack (on NYSTHI Programmer) took Rack down: Rack's `CableWidget::setCable` throws once the engine already holds the cable. Arguments, placement mode included, are checked before anything changes. Brumista refuses to remove a Brumista module, since its commands run inside that widget's `step()`.
 
 ## Features and milestones
@@ -131,7 +132,7 @@ The build loop:
 
 Cross-compiling from Linux (VCV's `rack-plugin-toolchain`, or mingw-w64 with the `-posix` g++) is the alternative. It's worth it only to check Linux and macOS builds ahead of a Library update, and the Library builds those itself. CI already compiles Linux and macOS.
 
-Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, runs the host tests of Moleta's engine (`make test-engine`, no SDK needed), and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
+Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, runs the host tests of Moleta's engine and Brumista's engine watch (`make test-engine`, no SDK needed), and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
 
 ### Releasing
 
@@ -150,7 +151,7 @@ Development runs as a Claude Code Project: a coordinator plus threads. Work that
 | Design, specs, docs, reviews | Cloud | Needs only the repo |
 | Go MCP binary: code, tests, cross-builds | Cloud | Builds anywhere |
 | C++ code that a compile check can verify | Cloud | A Linux compile catches most errors |
-| Moleta's engine tests (`make test-engine`) | Cloud | Host compiler only, no Rack SDK |
+| Host tests: Moleta's engine, Brumista's engine watch (`make test-engine`) | Cloud | Host compiler only, no Rack SDK |
 | Windows build and `make install` | Local (Remote Control) | Needs MSYS2 and the Rack folder |
 | Live tests against a running Rack | Local (Remote Control) | Needs Rack, limen and rackmaster |
 

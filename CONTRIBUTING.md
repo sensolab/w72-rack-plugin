@@ -25,7 +25,7 @@ The design lives in [docs/concept.md](docs/concept.md), [docs/architecture.md](d
 tools/check-commands.sh                  # commands.json against the C++ dispatch
 (cd mcp && go test ./...)                # MCP server
 (cd tools/panelgen && go test ./...)     # panel generator and generated files
-make test-engine                         # Moleta's engine, host compiler only, no SDK
+make test-engine                         # Moleta's engine and Brumista's engine watch, host compiler only, no SDK
 make                                     # plugin, needs the Rack SDK (RACK_DIR)
 ```
 

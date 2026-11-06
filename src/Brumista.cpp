@@ -133,6 +133,7 @@ struct BrumistaWidget : ModuleWidget {
 		ModuleWidget::step();
 		if (Brumista* m = getModule<Brumista>()) {
 			brumista::stepView();
+			brumista::watchEngine();
 			m->server.drain();
 		}
 	}

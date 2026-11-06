@@ -3,6 +3,7 @@
 // Shapes and error strings follow limen (forsitan modulare, GPL-3.0-or-later, by gosub),
 // recorded in protocol/limen/commands.json; differences are noted in protocol/commands.json.
 #include "BrumistaCommands.hpp"
+#include "BrumistaEngineWatch.hpp"
 #include "BrumistaShot.hpp"
 #include "plugin.hpp"
 #include <tag.hpp>
@@ -803,14 +804,50 @@ const Command COMMANDS[] = {
 	{"screenshot_rack", Thread::MAIN, Effect::READ, screenshotRack},
 };
 
+// What hello reports about Rack's engine: taken on the main thread every frame
+// (watchEngine), read by hello on the server thread.
+struct EngineState {
+	bool running = true;
+	float sampleRate = 0.f;
+	// -1 with no primary module.
+	int64_t primaryId = -1;
+	std::string primaryName;
+};
+
+EngineWatch engineWatch;
+std::mutex engineMutex;
+EngineState engineState;
+
 json_t* hello(json_t*) {
 	json_t* names = json_array();
 	for (const Command& c : COMMANDS)
 		json_array_append_new(names, json_string(c.name));
+	EngineState s;
+	{
+		std::lock_guard<std::mutex> lock(engineMutex);
+		s = engineState;
+	}
+	json_t* engine = json_object();
+	json_object_set_new(engine, "running", json_boolean(s.running));
+	json_object_set_new(engine, "sampleRate", json_real(s.sampleRate));
+	if (s.primaryId >= 0) {
+		json_t* primary = json_object();
+		json_object_set_new(primary, "id", json_integer(s.primaryId));
+		json_object_set_new(primary, "name", json_string(s.primaryName.c_str()));
+		json_object_set_new(engine, "primary", primary);
+	}
 	json_t* obj = json_object();
 	json_object_set_new(obj, "server", json_string("Brumista"));
 	json_object_set_new(obj, "version", json_string(pluginInstance->version.c_str()));
 	json_object_set_new(obj, "commands", names);
+	json_object_set_new(obj, "engine", engine);
+	if (!s.running) {
+		std::string warning = "Rack's engine isn't running, so modules aren't processing and knob changes won't take effect.";
+		if (s.primaryId >= 0)
+			warning += string::f(" %s (id %lld) is the primary audio module, which drives the engine: pick a device in it, or untick Master audio module in its right-click menu.",
+				s.primaryName.c_str(), (long long) s.primaryId);
+		json_object_set_new(obj, "warning", json_string(warning.c_str()));
+	}
 	return obj;
 }
 
@@ -917,6 +954,19 @@ void stepView() {
 		zoomFrames--;
 		APP->scene->rackScroll->zoomToModules();
 	}
+}
+
+void watchEngine() {
+	engineWatch.observe(APP->engine->getFrame(), system::getTime());
+	EngineState s;
+	s.running = engineWatch.running();
+	s.sampleRate = APP->engine->getSampleRate();
+	if (engine::Module* primary = APP->engine->getMasterModule()) {
+		s.primaryId = primary->id;
+		s.primaryName = primary->model ? primary->model->name : "";
+	}
+	std::lock_guard<std::mutex> lock(engineMutex);
+	engineState = s;
 }
 
 std::string handleLine(Server& server, const std::string& line, bool& edits) {

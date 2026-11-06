@@ -12,7 +12,7 @@ The repository is meant to be public. Keep machine paths, personal notes and cre
 
 ## Layout
 
-The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so the VCV Library can build it. `mcp/` (Go), `protocol/`, `panels/`, `tests/` (host tests of Moleta's engine) and `tools/panelgen/` (Go) sit beside it and stay out of the plugin package (`DISTRIBUTABLES`). `res/` holds the generated panels and the one Inter Tight weight the readouts draw (`res/fonts/`). Moleta's DSP is a header with no Rack includes (`src/MoletaEngine.hpp`), shared with Moleta +, so it can be tested without Rack.
+The plugin lives at the repo root (`plugin.json`, `Makefile`, `src/`, `res/`) so the VCV Library can build it. `mcp/` (Go), `protocol/`, `panels/`, `tests/` (host tests of Moleta's engine and Brumista's engine watch) and `tools/panelgen/` (Go) sit beside it and stay out of the plugin package (`DISTRIBUTABLES`). `res/` holds the generated panels and the one Inter Tight weight the readouts draw (`res/fonts/`). Moleta's DSP is a header with no Rack includes (`src/MoletaEngine.hpp`), shared with Moleta +, so it can be tested without Rack.
 
 Panels are generated: edit `panels/<Slug>.json` and run `make panels`, which rewrites `res/<Slug>.svg` and `src/<Slug>Panel.hpp`. Never edit either by hand.
 
@@ -39,7 +39,7 @@ If the rackmaster plugin is available in the session, use it first:
 
 ## Where work runs
 
-- **Cloud threads:** design, docs, the Go MCP server, C++ that a compile check can verify, and `make test-engine` (Moleta's engine, host compiler only).
+- **Cloud threads:** design, docs, the Go MCP server, C++ that a compile check can verify, and `make test-engine` (Moleta's engine and Brumista's engine watch, host compiler only).
 - **Local threads only:** the Windows build (`make install` with MSYS2 and the Rack SDK) and any test against a running Rack. A cloud thread must not claim a Rack test passed.
 
 Close Rack before `make install` on Windows: a loaded plugin `.dll` is locked.
@@ -66,4 +66,4 @@ W72 is in the VCV Library (accepted 2026-11-05). After each release, comment the
 
 ## CI
 
-Lightweight, on GitHub Actions: build and test the Go server, run the `commands.json` check, check the generated panels, run the host tests of Moleta's engine, and compile the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. A change that only touches docs skips this workflow. A tag `vX.Y.Z` runs the release workflow. CI never replaces a local test against a running Rack.
+Lightweight, on GitHub Actions: build and test the Go server, run the `commands.json` check, check the generated panels, run the host tests (Moleta's engine, Brumista's engine watch), and compile the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. A change that only touches docs skips this workflow. A tag `vX.Y.Z` runs the release workflow. CI never replaces a local test against a running Rack.
