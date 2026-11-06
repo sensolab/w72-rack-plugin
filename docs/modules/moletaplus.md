@@ -1,62 +1,55 @@
 # Moleta +
 
-*The grinder's second wheel: same pedals, same pace, more sparks.*
+*Four more outputs for the Moleta on its left, each with its own ratio, chance and length.*
 
-Moleta + is the expander of [Moleta](moleta.md). Placed directly to its right, it adds outputs 5 to 8, each with its own ratio, chance and length, run from Moleta's clock. It has no clock, tempo or inputs of its own: Moleta's BPM or CLOCK, RUN, RESET, REPEAT, DENSITY and *Coin loop* drive it as they drive outputs 1 to 4.
+## What it does
 
-- **Family:** trades · **Width:** 11 HP · **Slug:** `MoletaPlus` · **Since:** 2.8.0
+Moleta + gives a [Moleta](moleta.md) four more outputs, numbered 5 to 8. Place it directly to the right of a Moleta, touching it. There is no cable to patch between them.
 
-## Getting started
+Each new output works like Moleta's own. RATIO sets how fast it ticks, CHANCE how many ticks get through, and LENGTH whether they are triggers or gates. Moleta's tempo, RUN, RESET, REPEAT and DENSITY drive all eight outputs, so one REPEAT knob locks every pattern at once.
 
-1. Place Moleta + directly to the right of a Moleta, touching it. Nothing else connects them: no cable.
-2. Patch output **5** into a voice. A fresh Moleta + runs at ×4, ×1, /8 and 3/2 on outputs 5 to 8, every pulse passes, and each is a gate half its own period long.
-3. Thin and shape its outputs with **CHANCE** and **LENGTH** as on Moleta. Moleta's **REPEAT** locks these coin loops too.
+Moleta + is 11 HP wide. Away from a Moleta, its outputs stay silent.
 
-## Panel
+## The panel
 
 ![Moleta + panel](moletaplus.png)
 
 | Control | What it does |
 | --- | --- |
-| Readout | Each output's ratio over its number, 5 to 8. |
-| RATIO 5 to 8 | Each output's ratio, in the same 21 steps as Moleta: /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16. |
-| CHANCE 5 to 8 | The probability that a pulse passes, 0 to 100%. Moleta's DENSITY is added to it. |
-| LENGTH 5 to 8 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |
-| 5 to 8 | The pulses that passed, 10 V, as triggers or gates by LENGTH. 0 V with no Moleta on the left. |
+| Readout | Each output's ratio. |
+| RATIO 5 to 8 | How fast the output ticks against Moleta's beat, from /16 to ×16. |
+| CHANCE 5 to 8 | How often a tick gets through. Moleta's DENSITY input moves these too. |
+| LENGTH 5 to 8 | Fully left, a short trigger. Further right, a longer gate. |
+| 5 to 8 | The ticks that got through. Mono. |
 
-In the module browser the readout shows a sample: /2, ×4, 2/3 and /8.
+Everything else, the tempo, REPEAT and the clock options, is set on Moleta. See [Moleta's manual](moleta.md).
 
-## How it works
+## Right-click options
 
-- **The link.** Every sample Moleta hands its expander the beat clock's state (whether it is running, a beat, a reset, the beat count and the period T) and its REPEAT, DENSITY and *Coin loop*. Moleta + runs the same output engine as Moleta on that, so ratios, cycle restarts, the coin and LENGTH behave exactly as on outputs 1 to 4 ([Moleta's manual](moleta.md#how-it-works) has the details).
-- **Alignment.** Rack passes data between neighbours one sample late. While Moleta + is attached, Moleta delays all its own outputs (1 to 4, BEAT, RESET and CLICK) by one sample, so the eight outputs land together. Without it, Moleta has no delay.
-- **Its own coins.** Each of outputs 5 to 8 keeps its own loop of 16 stored numbers and pointer. Moleta's RESET and RUN restart them with Moleta's own, and its REPEAT and *Coin loop* apply to them.
-- **Follow the output above.** Outputs 6, 7 and 8 can follow the output to their left on Moleta +, as on Moleta. Output 5 does not follow Moleta's output 4: it starts a fresh chain.
-- **No Moleta on the left.** If the module on the left is not a Moleta, or there is none, the outputs are 0 V. Placed back next to a Moleta, each output waits for its next cycle restart, so it falls in line with Moleta's beats; its coin loops are kept.
-- **Saved with the patch.** The ratios, each output's coin loop (its numbers and pointer) and the follow choices.
-
-## Right-click menu
-
-| Item | Choices | Default |
+| Option | What it does | Default |
 | --- | --- | --- |
-| Follow the output above | Per output, 6 to 8: on or off | Off |
+| Follow the output above | Outputs 6 to 8 only play while the output to their left is playing. | Off |
 
-The clock, *Beats per bar* and *Coin loop* are set on Moleta.
+## Samples
 
-## In a patch
+### Start here: eight outputs
 
-- **Eight thinned clocks:** Moleta's four on drums, Moleta +'s four on a melody line and its accents, all locked by one REPEAT.
-- **A slow layer:** output 7 at /8 with a long LENGTH into a filter envelope, output 8 at 3/2 for a cross-rhythm against Moleta's ×2.
-- **Cascading rests:** output 5 at /4 and 60%, outputs 6 to 8 at ×2, ×3 and ×4 each following the one above, so silence spreads from bar to beat to subdivision.
+1. Place Moleta + directly to the right of a Moleta.
+2. Patch output **5** into a voice. It ticks at ×4, every tick passing.
+3. Turn **CHANCE 5** down to thin it, and Moleta's **REPEAT** right to lock it.
 
-## Saved state
+You now have a fifth output, locked with Moleta's four.
 
-What Moleta + saves beyond its parameters, as Brumista's `get_module_data` reads it:
+### More ideas
 
-| Key | Holds |
-| --- | --- |
-| `ratios` | Four objects `{"p", "q"}`, outputs 5 to 8: the ratio itself. On load, each RATIO knob goes to the step with that ratio, or the nearest one. |
-| `coins` | Four objects, outputs 5 to 8: `slots`, the 16 stored numbers (0 to 1), and `pointer`, the next slot |
-| `follow` | Three booleans, outputs 6 to 8 |
+**Drums on Moleta, melody on Moleta +.** Moleta's four outputs on drums, the expander's four on a melody line and its accents. One REPEAT locks the lot.
 
-A missing or unknown value loads as its default.
+**Silence that spreads.** Output 5 at /4 and 60%. Outputs 6 to 8 at ×2, ×3 and ×4, each with *Follow the output above* on. A rest on 5 silences the whole row.
+
+**When the outputs are silent.** Moleta + must touch the Moleta on its left. Anything in between, even a blank panel, breaks the link.
+
+## Where it comes from
+
+Moleta + has the same story as [Moleta](moleta.md#where-it-comes-from): the grinder's second wheel, same pedals, same pace, more sparks.
+
+Timing details, edge cases and the saved state are in the [reference](moletaplus-reference.md).

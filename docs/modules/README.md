@@ -1,14 +1,14 @@
 # W72 modules
 
-One page per module: what it does, its panel, and how to use it. The design behind the modules is in [concept.md](../concept.md) and [architecture.md](../architecture.md).
+One manual per module: what it does, its panel, and how to start using it. Each manual has a reference page beside it (`<slug>-reference.md`) with the exact ranges, timing, edge cases and saved state. The design behind the modules is in [concept.md](../concept.md) and [architecture.md](../architecture.md).
 
 | Module | Family | HP | What it does | Since |
 | --- | --- | --- | --- | --- |
-| [Brumista](brumista.md) | Trades | 3 | Bridge that lets an MCP-capable agent read and patch a running Rack | 2.1.0 |
-| [Ghisa](ghisa.md) | Trades | 8 | Shift register whose taps are a control: a drawn shape, slid through the register by CV, read as a chord and a bass | 2.3.0 |
-| [Moleta](moleta.md) | Trades | 18 | Master clock whose four outputs each have a ratio (fractions included), a chance and a length; the coin flips can loop | 2.8.0 |
-| [Moleta +](moletaplus.md) | Trades | 11 | Expander that adds four outputs to the Moleta on its left, each with a ratio, a chance and a length | 2.8.0 |
-| [Gibigiana](gibigiana.md) | Weather and light | 14 | Clocked echo lane: four taps on the clock grid, each with a chance per hit; the coin rides with the echo | 2.9.0 |
+| [Brumista](brumista.md) | Trades | 3 | Lets an AI agent read and patch your running Rack. | 2.1.0 |
+| [Ghisa](ghisa.md) | Trades | 8 | Feed Ghisa a melody, and it plays chords made from the notes the melody just played. | 2.3.0 |
+| [Moleta](moleta.md) | Trades | 18 | A clock whose four outputs each skip beats by chance, and can lock what they skipped into a phrase. | 2.8.0 |
+| [Moleta +](moletaplus.md) | Trades | 11 | Four more outputs for the Moleta on its left, each with its own ratio, chance and length. | 2.8.0 |
+| [Gibigiana](gibigiana.md) | Weather and light | 14 | Four echoes on the clock grid, each with its own chance of coming back. | 2.9.0 |
 
 Each module's `manualUrl` in `plugin.json` points to its page here on `main` (`https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/<slug-lowercase>.md`), so Rack's right-click Manual opens it. A new module ships with its page and that link.
 
