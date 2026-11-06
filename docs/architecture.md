@@ -4,7 +4,7 @@
 
 ## At a glance
 
-W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown three modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +); the diagram is the bridge only.
+W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown four modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +, Gibigiana); the diagram is the bridge only.
 
 ```mermaid
 flowchart LR
@@ -28,11 +28,11 @@ One GitHub repository, `w72-rack-plugin`, holds the plugin, the MCP binary and t
 w72-rack-plugin/
   plugin.json             the Rack plugin, slug W72
   Makefile
-  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, and W72's own parts
-                          (widgets.hpp; MoletaEngine.hpp, the DSP with no Rack includes)
+  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, Gibigiana, and W72's own parts
+                          (widgets.hpp; MoletaEngine.hpp and GibigianaEngine.hpp, DSP with no Rack includes)
   res/                    panels (SVG), generated; fonts/ holds the readout's Inter Tight weight
   panels/                 one description per panel
-  tests/                  host tests of Moleta's engine and Brumista's engine watch (not in the plugin package)
+  tests/                  host tests of Moleta's and Gibigiana's engines and Brumista's engine watch (not in the plugin package)
   tools/panelgen/         the panel generator, Go (not in the plugin package)
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
@@ -98,7 +98,7 @@ The first milestone matches what limen does today, without its problems. Each la
 
 Milestones 1 to 3 are done, the last of them (screenshots) in 2.5.0; 4 to 6 are open.
 
-Further modules come in parallel with these: Ghisa (2.3.0) and Moleta with its expander (2.8.0) have shipped, and Scighera and Gibigiana are next. Their specs come from technique cards.
+Further modules come in parallel with these: Ghisa (2.3.0) and Moleta with its expander (2.8.0) have shipped, Gibigiana is built for 2.9.0, and Scighera is next. Their specs come from technique cards.
 
 ## The MCP binary
 
@@ -132,7 +132,7 @@ The build loop:
 
 Cross-compiling from Linux (VCV's `rack-plugin-toolchain`, or mingw-w64 with the `-posix` g++) is the alternative. It's worth it only to check Linux and macOS builds ahead of a Library update, and the Library builds those itself. CI already compiles Linux and macOS.
 
-Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, runs the host tests of Moleta's engine and Brumista's engine watch (`make test-engine`, no SDK needed), and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
+Changes land through pull requests with Conventional Commits messages. A lightweight GitHub Actions CI builds and tests the Go server, checks `commands.json` against both sides, runs the host tests of Moleta's and Gibigiana's engines and Brumista's engine watch (`make test-engine`, no SDK needed), and compiles the plugin against the Rack SDK on Linux, macOS x64 and macOS arm64. Release builds of the binary come from the same Actions setup.
 
 ### Releasing
 
@@ -151,7 +151,7 @@ Development runs as a Claude Code Project: a coordinator plus threads. Work that
 | Design, specs, docs, reviews | Cloud | Needs only the repo |
 | Go MCP binary: code, tests, cross-builds | Cloud | Builds anywhere |
 | C++ code that a compile check can verify | Cloud | A Linux compile catches most errors |
-| Host tests: Moleta's engine, Brumista's engine watch (`make test-engine`) | Cloud | Host compiler only, no Rack SDK |
+| Host tests: Moleta's and Gibigiana's engines, Brumista's engine watch (`make test-engine`) | Cloud | Host compiler only, no Rack SDK |
 | Windows build and `make install` | Local (Remote Control) | Needs MSYS2 and the Rack folder |
 | Live tests against a running Rack | Local (Remote Control) | Needs Rack, limen and rackmaster |
 
@@ -281,6 +281,12 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Each Gibigiana tap has an output; a patched tap leaves the stereo sum unless *Patched tap stays in the sum* is on (off by default) | 2026-11-06 |
 | Gibigiana's LEVEL (default -6 dB) has no CV yet, and the sum goes through a gentle soft clip inside ±10 V; LEVEL CV waits until it has been played in Rack | 2026-11-06 |
 | Gibigiana's panel is 14 HP, layout C: STEP and CHANCE are knobs; LEVEL, PAN and the shared REPEAT, DUCK AMOUNT, CENTRE and WIDTH are trimpots; DENSITY stays CV only, as on Moleta. Trimpots may now take a row's secondary controls and a shared strip, not only CV amounts (see [design-system.md](design-system.md#parts)) | 2026-11-06 |
+| Gibigiana's step is the mean of the last two CLOCK intervals, so a swung clock reads as its average; a tempo change settles over two pulses. An interval over 2.5 steps is a stopped clock, ignored once, as on Moleta. Taps read at whole samples (no interpolation, since a tap never sweeps), and a change under clock jitter (4 samples or 0.1%) is ignored | 2026-11-06 |
+| A Gibigiana tap that moves (tempo or STEP) crossfades over 30 ms at equal power; a coin decision fades over 2 ms read ahead in the buffer, so the fade ends exactly on the hit: an unwanted tail is gone before the next note and a wanted note keeps its attack | 2026-11-06 |
+| Gibigiana's defaults: STEP 1½, 3, 4, 8; CHANCE 100%; PAN centred (equal power, -3 dB per side); DUCK amount 80%; WIDTH fully open, which bypasses the band. The band is a 12 dB/octave high-pass and low-pass, WIDTH × 5 octaves either side of a CENTRE of 20 Hz to 20 kHz. The duck follower is 2 ms attack, 150 ms release, full at 5 V; the soft clip is linear to 5 V and bends towards 10 V. All are starting points to tune by ear | 2026-11-06 |
+| Gibigiana's readout composes its fractions (¹⁄₃, ²⁄₃, 1¹⁄₂) from superior and inferior digits and the fraction slash: Inter Tight has ⅓ and ½ but no ⅔, and the composed forms look the same. A step out of reach is drawn dim, the display's dim ink | 2026-11-06 |
+| The panel generator draws dividers (a hairline across the panel, midway below a row) and plate rules (between two outputs on the plate), for Gibigiana's split between tap rows and shared settings and between the sum and the tap outputs | 2026-11-06 |
+| Gibigiana's coin loop is Moleta's `moleta::Coin`, included from `MoletaEngine.hpp`; its DSP is `src/GibigianaEngine.hpp`, with no Rack includes, tested by `make test-engine` | 2026-11-06 |
 
 ## Open questions
 

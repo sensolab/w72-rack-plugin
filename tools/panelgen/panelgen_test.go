@@ -352,3 +352,56 @@ func TestMoletaPanels(t *testing.T) {
 		}
 	}
 }
+
+func TestDividersAndPlateRules(t *testing.T) {
+	outs := []Control{{ID: "A", Kind: Output, Row: 0}, {ID: "B", Kind: Output, Row: 0}, {ID: "C", Kind: Output, Row: 0}}
+	m := &Module{Slug: "T", Name: "T", Family: "weather", HP: 8, Controls: outs, Dividers: []int{2}, PlateRules: []string{"A"}}
+	if err := m.check(); err != nil {
+		t.Fatal(err)
+	}
+	svg, err := panelSVG(m, testFaces(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Midway between A (20 px) and B (60 px), and midway below row 2 (249.5 + 24 px).
+	if !strings.Contains(svg, `<rect id="rule-A" x="`+mm(40-ruleWidth/2)+`"`) {
+		t.Error("plate rule not between A and B")
+	}
+	if !strings.Contains(svg, `<rect id="divider-2" x="`+mm(dividerInset)+`" y="`+mm(273.5-ruleWidth/2)+`"`) {
+		t.Error("divider not midway below row 2")
+	}
+	for name, bad := range map[string]*Module{
+		"divider on the plate":   {Slug: "T", Name: "T", Family: "weather", HP: 8, Controls: outs, Dividers: []int{0}},
+		"divider under the band": {Slug: "T", Name: "T", Family: "weather", HP: 8, Controls: outs, Dividers: []int{7}},
+		"rule after the last":    {Slug: "T", Name: "T", Family: "weather", HP: 8, Controls: outs, PlateRules: []string{"C"}},
+		"rule after no output":   {Slug: "T", Name: "T", Family: "weather", HP: 8, Controls: outs, PlateRules: []string{"X"}},
+	} {
+		if bad.check() == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestGibigianaPanel(t *testing.T) {
+	m, err := loadModule(filepath.Join("..", "..", "panels", "Gibigiana.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	knobs, trims, ins, outs := 0, 0, 0, 0
+	for _, p := range m.place() {
+		switch p.Kind {
+		case Knob:
+			knobs++
+		case Trimpot:
+			trims++
+		case Input:
+			ins++
+		case Output:
+			outs++
+		}
+	}
+	// 20 controls and 12 jacks, as the spec counts them.
+	if m.HP != 14 || knobs != 8 || trims != 12 || ins != 6 || outs != 6 {
+		t.Errorf("%d HP, %d knobs, %d trimpots, %d inputs, %d outputs", m.HP, knobs, trims, ins, outs)
+	}
+}

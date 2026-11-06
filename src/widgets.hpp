@@ -98,6 +98,10 @@ struct Readout : widget::TransparentWidget {
 	}
 
 	virtual std::string text(int i) = 0;
+	// A value that is set but has no effect right now is drawn dim.
+	virtual bool dim(int i) {
+		return false;
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer == 1) {
@@ -107,9 +111,9 @@ struct Readout : widget::TransparentWidget {
 				nvgFontFaceId(args.vg, font->handle);
 				nvgFontSize(args.vg, fontSize);
 				nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
-				nvgFillColor(args.vg, INK);
 				for (int i = 0; i < (int) baselines.size(); i++) {
 					std::string s = text(i);
+					nvgFillColor(args.vg, dim(i) ? nvgTransRGBAf(INK, DIM) : INK);
 					nvgText(args.vg, baselines[i].x, baselines[i].y, s.c_str(), NULL);
 				}
 			}

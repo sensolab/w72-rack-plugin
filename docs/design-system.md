@@ -57,6 +57,8 @@ Rack measures in pixels at 75 DPI, where 1 HP is exactly 15 px, so the grid belo
 | Output labels | `#1f2123` | On the plate |
 | Band title | `#ffffff` | |
 | Mark | `#9aa0a5` strokes | Its two cyans (`#22d3ee`, `#0891a8`) never change |
+| Divider | `#34373a` | A 1 px hairline between groups of rows, 12 px in from each side |
+| Plate rule | `#b4b9be` | A 1 px rule between groups of outputs, 6 px in from the plate's top and bottom |
 | Light | white | `MediumLight<WhiteLight>`, 3 mm |
 
 The family bands:
@@ -104,7 +106,7 @@ A trimpot is first a CV amount. It also takes a row's secondary controls, such a
 
 ## Displays
 
-Designed before any module needed one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; `src/widgets.hpp` draws the flat button and the bars (Ghisa uses them) and the readout (Moleta and Moleta + use it), and the keyboard waits for its first module. The sizes come from the mocks and were tuned by eye.
+Designed before any module needed one, and mocked up on Ghisa and Scighera. The generator builds the wells and positions; `src/widgets.hpp` draws the flat button and the bars (Ghisa uses them) and the readout (Moleta, Moleta + and Gibigiana use it), and the keyboard waits for its first module. The sizes come from the mocks and were tuned by eye.
 
 A display has two halves. The well and its label are panel SVG, made by the generator like everything else. What lights up is a widget drawn live with NanoVG on Rack's light layer, so it stays lit when the room is dimmed and sharp at any zoom.
 
@@ -118,6 +120,8 @@ A display has two halves. The well and its label are panel SVG, made by the gene
 - **Signage, not LEDs.** A readout is type, as on Noorda's signs: Inter Tight SemiBold, 14 px for the value and 6.5 px capitals for its name. Seven segments can't spell a note or a scale, and a dot matrix holds one line at this size and comes apart at 100% zoom.
 - **White ink**, `#f1f3f4`, like the lights, so colour on a panel still means family. A highlight colour is left open until a module needs one, and is chosen then for that use.
 - **One row.** A readout takes one 48 px row: a well 38 px tall, 10 px in from each side, ground `#151718`, a `#2c2f32` hairline, corners 1.5 like the plate. Half rows wait until a module needs them.
+- **Dim for a value with no effect.** A readout value that is set but does nothing right now, such as a Gibigiana step that reaches past its buffer, is drawn in the dim ink.
+- **Fractions are composed.** Inter Tight has ⅓ and ½ but no ⅔, so a readout writes every fraction from superior digits, the fraction slash and inferior digits (`¹⁄₃`, `²⁄₃`, `1¹⁄₂`), which match its own fractions.
 - **Flat lights for arrays, round for single states.** The keyboard's square light is the first W72 part; bars are the same part, stretched. Off is `#2b2d30`; dim is the ink at about 40%.
 - **A sample in the browser.** The module browser draws a panel with no module behind it, so each display shows a sample value there.
 - **Generator kinds.** `bars` (`count`) and `keyboard` are displays: a well 38 px tall and 10 px in from each side, with the label inside it at the foot. `button` is a 14 px bezel with its label below. `button-grid` (`cols`, `rows`) is buttons at a 30 px (2 HP) pitch both ways, centred, with no label. The generator draws the wells and bezels; the header lists the boxes and centres the widget draws its lights in (bars left to right, keyboard C to B, grids row by row). `readout` (`cells`, `rules`) is a well with one cell per column: each cell's name is an outline in the panel, below the value, and the widget draws the value live, 14 px, centred on the column. The header lists each cell's value baseline and a sample value for the module browser. `rules` are hairlines between groups of cells.
@@ -128,6 +132,8 @@ A display has two halves. The well and its label are panel SVG, made by the gene
 The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by `tools/panelgen`, a Go program (Go is already in the toolchain for the MCP server). Nobody edits a panel SVG by hand.
 
 1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`, `button`, `button-grid`, `bars`, `keyboard`, `readout`), a label and a row, and optionally a `dy` nudge.
+
+   A module may set `dividers`, rows to draw a hairline midway below, and `plateRules`, outputs to draw a rule after on the plate. Gibigiana uses both, to set its shared strip apart from the tap rows and its stereo sum from the tap outputs.
 
    A module may also set `columns` (`inset`, `pitch`, in px), a fixed grid of columns; a control then takes `col` (from 0) instead of sharing its row's width, and a row holds one kind or the other. Moleta uses it: seven columns 37 px apart, 24 px in from the edges, which the equal shares of an 18 HP row can't give. With columns, the output plate runs the panel's width less its margins.
 2. **Rows count from the bottom.** Row 0 is the output row on the plate (y = 345.5 px), and each row up is 48 px higher. Controls in a row share its width equally, in the order they are listed, so a description never holds a coordinate.

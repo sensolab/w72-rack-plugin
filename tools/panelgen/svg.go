@@ -109,9 +109,27 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 	}
 	w.text("title", d, colTitle)
 
-	// Output plate, behind the output labels.
+	// Output plate, behind the output labels, with a rule between the groups of
+	// outputs the description separates.
 	if span, ok := plateSpan(m, placed); ok {
 		w.rect("plate", span[0], plateTop, span[1]-span[0], plateBottom-plateTop, plateRadius, colPlate)
+	}
+	var outs []Placed
+	for _, p := range placed {
+		if p.Kind == Output {
+			outs = append(outs, p)
+		}
+	}
+	for _, id := range m.PlateRules {
+		i := m.outputIndex(id)
+		x := (outs[i].X + outs[i+1].X) / 2
+		w.rect("rule-"+id, x-ruleWidth/2, plateTop+plateRuleInset, ruleWidth, plateBottom-plateTop-2*plateRuleInset, 0, colPlateRule)
+	}
+
+	// Dividers between groups of rows: hairlines midway below the rows they name.
+	for _, row := range m.Dividers {
+		y := rowY(row) + rowPitch/2
+		w.rect(fmt.Sprintf("divider-%d", row), dividerInset, y-ruleWidth/2, W-2*dividerInset, ruleWidth, 0, colDivider)
 	}
 
 	// Wells and bezels, under their labels.

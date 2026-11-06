@@ -34,6 +34,13 @@
       "description": "Expander that adds four outputs to the Moleta on its left, each with a ratio, a chance and a length",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/moletaplus.md",
       "tags": ["Clock generator", "Clock modulator", "Expander", "Random"]
+    },
+    {
+      "slug": "Gibigiana",
+      "name": "Gibigiana",
+      "description": "Clocked echo lane: four taps on the clock grid, each with a chance per hit; the coin rides with the echo",
+      "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/gibigiana.md",
+      "tags": ["Delay", "Random"]
     }
   ]
 }

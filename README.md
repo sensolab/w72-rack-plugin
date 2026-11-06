@@ -8,8 +8,9 @@ Modules for [VCV Rack](https://vcvrack.com/) by WinterOf72, named in Milanese di
 | [Ghisa](docs/modules/ghisa.md) | A shift register whose taps are a control: a drawn shape, slid through the register by CV, read as a chord and a bass. |
 | [Moleta](docs/modules/moleta.md) | A master clock whose four outputs each have a ratio (fractions included), a chance and a length; a REPEAT knob loops the coin flips into a phrase. |
 | [Moleta +](docs/modules/moletaplus.md) | Its expander: place it directly to the right of a Moleta for outputs 5 to 8. |
+| [Gibigiana](docs/modules/gibigiana.md) | A clocked echo lane: four taps on the clock grid, each with a chance per hit; the coin rides with the echo, so a note and its tail come back whole or not at all. |
 
-Scighera and Gibigiana are planned. Each module has a page in [docs/modules](docs/modules/README.md). The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build), and the panel style is in [docs/design-system.md](docs/design-system.md).
+Scighera is planned. Each module has a page in [docs/modules](docs/modules/README.md). The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build), and the panel style is in [docs/design-system.md](docs/design-system.md).
 
 ## Install
 
@@ -25,7 +26,7 @@ make          # builds the plugin
 make install  # copies it into Rack's user plugins folder
 ```
 
-`make test-engine` runs the host tests of Moleta's engine and Brumista's engine watch with the plain host compiler; it needs no Rack SDK.
+`make test-engine` runs the host tests of Moleta's and Gibigiana's engines and Brumista's engine watch with the plain host compiler; it needs no Rack SDK.
 
 Panels are generated. Edit `panels/<Slug>.json` and run `make panels` (needs Go), which rewrites `res/<Slug>.svg` and `src/<Slug>Panel.hpp`. Do not edit those by hand.
 
@@ -47,7 +48,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - [limen](https://github.com/gosub/forsitan-modulare) by gosub (forsitan modulare, GPL-3.0-or-later) is the bridge module that Brumista follows. Brumista speaks limen's command protocol, and its socket loop follows the shape of limen's. See [Relation to limen](docs/modules/brumista.md#relation-to-limen).
 - Ghisa's root bass scores intervals as the Harmonic mode of bss in [cvly-modules](https://github.com/Lyqst/cvly-modules) by Lyqst (GPL-3.0) does.
-- Panel text is set in [Inter Tight](https://github.com/rsms/inter-tight) (SIL Open Font License 1.1, in [tools/panelgen/fonts](tools/panelgen/fonts)). The SemiBold weight also ships in [res/fonts](res/fonts), with its licence, for Moleta's readout.
+- Panel text is set in [Inter Tight](https://github.com/rsms/inter-tight) (SIL Open Font License 1.1, in [tools/panelgen/fonts](tools/panelgen/fonts)). The SemiBold weight also ships in [res/fonts](res/fonts), with its licence, for the readouts of Moleta and Gibigiana.
 
 ## Licence
 

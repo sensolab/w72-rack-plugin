@@ -64,14 +64,14 @@ jobs:
       - name: Check the dispatch table against protocol/commands.json
         run: tools/check-commands.sh
 
-  # Moleta's engine and Brumista's engine watch have no Rack includes, so their tests build
+  # Moleta's and Gibigiana's engines and Brumista's engine watch have no Rack includes, so their tests build
   # with the host compiler alone.
   engine:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Host tests of the Moleta engine and the Brumista engine watch
+      - name: Host tests of the Moleta and Gibigiana engines and the Brumista engine watch
         run: make test-engine
 
   panels:

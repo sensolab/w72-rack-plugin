@@ -17,6 +17,7 @@ The design lives in [docs/concept.md](docs/concept.md), [docs/architecture.md](d
 - **`protocol/commands.json` is the source of truth for Brumista's commands.** The C++ dispatch in `src/BrumistaCommands.cpp` is checked against it by `tools/check-commands.sh`, and the Go server generates its tools from it. Change all three together.
 - **Every module has a manual page** in `docs/modules/`, listed in `docs/modules/README.md`, with Rack's own render of its panel.
 - **Moleta's DSP lives in `src/MoletaEngine.hpp`**, which has no Rack includes and is shared with Moleta +. Change it together with `tests/moleta_engine_test.cpp`.
+- **Gibigiana's DSP lives in `src/GibigianaEngine.hpp`**, also free of Rack includes, and reuses Moleta's coin loop. Change it together with `tests/gibigiana_engine_test.cpp`.
 - **Module slugs are permanent**: plain ASCII, never renamed once shipped.
 
 ## Checks
@@ -25,7 +26,7 @@ The design lives in [docs/concept.md](docs/concept.md), [docs/architecture.md](d
 tools/check-commands.sh                  # commands.json against the C++ dispatch
 (cd mcp && go test ./...)                # MCP server
 (cd tools/panelgen && go test ./...)     # panel generator and generated files
-make test-engine                         # Moleta's engine and Brumista's engine watch, host compiler only, no SDK
+make test-engine                         # Moleta's and Gibigiana's engines and Brumista's engine watch, host compiler only, no SDK
 make                                     # plugin, needs the Rack SDK (RACK_DIR)
 ```
 
