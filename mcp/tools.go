@@ -70,8 +70,13 @@ func (c Command) inputSchema() map[string]any {
 	}
 }
 
+// instructions reach every client at connection, as limen's skill does for limen: call
+// hello first. Its warning is the one sign that Rack's engine has stopped, since every
+// other command still answers.
+const instructions = `Brumista reads and edits a running Rack patch. Call hello before anything else, and again if Rack may have restarted: it reports Brumista's version, the commands this build supports and whether Rack's engine is running. If hello's reply carries a warning, tell the user before going on: while the engine is stopped, modules don't process, knob changes don't take effect and voltages and displays don't move, so what you read will mislead you.`
+
 func newServer(spec *Spec, bridge *Bridge) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "brumista", Version: version}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "brumista", Version: version}, &mcp.ServerOptions{Instructions: instructions})
 	for _, c := range spec.Commands {
 		server.AddTool(&mcp.Tool{
 			Name:        c.Name,

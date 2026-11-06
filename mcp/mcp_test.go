@@ -160,6 +160,14 @@ func TestHello(t *testing.T) {
 	}
 }
 
+// The instructions every client gets at connection: call hello first, and heed its warning.
+func TestInstructionsAskForHelloFirst(t *testing.T) {
+	text := session(t, "127.0.0.1:1").InitializeResult().Instructions
+	if !strings.Contains(text, "hello") || !strings.Contains(text, "warning") {
+		t.Errorf("instructions don't ask for hello first: %q", text)
+	}
+}
+
 func TestModuleErrorIsToolError(t *testing.T) {
 	cs := session(t, fakeRack(t, brumistaHello))
 	text, isErr := call(t, cs, "fail", nil)
