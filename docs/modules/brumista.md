@@ -61,7 +61,11 @@ You now have an agent that can see and edit the rack you're playing.
 
 ## Where it comes from
 
-<!-- Photo to come: a historical photo of a brumista, a Milanese cab driver, with his horse-drawn carriage, public domain or CC-licensed, with its credit. -->
+![Public horse-drawn cabs in Piazza del Duomo, Milan](brumista-photo.jpg)
+
+*Public horse-drawn cabs in Piazza del Duomo, Milan, c. 1928–1935.
+Photo: Giulio Galimberti. Civico Archivio Fotografico, Comune di Milano (FM C 225/2).
+Reproduced for non-commercial purposes; not covered by the plugin's license.*
 
 *Brumista: the old Milanese cab driver. It carries commands into a running Rack, where it's told.*
 
