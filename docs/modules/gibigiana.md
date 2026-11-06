@@ -1,101 +1,84 @@
 # Gibigiana
 
-*The patch of reflected sunlight that dances on a wall, thrown off water or a window: it comes back from a few places at once, and only some of them catch the light.*
+*Four echoes on the clock grid, each with its own chance of coming back.*
 
-Gibigiana is a clocked echo lane. It gives one voice its reflections on the clock grid: four taps, each a set number of clock steps behind the input, each with its own chance of coming back. The coins roll once per hit, and each decision is stored with the audio it belongs to, so a note and its tail come back whole or not at all. Gibigiana outputs only the reflections; the dry voice stays wherever it already is in the mix. There is no feedback: every reflection is one bounce of the input.
+## What it does
 
-- **Family:** weather and light · **Width:** 14 HP · **Slug:** `Gibigiana` · **Since:** 2.9.0
+Gibigiana gives one voice its echoes, in time with the clock. It has four taps, and each one plays the voice back a set number of clock steps later. Each tap also has a chance. Some notes come back from one tap, some from three, some from none, so the echo answers the voice instead of copying it.
 
-## Getting started
+Each tap has two main knobs. STEP sets how far behind the voice it plays, from a third of a step to 16 steps. CHANCE sets how often it plays at all. A note and its tail always come back together, or not at all. Like Moleta, REPEAT locks the chances into a phrase, and CHANCE then thins it without reshuffling it.
 
-1. Patch a voice's dry output into **IN** (it can stay in the mix as well) and the clock it plays on into **CLOCK**. Patch **L** and **R** into a mixer channel of their own.
-2. A fresh Gibigiana returns every hit at 1½, 3, 4 and 8 clock steps, each at -6 dB. The taps are silent until two clock pulses have set the step.
-3. Turn a tap's **CHANCE** down to make it come back only sometimes. Each clock pulse is a hit and rolls every tap's coin; patch the voice's gate into **GATE** and each note rolls them instead.
-4. When the reflections fall into a pattern you like, turn **REPEAT** fully right: the coins lock into a loop of 16 hits per tap.
-5. Patch the anchor voice (a kick, say) into **DUCK** so the reflections step aside when it plays.
+Gibigiana outputs only the echoes, so the dry voice stays where it is in your mix. Every echo is a single bounce, with no feedback. It's built for short voices, drums, plucks and melodies, but anything you can clock works, even CV. Two trimpots shape the echoes' tone, and a DUCK input pulls them down when another voice, like the kick, plays.
 
-## Panel
+Gibigiana is 14 HP wide. It needs a voice in IN and a clock in CLOCK.
+
+## The panel
 
 ![Gibigiana panel](gibigiana.png)
 
 | Control | What it does |
 | --- | --- |
-| Readout | Each tap's step over its number. A step drawn dim reaches past the 20 s buffer at the current tempo, and that tap is silent. |
-| STEP 1 to 4 | How many clock steps behind the input the tap reads, in 14 steps: ⅓, ½, ⅔, 1, 1⅓, 1½, 2, 2⅔, 3, 4, 6, 8, 12 and 16. |
-| CHANCE 1 to 4 | The probability that a hit comes back at this tap, 0 to 100%. |
-| LEVEL 1 to 4 | The tap's level, from silent to 0 dB; the middle, the default, is -6 dB. |
-| PAN 1 to 4 | The tap's place in the stereo sum, equal power, centred by default. |
-| CENTRE | The centre of the band every tap goes through, 20 Hz to 20 kHz; the middle is about 630 Hz. |
-| WIDTH | The band's width. Fully right, the default, the band is open and does nothing; turning it left narrows a high-pass and a low-pass around CENTRE, down to one frequency at the far left. |
-| REPEAT | How often the coin loops are redrawn, as on Moleta (see below). One knob for all taps. |
-| DUCK | How far the DUCK input pulls the reflections down, 0 to 100% (default 80%). |
-| IN | The voice, mono. Reads the first channel. |
-| CLOCK | One step per rising edge. Required: unpatched, the taps fall silent. |
-| GATE | Each rising edge is a hit and rolls the coins. Unpatched, every CLOCK pulse is a hit. |
-| RESET | A trigger starts every coin loop from its first number. |
-| DENSITY | CV added to every CHANCE, 10% per volt. |
-| DUCK (input) | A sidechain, usually the anchor voice's audio. |
-| L, R | The stereo sum of the taps still in it, through a gentle soft clip that keeps it inside ±10 V. |
-| 1 to 4 | Each tap alone, mono, after the band, LEVEL and the duck. Patched, a tap leaves the sum unless *Patched tap stays in the sum* is on. |
+| Readout | Each tap's step. A dim step is too long for the buffer at this tempo, and that tap is silent. |
+| STEP 1 to 4 | How many clock steps later the tap plays: ⅓, ½, ⅔, 1, 1⅓, 1½, 2, 2⅔, 3, 4, 6, 8, 12 or 16. |
+| CHANCE 1 to 4 | How often a note comes back from this tap. Fully right, always. |
+| LEVEL 1 to 4 | How loud the tap is. The middle is -6 dB. |
+| PAN 1 to 4 | Where the tap sits in the stereo output. |
+| CENTRE | The tone of all four taps. Does nothing until you turn WIDTH left. |
+| WIDTH | Fully right, the echoes are untouched. Turn it left to narrow them around CENTRE, like a band-pass. |
+| REPEAT | Fully left, every note is a fresh coin flip. Fully right, the pattern locks. |
+| DUCK | How far the DUCK input pulls the echoes down. |
+| IN | The voice. Mono. |
+| CLOCK | Sets the step. Required. |
+| GATE | Optional. Patch the voice's gate here and each note gets its own coin flips. Without it, each clock does. |
+| RESET | A trigger restarts the locked pattern from the top. |
+| DENSITY | CV that adds to or takes from every CHANCE at once. |
+| DUCK input | The voice that pushes the echoes aside, usually the kick. |
+| L, R | The echoes, in stereo. |
+| 1 to 4 | Each tap on its own. Patching one takes that tap out of L and R. |
 
-In the module browser the readout shows a sample: 1½, 3, ⅔ and 8.
+## Right-click options
 
-## How it works
+The defaults are fine to leave alone.
 
-- **The step.** The step is the time between CLOCK pulses: the mean of the last two intervals, so a swung clock reads as its average. A tap reads the buffer STEP steps behind the write head, rounded to the nearest sample. An interval more than two and a half steps long is taken as the clock having stopped and is ignored once; a second one in a row is the new tempo. The taps keep their place while the clock is stopped, and fall silent when CLOCK is unpatched.
-- **Tempo changes.** When the tempo or a STEP changes, the tap crossfades to its new place over 30 ms instead of gliding there, so reflections don't warble. Changes smaller than clock jitter (a few samples, or 0.1%) are ignored.
-- **Hits and coins.** On each hit every tap draws from its coin loop and decides whether this hit comes back there. The decision is written into the buffer next to the audio, and covers everything from that hit until the next one, so a note and its tail share one fate, and the decision travels with the sound to every tap that reads it. Before the first hit, nothing comes back. Each decision fades in or out over 2 ms that end exactly on the hit: a tail that isn't wanted is gone before the next note starts, and a note that is wanted keeps its attack whole.
-- **The coin loop.** As on Moleta: each tap keeps a loop of 16 stored random numbers (8 with *Coin loop*) and a pointer. On each hit the number at the pointer is redrawn with probability 1 − REPEAT, the tap sounds if the number is below CHANCE plus DENSITY (clamped to 0 to 100%), and the pointer moves on. Fully right, the reflections repeat as a phrase of 16 (or 8) hits; lowering CHANCE thins that phrase without reshuffling it. RESET starts every loop from its first number.
-- **The buffer.** A fixed 20 s, sized in seconds rather than tempo: 16 quarter-note steps down to 48 BPM, or 16 eighths down to 24 BPM. It takes about 4.8 MB at 48 kHz. A tap that would reach past it falls silent rather than wrapping, and its step dims on the readout. Changing the sample rate empties it.
-- **The band.** CENTRE and WIDTH set one band for all taps: a 12 dB/octave high-pass and low-pass, WIDTH × 5 octaves either side of CENTRE. Each tap is filtered after it is read, before LEVEL and pan.
-- **The duck.** The DUCK input goes through an envelope follower with a fixed 2 ms attack and 150 ms release. At 5 V and above it pulls the taps down by the whole DUCK amount; the tap outputs and the sum are both ducked.
-- **The sum.** L and R carry the panned taps that are still in the sum. Up to 5 V the sum is untouched; above it, it bends smoothly towards 10 V.
-- **Saved with the patch.** The steps, each tap's coin loop (its numbers and pointer) and the menu choices, so a locked phrase reopens as it was. The buffer itself isn't saved.
-
-## Right-click menu
-
-| Item | Choices | Default |
+| Option | What it does | Default |
 | --- | --- | --- |
-| Coin loop | 8 or 16 hits | 16 |
-| Patched tap stays in the sum | On or off | Off |
+| Patched tap stays in the sum | Keeps a tap in L and R even when its own output is patched. | Off |
+| Coin loop | How long a locked pattern is: 8 or 16 notes. | 16 |
 
-## In a patch
+## Samples
 
-- **Kick-keyed echo lane:** a sparse percussion voice into IN, the kick's dry output into DUCK, L and R on their own mixer channel. The echo lives in the gaps the kick leaves.
-- **Dotted counterpoint:** a melody into IN with GATE from its sequencer, one tap at 1½ and one at 3, both at 100%: the line answers itself off the beat.
-- **Ghost notes:** four taps at ⅓, ⅔, 1⅓ and 2⅔ at low CHANCE and LEVEL, with REPEAT right once a pattern sits well.
-- **One tap, its own processing:** patch tap 4 into a filter or a pitch shifter and back into the mix; it leaves the sum, the other three stay.
-- **A wash:** L and R into Prince Of Perception or a reverb. Gibigiana makes the reflections; the tail comes from downstream.
+### Start here: an echo that answers back
 
-## Background
+1. Add Moleta and VCV's VCO, ADSR, VCA, Mixer and Audio.
+2. Patch Moleta's output **1** into the ADSR's gate, and the VCO through the VCA, with the ADSR on its CV. That's the voice.
+3. Patch the VCA into a mixer channel, and also into Gibigiana's **IN**. Patch Moleta's **BEAT** into Gibigiana's **CLOCK**.
+4. Patch Gibigiana's **L** and **R** into a mixer channel of their own. After two beats, every blip comes back at 1½, 3, 4 and 8 beats.
+5. Turn each tap's **CHANCE** down to about half.
 
-Delay is where the saved patches compose. In a scan of 176 patches, Prince Of Perception appears in 99, two or more of them in 43. Its instances are clocked in 163 of 165, ducked in 116, and nearly always fully wet on a mixer channel of their own, while its looper and freeze controls are never touched. Seven of the technique cards are echo techniques, and five of them (a kick-keyed echo lane, a high-passed accent echo, dotted counterpoint, loop-locked heterophony, multitap ghost notes) want reflections on the grid with a chance, not a longer tail. The other two need feedback and stay with Prince and Prism.
+You now have echoes that come back some of the time, from different places.
 
-| Module | What it does | How Gibigiana differs |
-| --- | --- | --- |
-| FLAG Prince Of Perception | Clocked delay with feedback, a DJ filter, a duck input and a looper | Four taps, a chance per tap, no feedback |
-| FrozenWasteland Portland Weather | 16 taps on a grid of the clock, pitch and filter per tap | Portland Weather can give each tap a chance with two expanders, rolled per clock. Gibigiana rolls per hit and carries the coin with the echo |
-| 4ms Tapographic Delay | Taps placed by tapping, with a level per tap | Taps on clock steps, each with a chance |
-| Submit Chrono | Three heads at clocked ratios, thirds included | A chance per tap, an output per tap |
-| CVfunk Tri Delay | Three taps as offsets of one time | Clocked steps, a chance per tap |
+### More ideas
 
-The panel follows the trimpot rule widened for it (see [design-system.md](../design-system.md#parts)): what a tap is about, its STEP and CHANCE, are knobs; LEVEL, PAN and the shared settings are trimpots. The tap columns are 52.5 px apart, 26.25 px in from the edges, the equal shares of four; the LEVEL and PAN pairs are the equal shares of eight. A hairline divides the tap rows from the shared ones, and a rule on the plate divides the sum from the tap outputs. `panels/Gibigiana.json` describes it.
+**An echo lane around the kick.** A sparse percussion voice into IN, the kick into DUCK. The echoes fill the gaps the kick leaves.
 
-## Saved state
+**Dotted counterpoint.** A melody into IN, its gate into GATE. One tap at 1½ and one at 3, both always on. The line answers itself off the beat.
 
-What Gibigiana saves beyond its parameters, as Brumista's `get_module_data` reads it:
+**Ghost notes.** Four taps at ⅓, ⅔, 1⅓ and 2⅔, with low CHANCE and LEVEL. When a pattern sits well, turn REPEAT right.
 
-| Key | Holds |
-| --- | --- |
-| `steps` | Four objects `{"p", "q"}`, taps 1 to 4: the step itself, p/q clock steps. On load, each STEP knob goes to the step with that value, or the nearest one. |
-| `coins` | Four objects, taps 1 to 4: `slots`, the 16 stored numbers (0 to 1), and `pointer`, the next slot |
-| `coinLoop` | 8 or 16 |
-| `keepPatched` | Whether a patched tap stays in the sum |
+**A long tail.** Patch L and R into a reverb. Gibigiana makes the echoes, and the reverb makes the tail.
 
-A missing or unknown value loads as its default.
+**When nothing comes back.** Gibigiana needs a clock in CLOCK and two clock pulses before it knows the step. A dim step on the readout means the tap is too long for this tempo.
 
-## Open questions
+<!-- Sample patch to come: built in Rack with VCV Fundamental modules only, saved to patches/. -->
 
-- [ ] The duck's attack and release, and the soft clip's knee, by ear against Prince Of Perception.
-- [ ] LEVEL with CV, after playing it in Rack.
-- [ ] Taps 5 to 8, or a send and return per tap, as an expander.
+## Where it comes from
+
+<!-- Photo to come: a historical photo of sunlight reflected off the water of a Milan naviglio onto a wall, public domain or CC-licensed, with its credit. -->
+
+*Gibigiana: the patch of sunlight that dances on a wall, thrown off water or a window. It comes back from a few places at once, and only some of them catch the light.*
+
+Delay is where my patches do their composing. Prince Of Perception is in more than half of them, nearly always clocked, ducked and fully wet on its own mixer channel. What I wanted from it was echoes on the grid that come back only some of the time, not a longer tail. Gibigiana does only that.
+
+FLAG's Prince Of Perception has feedback, a filter and a duck, but no chance. FrozenWasteland's Portland Weather can give each tap a chance with two expanders, rolled per clock. Gibigiana rolls per note and carries the coin with the echo. 4ms Tapographic Delay, Submit Chrono and CVfunk Tri Delay place taps in other ways, without chance.
+
+Timing details, edge cases and the saved state are in the [reference](gibigiana-reference.md).

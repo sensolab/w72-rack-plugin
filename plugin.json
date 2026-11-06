@@ -10,35 +10,35 @@
     {
       "slug": "Brumista",
       "name": "Brumista",
-      "description": "Bridge that lets Claude read and patch a running Rack",
+      "description": "Lets an AI agent read and patch your running Rack.",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/brumista.md",
       "tags": ["Utility"]
     },
     {
       "slug": "Ghisa",
       "name": "Ghisa",
-      "description": "Shift register whose taps are a control: a drawn shape, slid through the register by CV, read as a chord and a bass",
+      "description": "Feed Ghisa a melody, and it plays chords made from the notes the melody just played.",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/ghisa.md",
       "tags": ["Sample and hold", "Polyphonic"]
     },
     {
       "slug": "Moleta",
       "name": "Moleta",
-      "description": "Master clock whose four outputs each have a ratio (fractions included), a chance and a length; the coin flips can loop",
+      "description": "A clock whose four outputs each skip beats by chance, and can lock what they skipped into a phrase.",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/moleta.md",
       "tags": ["Clock generator", "Clock modulator", "Random"]
     },
     {
       "slug": "MoletaPlus",
       "name": "Moleta +",
-      "description": "Expander that adds four outputs to the Moleta on its left, each with a ratio, a chance and a length",
+      "description": "Four more outputs for the Moleta on its left, each with its own ratio, chance and length.",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/moletaplus.md",
       "tags": ["Clock generator", "Clock modulator", "Expander", "Random"]
     },
     {
       "slug": "Gibigiana",
       "name": "Gibigiana",
-      "description": "Clocked echo lane: four taps on the clock grid, each with a chance per hit; the coin rides with the echo",
+      "description": "Four echoes on the clock grid, each with its own chance of coming back.",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/gibigiana.md",
       "tags": ["Delay", "Random"]
     }
