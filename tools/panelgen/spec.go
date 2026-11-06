@@ -46,6 +46,15 @@ const (
 	colPlateLabel = "#1f2123"
 	colTitle      = "#ffffff"
 	colMark       = "#9aa0a5"
+	colDivider    = "#34373a" // a hairline between groups of rows, on the ground
+	colPlateRule  = "#b4b9be" // a rule between groups of outputs, on the plate
+)
+
+// Rules and dividers, in px.
+const (
+	ruleWidth      = 1.0
+	dividerInset   = 12.0 // in from each side of the panel
+	plateRuleInset = 6.0  // in from the plate's top and bottom
 )
 
 var families = map[string]string{
@@ -104,6 +113,10 @@ type Module struct {
 	// an equal share of the width.
 	Columns  *Columns  `json:"columns,omitempty"`
 	Controls []Control `json:"controls"`
+	// Dividers are hairlines across the panel, each midway below the row it names.
+	Dividers []int `json:"dividers,omitempty"`
+	// PlateRules are rules on the plate, each after the output it names.
+	PlateRules []string `json:"plateRules,omitempty"`
 }
 
 // Columns is a fixed grid of columns: the first centre Inset px from the left
@@ -250,7 +263,43 @@ func (m *Module) check() error {
 			return fmt.Errorf("row %d holds %d jacks; %d HP fits at most %d", row, n, m.HP, max(m.HP/2, 1))
 		}
 	}
+	for _, row := range m.Dividers {
+		// Below row 0 is the plate; a divider under the top row would cut the band.
+		if row < 1 || rowY(row)-rowPitch/2 < bandY+bandH {
+			return fmt.Errorf("divider below row %d is off the panel", row)
+		}
+	}
+	for _, id := range m.PlateRules {
+		if i := m.outputIndex(id); i < 0 || i == m.outputCount()-1 {
+			return fmt.Errorf("plate rule after %q: not an output with another after it", id)
+		}
+	}
 	return nil
+}
+
+// outputIndex is an output's place in row 0, counting from 0, or -1.
+func (m *Module) outputIndex(id string) int {
+	n := 0
+	for _, c := range m.Controls {
+		if c.Kind != Output {
+			continue
+		}
+		if c.ID == id {
+			return n
+		}
+		n++
+	}
+	return -1
+}
+
+func (m *Module) outputCount() int {
+	n := 0
+	for _, c := range m.Controls {
+		if c.Kind == Output {
+			n++
+		}
+	}
+	return n
 }
 
 func (m *Module) width() float64 { return pxPerHP * float64(m.HP) }
