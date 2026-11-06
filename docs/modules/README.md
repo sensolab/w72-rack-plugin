@@ -8,9 +8,10 @@ One page per module: what it does, its panel, and how to use it. The design behi
 | [Ghisa](ghisa.md) | Trades | 8 | Shift register whose taps are a control: a drawn shape, slid through the register by CV, read as a chord and a bass | 2.3.0 |
 | [Moleta](moleta.md) | Trades | 18 | Master clock whose four outputs each have a ratio (fractions included), a chance and a length; the coin flips can loop | 2.8.0 |
 | [Moleta +](moletaplus.md) | Trades | 11 | Expander that adds four outputs to the Moleta on its left, each with a ratio, a chance and a length | 2.8.0 |
+| [Gibigiana](gibigiana.md) | Weather and light | 14 | Clocked echo lane: four taps on the clock grid, each with a chance per hit; the coin rides with the echo | 2.9.0 |
 
 Each module's `manualUrl` in `plugin.json` points to its page here on `main` (`https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/<slug-lowercase>.md`), so Rack's right-click Manual opens it. A new module ships with its page and that link.
 
 The panel images are Rack's own renders, not the panel SVGs (GitHub can't draw Rack's knobs, jacks and lights). Regenerate them after a panel change with `Rack -u <empty folder> -t 2`, with only the W72 `.vcvplugin` in that folder's `plugins-<os>-<arch>/`; Rack writes `screenshots/W72/<Slug>.png`, which becomes `<slug-lowercase>.png` here.
 
-Scighera and Gibigiana are approved names for modules still to come; the glossary in [concept.md](../concept.md#glossary) has the candidates.
+Scighera is an approved name for a module still to come; the glossary in [concept.md](../concept.md#glossary) has the candidates.
