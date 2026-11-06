@@ -92,11 +92,13 @@ Rack's stock parts, chosen for a dark panel, and the flat button, the first cust
 | --- | --- | --- |
 | Main control (at most one per module) | `RoundLargeBlackKnob` | 12.19 mm |
 | Other controls | `RoundBlackKnob` | 9.60 mm |
-| CV amounts | `Trimpot` | 6.05 mm |
+| CV amounts, secondary controls | `Trimpot` | 6.05 mm |
 | Jacks | `DarkPJ301MPort` | 8.03 mm |
 | Screws | `ScrewBlack` | 5.08 mm |
 | Lights | `MediumLight<WhiteLight>` | 3 mm |
 | Button | custom: latching, 14 px bezel, flat square light 9 px | see [Displays](#displays) |
+
+A trimpot is first a CV amount. It also takes a row's secondary controls, such as a level or a pan beside the knobs that define the row, and a strip of settings the rows share, where a full knob for each would not fit the width. What a row is about stays a knob. Gibigiana is the first panel to use them this way.
 
 `DarkPJ301MPort` and `ScrewBlack`, not the `Themed*` classes: a themed part turns light when *Use dark panels if available* is off, and these panels are always dark.
 

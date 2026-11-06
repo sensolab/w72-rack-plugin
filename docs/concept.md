@@ -50,7 +50,7 @@ Three names are shipped modules (Brumista and Ghisa in the VCV Library, Moleta i
 | Ghisa | The Milanese traffic warden, nicknamed after the old helmet | A shift register whose taps are a control: chords and a bass from the melody's recent past ([manual](modules/ghisa.md)) | Shipped ([Library](https://library.vcvrack.com/W72/Ghisa)) |
 | Moleta | The itinerant knife grinder (also Molèta, Molètta), pedalling a steady wheel that throws sparks at random | A master clock whose outputs each have a ratio, a chance and a length ([manual](modules/moleta.md)); its expander, [Moleta +](modules/moletaplus.md), adds outputs 5 to 8 | Shipped (2.8.0) |
 | Scighera | The thick Po Valley fog | Diffusion, reverb, smeared noise | Approved |
-| Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | Shimmer, moving reflection or delay | Approved |
+| Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | A clocked echo lane: four taps on the clock grid, each with a chance per hit | Approved, designed |
 | Magutt | The bricklayer or labourer who builds what the architect drew | Passed over for the bridge: Claude builds the patch you design | Candidate |
 | Tram | The city's trams, carrying people between stops on fixed rails | Passed over for the bridge: carries commands on a fixed protocol | Candidate |
 | Naviglio | The canals that carried the Duomo's marble into the city | Passed over for the bridge: a channel into the rack | Candidate |
@@ -90,4 +90,4 @@ No extra runtime should be needed to use it: the module plus one downloaded bina
 
 - [x] Will W72 hold sound modules as well as studio tools, or will tools get their own plugin later? W72 holds both: the families in the naming grammar share one plugin.
 - [x] What is the panel style: what does a Milanese winter look like on a W72 panel? Metropolitana, after the Milan Metro's signage: see [design-system.md](design-system.md).
-- [x] Which module comes next? Ghisa shipped second (2.3.0), then Moleta and its expander (2.8.0), and Scighera will probably follow.
+- [x] Which module comes next? Ghisa shipped second (2.3.0), then Moleta and its expander (2.8.0), and Scighera will probably follow. Gibigiana, a clocked echo lane, was designed on 2026-11-06 (see the Decisions table in [architecture.md](architecture.md)).
