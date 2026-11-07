@@ -18,7 +18,7 @@ Ghisa has no quantizer. Feed it a melody that is already in a scale, and every c
 
 | Control | What it does |
 | --- | --- |
-| REGISTER display | The 16 remembered notes, newest at the left. Grey bars are the eight the buttons can reach, and bright bars are the ones in the chord. Turn DEPTH and both slide into the past. |
+| REGISTER display | The 16 remembered notes, newest at the left. Grey bars are the eight the buttons can reach, and bright bars are the ones in the chord. Turn DEPTH and both slide into the past. While HOLD loops, a thin line under the bars marks the notes it repeats. |
 | Shape buttons | Eight buttons, read left to right, top row first. Each lit button adds one remembered note to the chord. |
 | DEPTH | Reads the shape further back, up to 8 notes. At 0 the buttons cover notes 1 to 8; at 8, notes 9 to 16. |
 | HOLD | Stops taking new notes and loops the ones it has. |
