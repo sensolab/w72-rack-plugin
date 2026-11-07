@@ -287,6 +287,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Gibigiana's readout composes its fractions (¹⁄₃, ²⁄₃, 1¹⁄₂) from superior and inferior digits and the fraction slash: Inter Tight has ⅓ and ½ but no ⅔, and the composed forms look the same. A step out of reach is drawn dim, the display's dim ink | 2026-11-06 |
 | The panel generator draws dividers (a hairline across the panel, midway below a row) and plate rules (between two outputs on the plate), for Gibigiana's split between tap rows and shared settings and between the sum and the tap outputs | 2026-11-06 |
 | Gibigiana's coin loop is Moleta's `moleta::Coin`, included from `MoletaEngine.hpp`; its DSP is `src/GibigianaEngine.hpp`, with no Rack includes, tested by `make test-engine` | 2026-11-06 |
+| Ghisa's REGISTER display marks the hold loop with a dim 1 px line under stages 1 to *Hold loop length*, drawn only while HOLD loops. Bar levels stay as they were (window and taps), since taps past the loop sound copies of it | 2026-11-07 |
 
 ## Open questions
 
