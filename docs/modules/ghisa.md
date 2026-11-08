@@ -24,7 +24,7 @@ Ghisa has no quantizer. Feed it a melody that is already in a scale, and every c
 | HOLD | Stops taking new notes and loops the ones it has. |
 | DEPTH input | CV added to the DEPTH knob, one note further back per 1.25 V. |
 | HOLD input | A gate: the memory loops while it is high. |
-| IN | The melody, or any voltage. Mono. |
+| IN | The melody, or any voltage. Mono: from a poly cable, only the first channel goes in. |
 | CLOCK | Each clock takes a new note and updates the chord. Required. |
 | BASS CLK | Optional. Patch a slower clock here and the bass changes only on it. |
 | CHORD | Poly: one channel per lit button. Patch it into a poly voice's V/Oct. |
