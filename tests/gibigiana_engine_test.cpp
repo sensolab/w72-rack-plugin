@@ -55,7 +55,8 @@ struct Rig {
 		e.setSampleRate(FS);
 		e.fillCoins(rng);
 		f.clock = true;
-		for (int i = 0; i < TAPS; i++) {
+		k.lanes = 4;
+		for (int i = 0; i < LANES; i++) {
 			k.chance[i] = 0.f;
 			k.level[i] = 1.f;
 			k.pan[i] = -1.f;
@@ -368,6 +369,123 @@ static void testClockPulled() {
 	CHECK(r.e.taps[0].cur.delay == -1 && out == 0.f, "pulling CLOCK left the tap sounding");
 }
 
+// A lane two expanders down the chain: its tap out is early by its lag, so it lands on
+// the grid after crossing the chain, and its share of the sum is exactly on the grid.
+static void testLag() {
+	const long N = 4800;
+	const int LAG = 3;
+	Rig r(N);
+	r.k.chance[0] = 0.f;
+	r.k.chance[1] = 1.f;
+	r.k.step[1] = 3; // 1 step
+	r.k.lag[1] = LAG;
+	std::vector<float> tap, left;
+	for (long i = 0; i < 8 * N; i++) {
+		Out o = r.step(i % N == 100 ? 1.f : 0.f);
+		tap.push_back(o.tap[1]);
+		left.push_back(o.left);
+	}
+	for (long c = 3; c < 7; c++) {
+		long at = c * N + 100;
+		CHECK(std::fabs(tap[at - LAG] - 1.f) < 1e-6f && tap[at] == 0.f, "lag %d: the tap out is not %d samples early (%.3f at the grid)", LAG, LAG, tap[at]);
+		CHECK(std::fabs(left[at] - 1.f) < 1e-6f && left[at - LAG] == 0.f, "lag %d: the sum is off the grid (%.3f)", LAG, left[at]);
+	}
+}
+
+// A lane that leaves fades out over the coin ramp and stops; one that joins stays
+// silent until a hit has rolled for it and that hit's audio comes back.
+static void testLanesComeAndGo() {
+	const long N = 4800;
+	const long ramp = e_ramp();
+	Rig r(N);
+	r.k.lanes = 2;
+	r.k.chance[0] = 0.f;
+	r.k.chance[1] = 1.f;
+	r.k.step[1] = 3;
+	float o = 0.f;
+	for (long i = 0; i < 5 * N + N / 2; i++)
+		o = r.step(1.f).tap[1];
+	CHECK(std::fabs(o - 1.f) < 1e-6f, "lane 2 plays at %.3f", o);
+	r.k.lanes = 1;
+	float last = o;
+	bool falling = true;
+	for (long i = 0; i < ramp; i++) {
+		o = r.step(1.f).tap[1];
+		falling = falling && o < last;
+		last = o;
+	}
+	CHECK(falling && o == 0.f, "lane 2 did not fade out over the ramp (%.3f)", o);
+	CHECK(r.e.taps[1].cur.delay == -1, "lane 2 still reads after leaving");
+	// Back in the chain before the next hit, while the buffer still holds audio its
+	// coin passed before it left.
+	while (r.n % N != 3 * N / 4)
+		r.step(1.f);
+	r.k.lanes = 2;
+	long next = r.n - r.n % N + N;
+	float early = 0.f;
+	while (r.n < next + N - ramp)
+		early = std::max(early, std::fabs(r.step(1.f).tap[1]));
+	CHECK(early == 0.f, "lane 2 sounded before its first hit came back (%.3f)", early);
+	while (r.n < next + N + N / 2)
+		o = r.step(1.f).tap[1];
+	CHECK(std::fabs(o - 1.f) < 1e-6f, "lane 2 came back at %.3f after its first hit", o);
+}
+
+static void testLaneCv() {
+	const long N = 480;
+	Rig up(N, 9);
+	up.k.chance[0] = 0.f;
+	up.k.chanceCv[0] = 10.f;
+	up.run(N * 20);
+	int pass = 0;
+	for (uint8_t m : up.hits)
+		pass += m & 1;
+	CHECK(pass == (int) up.hits.size(), "10 V of CHANCE CV over CHANCE 0 passed %d of %zu", pass, up.hits.size());
+	Rig down(N, 9);
+	down.k.chanceCv[0] = -10.f;
+	down.run(N * 20);
+	pass = 0;
+	for (uint8_t m : down.hits)
+		pass += m & 1;
+	CHECK(pass == 0, "-10 V of CHANCE CV under CHANCE 100%% passed %d", pass);
+
+	Rig r(4800);
+	r.k.level[0] = 0.f;
+	r.k.levelCv[0] = 5.f;
+	r.k.pan[0] = 0.f;
+	r.k.panCv[0] = 5.f;
+	Out o;
+	for (long i = 0; i < 5 * 4800; i++)
+		o = r.step(1.f);
+	CHECK(std::fabs(o.tap[0] - 0.5f) < 1e-6f, "5 V of LEVEL CV over LEVEL 0: %.3f", o.tap[0]);
+	CHECK(std::fabs(o.left) < 1e-6f && std::fabs(o.right - 0.5f) < 1e-6f, "5 V of PAN CV from the centre: L %.3f, R %.3f", o.left, o.right);
+	r.k.levelCv[0] = 20.f;
+	r.k.panCv[0] = -20.f;
+	o = r.step(1.f);
+	CHECK(std::fabs(o.tap[0] - 1.f) < 1e-6f && std::fabs(o.left - 1.f) < 1e-6f && std::fabs(o.right) < 1e-6f, "the CVs pass their range: tap %.3f, L %.3f, R %.3f", o.tap[0], o.left, o.right);
+}
+
+// The full chain: eight lanes, eight coins, eight bits in the mask, each lane at its own step.
+static void testEightLanes() {
+	const long N = 4800;
+	Rig r(N, 13);
+	r.k.lanes = LANES;
+	for (int i = 0; i < LANES; i++) {
+		r.k.chance[i] = 0.5f;
+		r.k.step[i] = DEFAULT_STEPS[i];
+	}
+	r.run(40 * N);
+	int high = 0;
+	for (uint8_t m : r.hits)
+		high += (m >> 7) & 1;
+	CHECK(high > 5 && high < (int) r.hits.size() - 5, "lane 8 passed %d of %zu hits", high, r.hits.size());
+	for (int i = 0; i < LANES; i++) {
+		const Step& s = STEPS[DEFAULT_STEPS[i]];
+		CHECK(r.e.taps[i].cur.delay == (int) (N * s.p / s.q), "lane %d reads at %d samples", i + 1, r.e.taps[i].cur.delay);
+	}
+	CHECK(std::strcmp(STEPS[DEFAULT_STEPS[LANES - 1]].name, "8") == 0, "lane 8 defaults to %s", STEPS[DEFAULT_STEPS[LANES - 1]].name);
+}
+
 int main() {
 	testSteps();
 	testClockPeriod();
@@ -384,6 +502,10 @@ int main() {
 	testDuck();
 	testBand();
 	testClockPulled();
+	testLag();
+	testLanesComeAndGo();
+	testLaneCv();
+	testEightLanes();
 	std::printf("%d checks, %d failed\n", checks, failures);
 	return failures ? 1 : 0;
 }

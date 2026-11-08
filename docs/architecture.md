@@ -292,6 +292,8 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Gibigiana's ADD LANE button and its *Add lane* menu item place a Gibigiana + after the last lane and push the modules there aside, in one undo action; the button is read in the widget's `step()`, on the UI thread. The chain holds at most 8 lanes (Gibigiana's own and 7 expanders); at the cap the button does nothing and the item is greyed | 2026-11-08 |
 | All of Gibigiana's sound is made in Gibigiana: each Gibigiana + sends its lane's settings leftward every sample, and Gibigiana sends each lane's tap sound rightward, reading lane *n* *n* samples early so its tap out lands on the grid; the L/R sum has no chain lag. The buffer's coin mask is 8 bits, one per lane; coin loops belong to the place in the chain and are saved by Gibigiana. A Gibigiana + with no Gibigiana to its left is silent, its readout dim. Lanes that leave fade out over the 2 ms coin ramp; a lane that joins starts silent until the next hit | 2026-11-08 |
 | 2.9.0 waits for Gibigiana's split: Gibigiana is released once, in its split form | 2026-11-08 |
+| Gibigiana's lane CVs add to their knobs: CHANCE and LEVEL by 10% of their range per volt, as DENSITY does, and PAN by 20% per volt, so ±5 V sweeps it from side to side. Starting points, to tune by ear | 2026-11-08 |
+| Gibigiana's engine holds 8 lanes and takes each lane's chain lag (one sample per expander hop) as an input: the lane's tap reads that many samples early, and an 8-sample ring holds its share of the sum back as much. A lane that joins plays nothing written before it joined (the engine counts the samples it writes), so decisions left in the buffer from before it left never sound | 2026-11-08 |
 
 ## Open questions
 
