@@ -18,7 +18,7 @@ Ghisa has no quantizer. Feed it a melody that is already in a scale, and every c
 
 | Control | What it does |
 | --- | --- |
-| REGISTER display | The 16 remembered notes, newest at the left. Grey bars are the eight the buttons can reach, and bright bars are the ones in the chord. Turn DEPTH and both slide into the past. |
+| REGISTER display | The 16 remembered notes, newest at the left. Grey bars are the eight the buttons can reach, and bright bars are the ones in the chord. Turn DEPTH and both slide into the past. While HOLD loops, a thin line under the bars marks the notes it repeats. |
 | Shape buttons | Eight buttons, read left to right, top row first. Each lit button adds one remembered note to the chord. |
 | DEPTH | Reads the shape further back, up to 8 notes. At 0 the buttons cover notes 1 to 8; at 8, notes 9 to 16. |
 | HOLD | Stops taking new notes and loops the ones it has. |
@@ -26,7 +26,7 @@ Ghisa has no quantizer. Feed it a melody that is already in a scale, and every c
 | HOLD input | A gate: the memory loops while it is high. |
 | DRIFT | While HOLD loops, how often a new note gets in. At 0 the loop repeats exactly; at full, every note is new, as if HOLD were off. |
 | DRIFT input | CV added to the DRIFT knob, 10% per volt. |
-| IN | The melody, or any voltage. Mono. |
+| IN | The melody, or any voltage. Mono: from a poly cable, only the first channel is recorded. |
 | CLOCK | Each clock takes a new note and updates the chord. Required. |
 | BASS CLK | Optional. Patch a slower clock here and the bass changes only on it. |
 | CHORD | Poly: one channel per lit button. Patch it into a poly voice's V/Oct. |

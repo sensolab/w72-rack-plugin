@@ -1,6 +1,6 @@
 # W72 — VCV Rack plugin
 
-W72 is a VCV Rack plugin (slug `W72`) with modules named in Milanese dialect. Five modules ship: Brumista, a bridge (a TCP server inside Rack that lets Claude read and patch a running Rack, paired with a Go MCP server in `mcp/`); Ghisa, a shift register whose taps are a control; Moleta, a probability master clock; its expander Moleta +; and Gibigiana, a clocked echo lane with a chance per tap.
+W72 is a VCV Rack plugin (slug `W72`) with modules named in Milanese dialect. Six modules: Brumista, a bridge (a TCP server inside Rack that lets Claude read and patch a running Rack, paired with a Go MCP server in `mcp/`); Ghisa, a shift register whose taps are a control; Moleta, a probability master clock; its expander Moleta +; Gibigiana, a clocked echo lane with a chance per tap; and its lane expander Gibigiana +, one more lane each.
 
 Read these before starting any task:
 

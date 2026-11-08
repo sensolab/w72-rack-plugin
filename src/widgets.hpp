@@ -102,6 +102,12 @@ struct Readout : widget::TransparentWidget {
 	virtual bool dim(int i) {
 		return false;
 	}
+	// A cell name drawn live, for a cell the panel leaves unnamed (Gibigiana's lane
+	// number), on nameBaseline below the well's top; empty draws nothing.
+	virtual std::string name(int i) {
+		return "";
+	}
+	float nameBaseline = 0.f;
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer == 1) {
@@ -116,6 +122,17 @@ struct Readout : widget::TransparentWidget {
 					nvgFillColor(args.vg, dim(i) ? nvgTransRGBAf(INK, DIM) : INK);
 					nvgText(args.vg, baselines[i].x, baselines[i].y, s.c_str(), NULL);
 				}
+				// Names as the panel's labels are set: 6.5 px capitals, tracked 0.04 em.
+				nvgFontSize(args.vg, 6.5f);
+				nvgTextLetterSpacing(args.vg, 0.04f * 6.5f);
+				for (int i = 0; i < (int) baselines.size(); i++) {
+					std::string s = name(i);
+					if (s.empty())
+						continue;
+					nvgFillColor(args.vg, dim(i) ? nvgTransRGBAf(INK, DIM) : INK);
+					nvgText(args.vg, baselines[i].x, nameBaseline, s.c_str(), NULL);
+				}
+				nvgTextLetterSpacing(args.vg, 0.f);
 			}
 		}
 		widget::TransparentWidget::drawLayer(args, layer);

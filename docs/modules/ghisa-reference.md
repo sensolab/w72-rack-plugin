@@ -6,11 +6,11 @@ The details behind [Ghisa's manual](ghisa.md): exact ranges, timing, edge cases 
 
 | Control | What it does |
 | --- | --- |
-| REGISTER display | Sixteen bars, one per stage, newest at the left. Off: outside the window. Dim: in the window, not tapped. Full: tapped. It shows the chord that is sounding, so the voicing can be watched moving. |
+| REGISTER display | Sixteen bars, one per stage, newest at the left. Off: outside the window. Dim: in the window, not tapped. Full: tapped. It shows the chord that is sounding, so the voicing can be watched moving. While HOLD loops, a dim line under the bars marks the stages it loops, 1 to *Hold loop length*. |
 | Shape buttons | Eight latching buttons in a 2 × 4 grid, read left to right and top to bottom. Button *k* lit taps the *k*-th stage of the window. A button lights as soon as it's pressed; the chord follows on the next clock. |
 | DEPTH | Where the window starts, from 0 to 8 stages back. At 0 the window is stages 1 to 8; at 8 it is stages 9 to 16. |
 | HOLD | Loops the register's first *Hold loop length* stages, 16 by default (see below). Lit while it loops, by the button or the gate. |
-| IN | The voltage to record. Any voltage: pitch, modulation or slow CV. Reads the first channel. |
+| IN | The voltage to record. Any voltage: pitch, modulation or slow CV. Mono: a poly cable is read on its first channel only, and the other channels are ignored. |
 | CLOCK | Each rising edge shifts the register and updates every output (BASS too, unless BASS CLK is patched). |
 | DEPTH (input) | Adds to the knob, 1.25 V per stage, so 0 to 10 V covers the range. The sum is rounded to a whole stage and clamped to 0 to 8, so a negative CV holds DEPTH at the knob's floor. |
 | HOLD (input) | A gate: while it's high, the register loops. |

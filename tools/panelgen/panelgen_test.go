@@ -382,26 +382,102 @@ func TestDividersAndPlateRules(t *testing.T) {
 	}
 }
 
-func TestGibigianaPanel(t *testing.T) {
-	m, err := loadModule(filepath.Join("..", "..", "panels", "Gibigiana.json"))
+func TestGibigianaPanels(t *testing.T) {
+	count := func(m *Module) map[Kind]int {
+		n := map[Kind]int{}
+		for _, p := range m.place() {
+			n[p.Kind]++
+		}
+		return n
+	}
+	g, err := loadModule(filepath.Join("..", "..", "panels", "Gibigiana.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	knobs, trims, ins, outs := 0, 0, 0, 0
-	for _, p := range m.place() {
-		switch p.Kind {
-		case Knob:
-			knobs++
-		case Trimpot:
-			trims++
-		case Input:
-			ins++
-		case Output:
-			outs++
+	// The system and lane 1: 6 knobs, 2 trimpots, 9 inputs, L, R and the tap, ADD LANE.
+	if n := count(g); g.HP != 10 || n[Knob] != 6 || n[Trimpot] != 2 || n[Input] != 9 || n[Output] != 3 || n[Button] != 1 {
+		t.Errorf("Gibigiana: %d HP, %v", g.HP, n)
+	}
+	plus, err := loadModule(filepath.Join("..", "..", "panels", "GibigianaPlus.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := count(plus); plus.HP != 4 || plus.signed() || n[Knob] != 2 || n[Trimpot] != 2 || n[Input] != 3 || n[Output] != 1 {
+		t.Errorf("Gibigiana +: %d HP, signed %v, %v", plus.HP, plus.signed(), n)
+	}
+	// Lane 1 on Gibigiana is the strip a Gibigiana + repeats, moved over by the system's 90 px.
+	at := func(m *Module) map[string]Placed {
+		out := map[string]Placed{}
+		for _, p := range m.place() {
+			out[p.ID] = p
+		}
+		return out
+	}
+	gp, pp := at(g), at(plus)
+	for _, id := range []string{"STEP", "CHANCE", "LEVEL", "PAN", "CHANCE_CV", "LEVEL_CV", "PAN_CV", "OUT"} {
+		if gp[id].X != pp[id].X+90 || gp[id].Y != pp[id].Y {
+			t.Errorf("%s: Gibigiana (%v, %v), Gibigiana + (%v, %v)", id, gp[id].X, gp[id].Y, pp[id].X, pp[id].Y)
 		}
 	}
-	// 20 controls and 12 jacks, as the spec counts them.
-	if m.HP != 14 || knobs != 8 || trims != 12 || ins != 6 || outs != 6 {
-		t.Errorf("%d HP, %d knobs, %d trimpots, %d inputs, %d outputs", m.HP, knobs, trims, ins, outs)
+	if gw, pw := g.well(gp["READOUT"]), plus.well(pp["READOUT"]); gw.X != pw.X+90 || gw.W != pw.W {
+		t.Errorf("readout wells %v and %v", gw, pw)
+	}
+}
+
+func TestSplitsAndUnsigned(t *testing.T) {
+	f := testFaces(t)
+	col := func(i int) *int { return &i }
+	split := &Module{Slug: "T", Name: "T", Family: "weather", HP: 10, Columns: &Columns{Inset: 0, Pitch: 7.5}, Splits: []int{12},
+		PlateRules: []string{"A"}, Controls: []Control{
+			{ID: "B", Kind: Button, Row: 6, Dy: 1.5, Col: col(6)},
+			{ID: "R", Kind: Readout, Row: 6, Dy: 4.5, Cells: []Cell{{Col: 16, Sample: "1"}}},
+			{ID: "A", Kind: Output, Row: 0, Col: col(3)},
+			{ID: "C", Kind: Output, Row: 0, Col: col(16)},
+		}}
+	if err := split.check(); err != nil {
+		t.Fatal(err)
+	}
+	p := split.place()
+	if w := split.well(p[1]); w.X != 100 || w.W != 40 {
+		t.Errorf("readout well %v, want its section's width less the margins", w)
+	}
+	svg, err := panelSVG(split, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(svg, `<rect id="split-0" x="`+mm(90-ruleWidth/2)+`"`) {
+		t.Error("no split at 90 px")
+	}
+	if !strings.Contains(svg, `<rect id="rule-A" x="`+mm(90-ruleWidth/2)+`"`) {
+		t.Error("the plate rule between sections is not on the split")
+	}
+	if !strings.Contains(svg, `id="mark"`) {
+		t.Error("a 10 HP panel lost its mark")
+	}
+	if h := panelHeader(split); !strings.Contains(h, "R_NAME_BASELINE = 75.0f") {
+		t.Error("a readout cell with no name has no live baseline in the header")
+	}
+
+	unsigned := &Module{Slug: "U", Name: "U +", Family: "weather", HP: 4, Mark: new(bool), Controls: []Control{{ID: "O", Kind: Output, Row: 0}}}
+	if err := unsigned.check(); err != nil {
+		t.Fatal(err)
+	}
+	if svg, err := panelSVG(unsigned, f); err != nil || strings.Contains(svg, `id="mark"`) {
+		t.Errorf("unsigned panel: %v, mark drawn %v", err, strings.Contains(svg, `id="mark"`))
+	}
+
+	for name, bad := range map[string]*Module{
+		"output under 6 HP, signed": {Slug: "U", Name: "U", Family: "weather", HP: 4, Controls: []Control{{ID: "O", Kind: Output, Row: 0}}},
+		"split without columns":     {Slug: "T", Name: "T", Family: "weather", HP: 10, Splits: []int{12}},
+		"control off the columns": {Slug: "T", Name: "T", Family: "weather", HP: 10, Columns: &Columns{Pitch: 7.5}, Splits: []int{12},
+			Controls: []Control{{ID: "K", Kind: Knob, Row: 3}}},
+		"two readouts in one section": {Slug: "T", Name: "T", Family: "weather", HP: 10, Columns: &Columns{Pitch: 7.5}, Splits: []int{12},
+			Controls: []Control{{ID: "R", Kind: Readout, Row: 6, Cells: []Cell{{Col: 14, Sample: "1"}}}, {ID: "K", Kind: Button, Row: 6, Col: col(16)}}},
+		"readout across the split": {Slug: "T", Name: "T", Family: "weather", HP: 10, Columns: &Columns{Pitch: 7.5}, Splits: []int{12},
+			Controls: []Control{{ID: "R", Kind: Readout, Row: 6, Cells: []Cell{{Col: 6, Sample: "1"}, {Col: 16, Sample: "2"}}}}},
+	} {
+		if bad.check() == nil {
+			t.Errorf("%s: accepted", name)
+		}
 	}
 }

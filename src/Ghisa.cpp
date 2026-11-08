@@ -373,7 +373,8 @@ struct Ghisa : Module {
 static const bool SAMPLE_SHAPE[TAPS] = {true, true, false, true, false, true, false, true};
 static const int SAMPLE_DEPTH = 5;
 
-// Sixteen bars, newest at the left: off outside the window, dim in it, full where tapped.
+// Sixteen bars, newest at the left: off outside the window, dim in it, full where tapped,
+// underlined across the loop while HOLD is on.
 struct RegisterDisplay : w72::FlatBars {
 	Ghisa* module;
 
@@ -387,6 +388,17 @@ struct RegisterDisplay : w72::FlatBars {
 		if (k < 0 || k >= TAPS)
 			return 0.f;
 		return shape[k] ? 1.f : w72::DIM;
+	}
+
+	// While HOLD loops, a dim line under stages 1 to the loop length shows how far the loop reaches.
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer == 1 && module && module->holding) {
+			const math::Rect& first = bars[0];
+			const math::Rect& last = bars[HOLD_LENGTHS[module->holdLength] - 1];
+			float y = first.getBottom() + 1.5f;
+			w72::drawFlat(args.vg, math::Rect(first.pos.x, y, last.getRight() - first.pos.x, 1.f), nvgTransRGBAf(w72::INK, w72::DIM));
+		}
+		FlatBars::drawLayer(args, layer);
 	}
 };
 
