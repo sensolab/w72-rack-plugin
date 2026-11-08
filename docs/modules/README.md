@@ -8,7 +8,8 @@ One manual per module: what it does, its panel, and how to start using it. Each 
 | [Ghisa](ghisa.md) | Trades | 8 | Feed Ghisa a melody, and it plays chords made from the notes the melody just played. | 2.3.0 |
 | [Moleta](moleta.md) | Trades | 18 | A clock whose four outputs each skip beats by chance, and can lock what they skipped into a phrase. | 2.8.0 |
 | [Moleta +](moletaplus.md) | Trades | 11 | Four more outputs for the Moleta on its left, each with its own ratio, chance and length. | 2.8.0 |
-| [Gibigiana](gibigiana.md) | Weather and light | 14 | Four echoes on the clock grid, each with its own chance of coming back. | 2.9.0 |
+| [Gibigiana](gibigiana.md) | Weather and light | 10 | Echoes on the clock grid, each lane with its own chance of coming back. | 2.9.0 |
+| [Gibigiana +](gibigianaplus.md) | Weather and light | 4 | One more echo lane for the Gibigiana on its left. | 2.9.0 |
 
 Each module's `manualUrl` in `plugin.json` points to its page here on `main` (`https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/<slug-lowercase>.md`), so Rack's right-click Manual opens it. A new module ships with its page and that link.
 
