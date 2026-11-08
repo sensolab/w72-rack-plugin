@@ -301,6 +301,7 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | The panel generator gains `splits` (side-by-side sections at columns, drawn as hairlines; a readout takes its section and may share its row), `"mark": false` for an unsigned panel, the only way under 6 HP to take outputs, and readout cells whose blank names the widget draws live | 2026-11-08 |
 | A Gibigiana + sends its lane's settings leftward and gets its tap from the left (`GibigianaExpander.hpp`); a lane past the eighth, or one with no Gibigiana at the head of its chain, is silent with its readout dim. ADD LANE sets the new lane's STEP by its place; one made from the module browser takes its place's step the first time it joins a chain, unless its knob was turned, and one loaded from a patch or preset keeps its own | 2026-11-08 |
 | Gibigiana's engine holds 8 lanes and takes each lane's chain lag (one sample per expander hop) as an input: the lane's tap reads that many samples early, and an 8-sample ring holds its share of the sum back as much. A lane that joins plays nothing written before it joined (the engine counts the samples it writes), so decisions left in the buffer from before it left never sound | 2026-11-08 |
+| Moleta's RATIO list grows to every divider and multiplier from /32 to ×32 around the four fractions (67 steps), on both Moleta and Moleta +, after a user request (#70). Patches keep their ratios through the saved p/q; the curated 21-step list stays out (no toggle) | 2026-11-08 |
 
 ## Open questions
 

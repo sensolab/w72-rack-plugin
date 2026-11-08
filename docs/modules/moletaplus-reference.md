@@ -7,7 +7,7 @@ The details behind [Moleta +'s manual](moletaplus.md): exact ranges, timing, edg
 | Control | What it does |
 | --- | --- |
 | Readout | Each output's ratio over its number, 5 to 8. |
-| RATIO 5 to 8 | Each output's ratio, in the same 21 steps as Moleta: /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16. |
+| RATIO 5 to 8 | Each output's ratio, in the same 67 steps as Moleta: every divider from /32 to /2, then 2/3, 3/4, ×1, 4/3, 3/2, then every multiplier from ×2 to ×32. |
 | CHANCE 5 to 8 | The probability that a pulse passes, 0 to 100%. Moleta's DENSITY is added to it. |
 | LENGTH 5 to 8 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |
 | 5 to 8 | The pulses that passed, 10 V, as triggers or gates by LENGTH. 0 V with no Moleta on the left. |

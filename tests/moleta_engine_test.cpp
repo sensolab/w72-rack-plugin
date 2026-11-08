@@ -102,6 +102,12 @@ struct Rig {
 	}
 };
 
+static std::string string_f(const char* format, int k) {
+	char buf[16];
+	std::snprintf(buf, sizeof(buf), format, k);
+	return buf;
+}
+
 static int ratioIndex(const char* name) {
 	for (int i = 0; i < RATIO_COUNT; i++) {
 		if (std::string(RATIOS[i].name) == name)
@@ -126,10 +132,18 @@ static bool contains(const std::vector<long>& v, long x) {
 }
 
 static void testTable() {
-	CHECK(RATIO_COUNT == 21, "21 ratios");
-	const char* order[] = {"/16", "/8", "/7", "/6", "/5", "/4", "/3", "/2", "2/3", "3/4", "×1", "4/3", "3/2", "×2", "×3", "×4", "×5", "×6", "×7", "×8", "×16"};
-	for (int i = 0; i < RATIO_COUNT; i++)
-		CHECK(std::string(RATIOS[i].name) == order[i], "ratio %d is %s", i, order[i]);
+	CHECK(RATIO_COUNT == 67, "67 ratios");
+	CHECK(std::string(RATIOS[0].name) == "/32", "the list starts at /32");
+	CHECK(std::string(RATIOS[RATIO_COUNT - 1].name) == "×32", "the list ends at ×32");
+	for (int k = 2; k <= 32; k++) {
+		CHECK(ratioIndex(string_f("/%d", k).c_str()) >= 0, "/%d is listed", k);
+		CHECK(ratioIndex(string_f("×%d", k).c_str()) >= 0, "×%d is listed", k);
+	}
+	const char* fractions[] = {"2/3", "3/4", "×1", "4/3", "3/2"};
+	for (int i = 0; i < 5; i++)
+		CHECK(std::string(RATIOS[31 + i].name) == fractions[i], "%s sits between the dividers and the multipliers", fractions[i]);
+	for (int i = 1; i < RATIO_COUNT; i++)
+		CHECK((double) RATIOS[i].p / RATIOS[i].q > (double) RATIOS[i - 1].p / RATIOS[i - 1].q, "ratio %d is faster than the one before", i);
 	CHECK(std::string(RATIOS[DEFAULT_RATIOS[0]].name) == "×2", "default 1 is ×2");
 	CHECK(std::string(RATIOS[DEFAULT_RATIOS[1]].name) == "/2", "default 2 is /2");
 	CHECK(std::string(RATIOS[DEFAULT_RATIOS[2]].name) == "/3", "default 3 is /3");
@@ -141,8 +155,8 @@ static void testTable() {
 	for (int i = 0; i < RATIO_COUNT; i++)
 		CHECK(nearestRatio(RATIOS[i].p, RATIOS[i].q) == i, "a listed ratio maps back to its own step (%s)", RATIOS[i].name);
 	CHECK(nearestRatio(4, 2) == ratioIndex("×2"), "4/2 lands on ×2");
-	CHECK(nearestRatio(32, 1) == ratioIndex("×16"), "×32 lands on ×16");
-	CHECK(nearestRatio(10, 1) == ratioIndex("×8"), "×10 lands on ×8, the nearer by octaves");
+	CHECK(nearestRatio(64, 1) == ratioIndex("×32"), "×64 lands on ×32");
+	CHECK(nearestRatio(5, 4) == ratioIndex("4/3"), "5/4 lands on 4/3, the nearer by octaves");
 }
 
 // Every ratio on the internal clock: p pulses per q beats, each within a sample

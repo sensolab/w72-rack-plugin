@@ -17,7 +17,7 @@ Moleta + is 11 HP wide. Away from a Moleta, its outputs stay silent.
 | Control | What it does |
 | --- | --- |
 | Readout | Each output's ratio. |
-| RATIO 5 to 8 | How fast the output ticks against Moleta's beat, from /16 to ×16. |
+| RATIO 5 to 8 | How fast the output ticks against Moleta's beat, from /32 to ×32. |
 | CHANCE 5 to 8 | How often a tick gets through. Moleta's DENSITY input moves these too. |
 | LENGTH 5 to 8 | Fully left, a short trigger. Further right, a longer gate. |
 | 5 to 8 | The ticks that got through. Mono. |

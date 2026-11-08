@@ -6,7 +6,7 @@
 
 Moleta is a clock you patch into drums, envelopes and sequencers. Each of its four outputs ticks at its own speed, and each one can drop some of its ticks at random. What you hear is a groove that breathes: hats that leave gaps, a bass that sometimes skips a bar.
 
-Three knobs shape each output. RATIO sets how fast it ticks against the beat, from once every 16 beats to 16 times a beat. A few fractions, like 3/2, give cross-rhythms. CHANCE sets how many ticks get through. LENGTH turns the ticks into short triggers or longer gates.
+Three knobs shape each output. RATIO sets how fast it ticks against the beat, from once every 32 beats to 32 times a beat. A few fractions, like 3/2, give cross-rhythms. CHANCE sets how many ticks get through. LENGTH turns the ticks into short triggers or longer gates.
 
 Random gaps are fun until you find one you like. Turn REPEAT up and Moleta starts repeating its choices. All the way right, the pattern locks into a 16-step phrase. Once it's locked, CHANCE still thins or fills it without reshuffling it.
 

@@ -12,7 +12,7 @@ The details behind [Moleta's manual](moleta.md): exact ranges, timing, edge case
 | RESET | Momentary button. Restarts every output's cycle, the coin loops and the bar count, and fires the RESET output. |
 | REPEAT | How often the coin loops are redrawn (see below). One knob for all outputs. |
 | DENSITY | CV added to every CHANCE, 10% per volt, so ±5 V moves each by half its range. Reads the first channel. |
-| RATIO 1 to 4 | Each output's ratio, in 21 steps: /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16. |
+| RATIO 1 to 4 | Each output's ratio, in 67 steps: every divider from /32 to /2, then 2/3, 3/4, ×1, 4/3, 3/2, then every multiplier from ×2 to ×32. |
 | CHANCE 1 to 4 | The probability that a pulse passes, 0 to 100%. |
 | LENGTH 1 to 4 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |
 | RUN (input) | A trigger toggles RUN, like the button. |
