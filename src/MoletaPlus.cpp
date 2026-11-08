@@ -210,6 +210,10 @@ struct MoletaPlusReadout : w72::Readout {
 		return moleta::RATIOS[r].name;
 	}
 
+	bool follows(int i) override {
+		return module && module->follow[i];
+	}
+
 	// The output's number, from the place in the chain; none while unlinked.
 	std::string name(int i) override {
 		if (!module)

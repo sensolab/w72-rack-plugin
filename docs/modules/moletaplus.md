@@ -18,7 +18,7 @@ Moleta + is 11 HP wide. Away from a Moleta, its outputs stay silent.
 
 | Control | What it does |
 | --- | --- |
-| Readout | Each output's ratio, over its number. The numbers show once the module is linked to a Moleta. |
+| Readout | Each output's ratio, over its number. The numbers show once the module is linked to a Moleta. A chevron (›) between two ratios means the output on the right follows the one on its left. |
 | RATIO 5 to 8 | How fast the output ticks against Moleta's beat, from /32 to ×32. |
 | CHANCE 5 to 8 | How often a tick gets through. Moleta's DENSITY input moves these too. |
 | LENGTH 5 to 8 | Fully left, a short trigger. Further right, a longer gate. |

@@ -108,9 +108,32 @@ struct Readout : widget::TransparentWidget {
 		return "";
 	}
 	float nameBaseline = 0.f;
+	// Whether cell i follows the cell before it (Moleta's *Follow the output
+	// above*): a small chevron midway between the two values says so.
+	virtual bool follows(int i) {
+		return false;
+	}
+
+	// A 3 px by 6 px chevron pointing right, centred on c, in display ink.
+	void drawChevron(NVGcontext* vg, math::Vec c) {
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, c.x - 1.5f, c.y - 3.f);
+		nvgLineTo(vg, c.x + 1.5f, c.y);
+		nvgLineTo(vg, c.x - 1.5f, c.y + 3.f);
+		nvgStrokeColor(vg, INK);
+		nvgStrokeWidth(vg, 1.f);
+		nvgLineCap(vg, NVG_ROUND);
+		nvgLineJoin(vg, NVG_ROUND);
+		nvgStroke(vg);
+	}
 
 	void drawLayer(const DrawArgs& args, int layer) override {
 		if (layer == 1) {
+			// Midway between the two values, at the height of a value's middle.
+			for (int i = 1; i < (int) baselines.size(); i++) {
+				if (follows(i))
+					drawChevron(args.vg, math::Vec((baselines[i - 1].x + baselines[i].x) / 2.f, baselines[i].y - 0.36f * fontSize));
+			}
 			// A missing font draws nothing rather than failing.
 			std::shared_ptr<window::Font> font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/InterTight-SemiBold.ttf"));
 			if (font && font->handle >= 0) {

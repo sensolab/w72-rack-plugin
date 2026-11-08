@@ -6,7 +6,7 @@ The details behind [Moleta's manual](moleta.md): exact ranges, timing, edge case
 
 | Control | What it does |
 | --- | --- |
-| Readout | BPM, then each output's ratio over its number. While CLOCK is patched, the BPM cell shows the measured tempo (`---` until two beats have arrived); its name stays BPM. |
+| Readout | BPM, then each output's ratio over its number. While CLOCK is patched, the BPM cell shows the measured tempo (`---` until two beats have arrived); its name stays BPM. A small chevron between two ratios marks an output that follows the one on its left (*Follow the output above*). |
 | RUN | Latching button, lit while running. Stopped, every output is silent and the internal clock is frozen. Turning it on restarts the cycles and the coin loops, as RESET does, without firing the RESET output. |
 | BPM | The internal tempo, 30 to 300 BPM, shown with one decimal. A change takes effect at once. Ignored while CLOCK is patched. |
 | RESET | Momentary button. Restarts every output's cycle, the coin loops and the bar count, and fires the RESET output. |

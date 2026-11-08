@@ -291,6 +291,11 @@ struct MoletaReadout : w72::Readout {
 		int r = moleta::clampRatio((int) std::round(module->params[Moleta::RATIO_PARAM + i - 1].getValue()));
 		return moleta::RATIOS[r].name;
 	}
+
+	// Cell i is output i; output 1 follows nothing.
+	bool follows(int i) override {
+		return module && i >= 2 && module->follow[i - 1];
+	}
 };
 
 struct MoletaWidget : ModuleWidget {
