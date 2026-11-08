@@ -8,13 +8,14 @@ Modules for [VCV Rack](https://vcvrack.com/) by WinterOf72, named in Milanese di
 | [Ghisa](docs/modules/ghisa.md) | Feed Ghisa a melody, and it plays chords made from the notes the melody just played. |
 | [Moleta](docs/modules/moleta.md) | A clock whose four outputs each skip beats by chance, and can lock what they skipped into a phrase. |
 | [Moleta +](docs/modules/moletaplus.md) | Four more outputs for the Moleta on its left, each with its own ratio, chance and length. |
-| [Gibigiana](docs/modules/gibigiana.md) | Four echoes on the clock grid, each with its own chance of coming back. |
+| [Gibigiana](docs/modules/gibigiana.md) | Echoes on the clock grid, each lane with its own chance of coming back. |
+| [Gibigiana +](docs/modules/gibigianaplus.md) | One more echo lane for the Gibigiana on its left. |
 
-Scighera is planned. Each module has a page in [docs/modules](docs/modules/README.md). The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build), and the panel style is in [docs/design-system.md](docs/design-system.md).
+Both expanders chain: up to four Moleta + for 20 outputs in all, and up to seven Gibigiana + for 8 lanes. Scighera is planned. Each module has a page in [docs/modules](docs/modules/README.md). The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build), and the panel style is in [docs/design-system.md](docs/design-system.md).
 
 ## Install
 
-W72 is in the [VCV Library](https://vcvrack.com/plugins) as "W72 by WinterOf72", for Rack 2. Subscribe to it there and it appears in Rack's Plugin Manager (Library menu, then Log in and Update all). The Library lists a new version some time after each release here. To build it yourself instead, see below.
+W72 is in the [VCV Library](https://library.vcvrack.com/W72) as "W72 by WinterOf72", for Rack 2. Subscribe to it there and it appears in Rack's Plugin Manager (Library menu, then Log in and Update all). The Library lists a new version some time after each release here. To build it yourself instead, see below.
 
 ## Build
 
