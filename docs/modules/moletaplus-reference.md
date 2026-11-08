@@ -6,7 +6,7 @@ The details behind [Moleta +'s manual](moletaplus.md): exact ranges, timing, edg
 
 | Control | What it does |
 | --- | --- |
-| Readout | Each output's ratio over its number: 5 to 8 next to Moleta, then 9 to 12, 13 to 16 and 17 to 20 down the chain. The numbers are drawn live from the module's place, and are blank while it is unlinked. A small chevron between two ratios marks an output that follows the one on its left. |
+| Readout | Each output's ratio over its number: 5 to 8 next to Moleta, then 9 to 12, 13 to 16 and 17 to 20 down the chain. The numbers are drawn live from the module's place, and are blank while it is unlinked. A small chevron between two ratios, pointing left, marks an output that follows the one on its left. |
 | RATIO 5 to 8 | Each output's ratio, in the same 67 steps as Moleta: every divider from /32 to /2, then 2/3, 3/4, ×1, 4/3, 3/2, then every multiplier from ×2 to ×32. |
 | CHANCE 5 to 8 | The probability that a pulse passes, 0 to 100%. Moleta's DENSITY is added to it. |
 | LENGTH 5 to 8 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |

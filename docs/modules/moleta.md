@@ -18,7 +18,7 @@ The obvious job is drums, but any ticks will do. Clock a sample and hold for ste
 
 | Control | What it does |
 | --- | --- |
-| Readout | The tempo, then each output's ratio. Shows `---` until an external clock has sent two beats. A chevron (›) between two ratios means the output on the right follows the one on its left. |
+| Readout | The tempo, then each output's ratio. Shows `---` until an external clock has sent two beats. A chevron (‹) between two ratios means the output on the right follows the one on its left. |
 | RUN | Starts and stops the clock. Stopped, every output is silent. |
 | BPM | The tempo, 30 to 300 BPM. Ignored while CLOCK is patched. |
 | RESET | Restarts every output and every pattern from the top. |

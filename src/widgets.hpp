@@ -114,12 +114,13 @@ struct Readout : widget::TransparentWidget {
 		return false;
 	}
 
-	// A 3 px by 6 px chevron pointing right, centred on c, in display ink.
+	// A 3 px by 6 px chevron pointing left, at the cell being followed, centred on c,
+	// in display ink.
 	void drawChevron(NVGcontext* vg, math::Vec c) {
 		nvgBeginPath(vg);
-		nvgMoveTo(vg, c.x - 1.5f, c.y - 3.f);
-		nvgLineTo(vg, c.x + 1.5f, c.y);
-		nvgLineTo(vg, c.x - 1.5f, c.y + 3.f);
+		nvgMoveTo(vg, c.x + 1.5f, c.y - 3.f);
+		nvgLineTo(vg, c.x - 1.5f, c.y);
+		nvgLineTo(vg, c.x + 1.5f, c.y + 3.f);
 		nvgStrokeColor(vg, INK);
 		nvgStrokeWidth(vg, 1.f);
 		nvgLineCap(vg, NVG_ROUND);
