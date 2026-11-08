@@ -5,10 +5,12 @@
 namespace GhisaPanel {
 
 // Centres of the controls, in px.
-static const rack::math::Vec DEPTH = rack::math::Vec(30.0f, 203.5f);
-static const rack::math::Vec HOLD = rack::math::Vec(90.0f, 203.5f);
-static const rack::math::Vec DEPTH_CV = rack::math::Vec(30.0f, 255.5f);
-static const rack::math::Vec HOLD_GATE = rack::math::Vec(90.0f, 255.5f);
+static const rack::math::Vec HOLD = rack::math::Vec(20.0f, 203.5f);
+static const rack::math::Vec DEPTH = rack::math::Vec(60.0f, 203.5f);
+static const rack::math::Vec DRIFT = rack::math::Vec(100.0f, 203.5f);
+static const rack::math::Vec HOLD_GATE = rack::math::Vec(20.0f, 255.5f);
+static const rack::math::Vec DEPTH_CV = rack::math::Vec(60.0f, 255.5f);
+static const rack::math::Vec DRIFT_CV = rack::math::Vec(100.0f, 255.5f);
 static const rack::math::Vec IN = rack::math::Vec(20.0f, 297.5f);
 static const rack::math::Vec CLOCK = rack::math::Vec(60.0f, 297.5f);
 static const rack::math::Vec BASS_CLOCK = rack::math::Vec(100.0f, 297.5f);

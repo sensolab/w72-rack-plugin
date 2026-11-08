@@ -2,7 +2,8 @@
 // pick stages from an eight-stage window that DEPTH slides through the register;
 // the taps leave as a poly CHORD, a per-voice CHANGE trigger or gate and a mono BASS.
 // Everything the outputs read is latched on the clock; BASS CLOCK, when patched,
-// gives BASS a clock of its own.
+// gives BASS a clock of its own. While HOLD loops, DRIFT is the chance that a clock
+// lets IN back in instead of the loop's last stage.
 //
 // The Root bass scores intervals as cvly bss's Harmonic mode does
 // (cvly-modules by Lyqst, GPL-3.0, https://github.com/Lyqst/cvly-modules).
@@ -105,9 +106,9 @@ static bool isString(json_t* j, const char* value) {
 }
 
 struct Ghisa : Module {
-	enum ParamId { ENUMS(SHAPE_PARAM, TAPS), DEPTH_PARAM, HOLD_PARAM, PARAMS_LEN };
-	// New inputs go at the end: patches store cables by input index.
-	enum InputId { IN_INPUT, CLOCK_INPUT, DEPTH_INPUT, HOLD_INPUT, BASS_CLOCK_INPUT, INPUTS_LEN };
+	// New params and inputs go at the end: patches store them by index.
+	enum ParamId { ENUMS(SHAPE_PARAM, TAPS), DEPTH_PARAM, HOLD_PARAM, DRIFT_PARAM, PARAMS_LEN };
+	enum InputId { IN_INPUT, CLOCK_INPUT, DEPTH_INPUT, HOLD_INPUT, BASS_CLOCK_INPUT, DRIFT_INPUT, INPUTS_LEN };
 	enum OutputId { CHORD_OUTPUT, CHANGE_OUTPUT, BASS_OUTPUT, OUTPUTS_LEN };
 	enum LightId { LIGHTS_LEN };
 
@@ -165,11 +166,13 @@ struct Ghisa : Module {
 		getParamQuantity(DEPTH_PARAM)->snapEnabled = true;
 		configSwitch(HOLD_PARAM, 0.f, 1.f, 0.f, "Hold", {"Off", "On"});
 		getParamQuantity(HOLD_PARAM)->randomizeEnabled = false;
+		configParam(DRIFT_PARAM, 0.f, 1.f, 0.f, "Drift", "%", 0.f, 100.f)->description = "While HOLD loops, the chance on each clock that IN enters instead of the loop's last stage";
 		configInput(IN_INPUT, "In");
 		configInput(CLOCK_INPUT, "Clock");
 		configInput(DEPTH_INPUT, "Depth")->description = "1.25 V per stage, added to the knob";
 		configInput(HOLD_INPUT, "Hold")->description = "While high, the last stage of the loop feeds stage 1 (stage 16 unless Hold loop length says less)";
 		configInput(BASS_CLOCK_INPUT, "Bass clock")->description = "Normalled to CLOCK. When patched, BASS changes only on its rising edges";
+		configInput(DRIFT_INPUT, "Drift")->description = "10% per volt, added to the knob";
 		configOutput(CHORD_OUTPUT, "Chord");
 		configOutput(CHANGE_OUTPUT, "Change")->description = "Per channel, a trigger (or a gate until the next clock) when that channel's voltage changed";
 		configOutput(BASS_OUTPUT, "Bass");
@@ -207,6 +210,15 @@ struct Ghisa : Module {
 		std::copy(taps, taps + tapCount, sorted);
 		sortLowToHigh(sorted, tapCount);
 		return foldBass(bassMode == BASS_ROOT ? rootOf(sorted, tapCount) : sorted[0]);
+	}
+
+	// HOLD's feedback for this clock: the loop's last stage, or IN with chance DRIFT.
+	// At 0% it's always the loop (HOLD as it was); at 100%, always IN (as if HOLD were off).
+	float holdSource() {
+		float drift = params[DRIFT_PARAM].getValue() + inputs[DRIFT_INPUT].getVoltage() / 10.f;
+		if (drift > 0.f && random::uniform() < drift)
+			return inputs[IN_INPUT].getVoltage();
+		return reg[HOLD_LENGTHS[holdLength] - 1];
 	}
 
 	// Reads the shape and DEPTH, taps the register, folds the taps by the chord
@@ -265,7 +277,7 @@ struct Ghisa : Module {
 
 		bool clocked = clockTrigger.process(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 1.f);
 		if (clocked) {
-			float in = holding ? reg[HOLD_LENGTHS[holdLength] - 1] : inputs[IN_INPUT].getVoltage();
+			float in = holding ? holdSource() : inputs[IN_INPUT].getVoltage();
 			std::copy_backward(reg, reg + STAGES - 1, reg + STAGES);
 			reg[0] = in;
 			latch(true);
@@ -405,12 +417,14 @@ struct GhisaWidget : ModuleWidget {
 		}
 		addParam(createParamCentered<RoundLargeBlackKnob>(GhisaPanel::DEPTH, module, Ghisa::DEPTH_PARAM));
 		addParam(w72::createFlatButton<HoldButton>(GhisaPanel::HOLD, BUTTON_SIZE, FLAT_LIGHT_SIZE, module, Ghisa::HOLD_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GhisaPanel::DRIFT, module, Ghisa::DRIFT_PARAM));
 
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::IN, module, Ghisa::IN_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::CLOCK, module, Ghisa::CLOCK_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::DEPTH_CV, module, Ghisa::DEPTH_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::HOLD_GATE, module, Ghisa::HOLD_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::BASS_CLOCK, module, Ghisa::BASS_CLOCK_INPUT));
+		addInput(createInputCentered<DarkPJ301MPort>(GhisaPanel::DRIFT_CV, module, Ghisa::DRIFT_INPUT));
 
 		addOutput(createOutputCentered<DarkPJ301MPort>(GhisaPanel::CHORD, module, Ghisa::CHORD_OUTPUT));
 		addOutput(createOutputCentered<DarkPJ301MPort>(GhisaPanel::CHANGE, module, Ghisa::CHANGE_OUTPUT));
