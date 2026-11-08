@@ -6,9 +6,9 @@
 
 Ghisa remembers the last 16 notes of a melody. On every clock it plays a few of them at once as a chord, on a polyphonic output. Because the notes come from your own melody, the chord always fits it, and it moves as the melody moves.
 
-The eight buttons pick which of those remembered notes go into the chord. Light the first one and you get the note just played; light the third and you get the one from two clocks ago. That set of lit buttons is the voicing. DEPTH reads the same voicing further back in the memory, so the chord drifts back through what the melody played. DEPTH takes CV, so the voicing can move on its own.
+The eight buttons pick which of those remembered notes go into the chord. Light the first one and you get the note just played; light the third and you get the one from two clocks ago. That set of lit buttons is the voicing. DEPTH reads the same voicing further back in the memory, so the chord wanders back through what the melody played. DEPTH takes CV, so the voicing can move on its own.
 
-BASS picks one note from the chord for a bass voice. CHANGE fires for each voice only when its note actually changes, so notes that stay in the next chord keep ringing instead of striking again. HOLD freezes the memory and loops it, so the chords repeat.
+BASS picks one note from the chord for a bass voice. CHANGE fires for each voice only when its note actually changes, so notes that stay in the next chord keep ringing instead of striking again. HOLD freezes the memory and loops it, so the chords repeat. DRIFT lets the loop breathe: now and then a new note from the melody slips into it, and the chords slowly turn into new ones.
 
 Ghisa has no quantizer. Feed it a melody that is already in a scale, and every chord stays in that scale. It doesn't have to be pitch, though: any voltage works, so it also turns a slow LFO into a set of related modulation voltages. Ghisa is 8 HP wide, and needs a signal in IN and a clock in CLOCK.
 
@@ -24,6 +24,8 @@ Ghisa has no quantizer. Feed it a melody that is already in a scale, and every c
 | HOLD | Stops taking new notes and loops the ones it has. |
 | DEPTH input | CV added to the DEPTH knob, one note further back per 1.25 V. |
 | HOLD input | A gate: the memory loops while it is high. |
+| DRIFT | While HOLD loops, how often a new note gets in. At 0 the loop repeats exactly; at full, every note is new, as if HOLD were off. |
+| DRIFT input | CV added to the DRIFT knob, 10% per volt. |
 | IN | The melody, or any voltage. Mono: from a poly cable, only the first channel is recorded. |
 | CLOCK | Each clock takes a new note and updates the chord. Required. |
 | BASS CLK | Optional. Patch a slower clock here and the bass changes only on it. |
@@ -68,7 +70,11 @@ You now have a pad that voices itself from the melody, and a knob that moves the
 
 **A phrase and its echo.** Patch a slow gate into HOLD. Ghisa takes new notes, then loops them while the gate is high. *Hold loop length* at 8 makes an eight-note repeat easy to line up.
 
-**Drifting voicing.** A slow random CV into DEPTH, with the knob near the middle. The pad wanders back through what the melody played.
+**A loop that slowly changes.** Turn HOLD on and DRIFT up a little, around 10%. The phrase repeats, but every so often one of its notes is replaced by what the melody is playing now, and the change travels round the loop.
+
+**One melody, several lives.** Split one melody into two or three Ghisas, each on its own clock and shape, with HOLD on and some DRIFT. Each loop keeps its own version of the melody and drifts away from it at its own pace.
+
+**Wandering voicing.** A slow random CV into DEPTH, with the knob near the middle. The pad wanders back through what the melody played.
 
 **When the chord goes thin.** A melody that repeats every few notes can put the same note on several buttons. Set *Duplicate notes* to *Skip*, or light a different button.
 
