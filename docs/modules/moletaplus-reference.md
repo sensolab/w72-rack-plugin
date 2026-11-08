@@ -6,11 +6,11 @@ The details behind [Moleta +'s manual](moletaplus.md): exact ranges, timing, edg
 
 | Control | What it does |
 | --- | --- |
-| Readout | Each output's ratio over its number, 5 to 8. |
-| RATIO 5 to 8 | Each output's ratio, in the same 21 steps as Moleta: /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16. |
+| Readout | Each output's ratio over its number: 5 to 8 next to Moleta, then 9 to 12, 13 to 16 and 17 to 20 down the chain. The numbers are drawn live from the module's place, and are blank while it is unlinked. A small chevron between two ratios, pointing left, marks an output that follows the one on its left. |
+| RATIO 5 to 8 | Each output's ratio, in the same 67 steps as Moleta: every divider from /32 to /2, then 2/3, 3/4, ×1, 4/3, 3/2, then every multiplier from ×2 to ×32. |
 | CHANCE 5 to 8 | The probability that a pulse passes, 0 to 100%. Moleta's DENSITY is added to it. |
 | LENGTH 5 to 8 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |
-| 5 to 8 | The pulses that passed, 10 V, as triggers or gates by LENGTH. 0 V with no Moleta on the left. |
+| OUT | The pulses that passed, 10 V, as triggers or gates by LENGTH. 0 V while unlinked. Their tooltips, and the knobs', carry the output numbers of the module's place. |
 
 A fresh Moleta + runs at ×4, ×1, /8 and 3/2 on outputs 5 to 8, every pulse passes, and each is a gate half its own period long.
 
@@ -19,17 +19,18 @@ In the module browser the readout shows a sample: /2, ×4, 2/3 and /8.
 ## Timing and behaviour
 
 - **The link.** Every sample Moleta hands its expander the beat clock's state (whether it is running, a beat, a reset, the beat count and the period T) and its REPEAT, DENSITY and *Coin loop*. Moleta + runs the same output engine as Moleta on that, so ratios, cycle restarts, the coin and LENGTH behave exactly as on outputs 1 to 4 ([Moleta's reference](moleta-reference.md#timing-and-behaviour) has the details).
-- **Alignment.** Rack passes data between neighbours one sample late. While Moleta + is attached, Moleta delays all its own outputs (1 to 4, BEAT, RESET and CLICK) by one sample, so the eight outputs land together. Without it, Moleta has no delay.
+- **Chaining.** Up to four Moleta + chain to the right of a Moleta, each touching the one before. Moleta walks the chain every sample and writes to each one directly, with its place, so the outputs are numbered by place and a fifth Moleta + is unlinked.
+- **Alignment.** Rack passes data between modules one sample late. Because Moleta writes to every Moleta + directly rather than hop by hop, all of them get the tick that same one sample late, wherever they sit. While one is attached, Moleta delays all its own outputs (1 to 4, BEAT, RESET and CLICK) by one sample, so every output in the chain lands together. Without one, Moleta has no delay.
 - **Its own coins.** Each of outputs 5 to 8 keeps its own loop of 16 stored numbers and pointer. Moleta's RESET and RUN restart them with Moleta's own, and its REPEAT and *Coin loop* apply to them.
-- **Follow the output above.** Outputs 6, 7 and 8 can follow the output to their left on Moleta +, as on Moleta. Output 5 does not follow Moleta's output 4: it starts a fresh chain.
-- **No Moleta on the left.** If the module on the left is not a Moleta, or there is none, the outputs are 0 V. Placed back next to a Moleta, each output waits for its next cycle restart, so it falls in line with Moleta's beats; its coin loops are kept.
+- **Follow the output above.** Outputs 6, 7 and 8 can follow the output to their left on Moleta +, as on Moleta. Each Moleta +'s first output (5, 9, 13, 17) does not follow the output before it: it starts a fresh chain.
+- **Unlinked.** If no Moleta reaches the module (nothing on its left, a module in between, or a fifth in the chain), the outputs are 0 V and the readout's numbers are blank. Placed back next to a Moleta, each output waits for its next cycle restart, so it falls in line with Moleta's beats; its coin loops are kept.
 - **Saved with the patch.** The ratios, each output's coin loop (its numbers and pointer) and the follow choices.
 
 ## Every menu option
 
 | Item | Choices | Default |
 | --- | --- | --- |
-| Follow the output above | Per output, 6 to 8: on or off | Off |
+| Follow the output above | Per output, the second to the fourth (6 to 8 next to Moleta): on or off | Off |
 
 The clock, *Beats per bar* and *Coin loop* are set on Moleta.
 

@@ -6,7 +6,9 @@
 
 Moleta + gives a [Moleta](moleta.md) four more outputs, numbered 5 to 8. Place it directly to the right of a Moleta, touching it. There is no cable to patch between them.
 
-Each new output works like Moleta's own. RATIO sets how fast it ticks, CHANCE how many ticks get through, and LENGTH whether they are triggers or gates. Moleta's tempo, RUN, RESET, REPEAT and DENSITY drive all eight outputs, so one REPEAT knob locks every pattern at once.
+Want more? Chain up to four, each touching the one before: the second adds outputs 9 to 12, the third 13 to 16, the fourth 17 to 20. The readout shows which outputs a Moleta + has.
+
+Each new output works like Moleta's own. RATIO sets how fast it ticks, CHANCE how many ticks get through, and LENGTH whether they are triggers or gates. Moleta's tempo, RUN, RESET, REPEAT and DENSITY drive every output in the chain, so one REPEAT knob locks every pattern at once.
 
 Moleta + is 11 HP wide. Away from a Moleta, its outputs stay silent.
 
@@ -16,11 +18,11 @@ Moleta + is 11 HP wide. Away from a Moleta, its outputs stay silent.
 
 | Control | What it does |
 | --- | --- |
-| Readout | Each output's ratio. |
-| RATIO 5 to 8 | How fast the output ticks against Moleta's beat, from /16 to ×16. |
+| Readout | Each output's ratio, over its number. The numbers show once the module is linked to a Moleta. A chevron (‹) between two ratios means the output on the right follows the one on its left. |
+| RATIO 5 to 8 | How fast the output ticks against Moleta's beat, from /32 to ×32. |
 | CHANCE 5 to 8 | How often a tick gets through. Moleta's DENSITY input moves these too. |
 | LENGTH 5 to 8 | Fully left, a short trigger. Further right, a longer gate. |
-| 5 to 8 | The ticks that got through. Mono. |
+| OUT | The ticks that got through, one per column. Mono. |
 
 Everything else, the tempo, REPEAT and the clock options, is set on Moleta. See [Moleta's manual](moleta.md).
 
@@ -28,7 +30,7 @@ Everything else, the tempo, REPEAT and the clock options, is set on Moleta. See 
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| Follow the output above | Outputs 6 to 8 only play while the output to their left is playing. | Off |
+| Follow the output above | The second, third and fourth outputs only play while the output to their left is playing. | Off |
 
 ## Samples
 
@@ -46,7 +48,7 @@ You now have a fifth output, locked with Moleta's four.
 
 **Silence that spreads.** Output 5 at /4 and 60%. Outputs 6 to 8 at ×2, ×3 and ×4, each with *Follow the output above* on. A rest on 5 silences the whole row.
 
-**When the outputs are silent.** Moleta + must touch the Moleta on its left. Anything in between, even a blank panel, breaks the link.
+**When the outputs are silent.** Moleta + must touch the Moleta on its left, or the Moleta + before it in a chain. Anything in between, even a blank panel, breaks the link, and a fifth Moleta + stays silent.
 
 ## Where it comes from
 

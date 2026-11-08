@@ -6,13 +6,13 @@ The details behind [Moleta's manual](moleta.md): exact ranges, timing, edge case
 
 | Control | What it does |
 | --- | --- |
-| Readout | BPM, then each output's ratio over its number. While CLOCK is patched, the BPM cell shows the measured tempo (`---` until two beats have arrived); its name stays BPM. |
+| Readout | BPM, then each output's ratio over its number. While CLOCK is patched, the BPM cell shows the measured tempo (`---` until two beats have arrived); its name stays BPM. A small chevron between two ratios, pointing left, marks an output that follows the one on its left (*Follow the output above*). |
 | RUN | Latching button, lit while running. Stopped, every output is silent and the internal clock is frozen. Turning it on restarts the cycles and the coin loops, as RESET does, without firing the RESET output. |
 | BPM | The internal tempo, 30 to 300 BPM, shown with one decimal. A change takes effect at once. Ignored while CLOCK is patched. |
 | RESET | Momentary button. Restarts every output's cycle, the coin loops and the bar count, and fires the RESET output. |
 | REPEAT | How often the coin loops are redrawn (see below). One knob for all outputs. |
 | DENSITY | CV added to every CHANCE, 10% per volt, so ±5 V moves each by half its range. Reads the first channel. |
-| RATIO 1 to 4 | Each output's ratio, in 21 steps: /16, /8, /7, /6, /5, /4, /3, /2, 2/3, 3/4, ×1, 4/3, 3/2, ×2, ×3, ×4, ×5, ×6, ×7, ×8, ×16. |
+| RATIO 1 to 4 | Each output's ratio, in 67 steps: every divider from /32 to /2, then 2/3, 3/4, ×1, 4/3, 3/2, then every multiplier from ×2 to ×32. |
 | CHANCE 1 to 4 | The probability that a pulse passes, 0 to 100%. |
 | LENGTH 1 to 4 | Fully left, a 1 ms trigger (*Trigger* in the tooltip). Further right, a gate from 5% to 95% of the output's own period; the middle is 50%. |
 | RUN (input) | A trigger toggles RUN, like the button. |
@@ -49,7 +49,7 @@ In the module browser the readout shows a sample: 120.0, ×2, 3/2, /4 and ×3.
 
 ## Expander
 
-[Moleta +](moletaplus.md), an 11 HP expander placed directly to the right, adds outputs 5 to 8, with the same strips and their ratios on its own readout row. It shares the clock, RESET, RUN and *Coin loop*, keeps its own coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays all its own outputs by one sample while Moleta + is attached, keeping all eight in line; with nothing attached there is no delay.
+[Moleta +](moletaplus.md), an 11 HP expander placed directly to the right, adds outputs 5 to 8, with the same strips and their ratios on its own readout row; up to four chain, for outputs 5 to 20. It shares the clock, RESET, RUN and *Coin loop*, keeps its own coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays all its own outputs by one sample while Moleta + is attached, keeping every output in line (Moleta writes to each Moleta + directly, so the delay stays one sample however long the chain); with nothing attached there is no delay.
 
 ## Saved state
 

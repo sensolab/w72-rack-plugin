@@ -6,7 +6,7 @@
 
 Moleta is a clock you patch into drums, envelopes and sequencers. Each of its four outputs ticks at its own speed, and each one can drop some of its ticks at random. What you hear is a groove that breathes: hats that leave gaps, a bass that sometimes skips a bar.
 
-Three knobs shape each output. RATIO sets how fast it ticks against the beat, from once every 16 beats to 16 times a beat. A few fractions, like 3/2, give cross-rhythms. CHANCE sets how many ticks get through. LENGTH turns the ticks into short triggers or longer gates.
+Three knobs shape each output. RATIO sets how fast it ticks against the beat, from once every 32 beats to 32 times a beat. A few fractions, like 3/2, give cross-rhythms. CHANCE sets how many ticks get through. LENGTH turns the ticks into short triggers or longer gates.
 
 Random gaps are fun until you find one you like. Turn REPEAT up and Moleta starts repeating its choices. All the way right, the pattern locks into a 16-step phrase. Once it's locked, CHANCE still thins or fills it without reshuffling it.
 
@@ -18,7 +18,7 @@ The obvious job is drums, but any ticks will do. Clock a sample and hold for ste
 
 | Control | What it does |
 | --- | --- |
-| Readout | The tempo, then each output's ratio. Shows `---` until an external clock has sent two beats. |
+| Readout | The tempo, then each output's ratio. Shows `---` until an external clock has sent two beats. A chevron (‹) between two ratios means the output on the right follows the one on its left. |
 | RUN | Starts and stops the clock. Stopped, every output is silent. |
 | BPM | The tempo, 30 to 300 BPM. Ignored while CLOCK is patched. |
 | RESET | Restarts every output and every pattern from the top. |
@@ -79,4 +79,4 @@ I kept patching the same pair: a clock, then a Chances module on an output, to d
 
 The clock modules I used had either fractions or chance, never both, and none let me pick a trigger or a gate per output. SickoCV Clocker has integer ratios and widths. CVfunk Syncro has fractions but no chance. Count Modula Chances flips a coin on any signal. ALM's Pamela's Workout does ratio, width and chance per output in hardware, and is the closest ancestor.
 
-Moleta + adds four more outputs; see [its manual](moletaplus.md). Timing details, edge cases and the saved state are in the [reference](moleta-reference.md).
+Moleta + adds four more outputs, and up to four chain for twenty in all; see [its manual](moletaplus.md). Timing details, edge cases and the saved state are in the [reference](moleta-reference.md).
