@@ -123,6 +123,11 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 	for _, id := range m.PlateRules {
 		i := m.outputIndex(id)
 		x := (outs[i].X + outs[i+1].X) / 2
+		for _, s := range m.sections()[1:] {
+			if s[0] > outs[i].X && s[0] < outs[i+1].X {
+				x = s[0]
+			}
+		}
 		w.rect("rule-"+id, x-ruleWidth/2, plateTop+plateRuleInset, ruleWidth, plateBottom-plateTop-2*plateRuleInset, 0, colPlateRule)
 	}
 
@@ -130,6 +135,13 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 	for _, row := range m.Dividers {
 		y := rowY(row) + rowPitch/2
 		w.rect(fmt.Sprintf("divider-%d", row), dividerInset, y-ruleWidth/2, W-2*dividerInset, ruleWidth, 0, colDivider)
+	}
+
+	// Splits between sections: hairlines down the panel, from under the band to
+	// above the plate, as far in as a divider is from the sides.
+	for i, s := range m.sections()[1:] {
+		top, bottom := bandY+bandH+dividerInset, plateTop-dividerInset
+		w.rect(fmt.Sprintf("split-%d", i), s[0]-ruleWidth/2, top, ruleWidth, bottom-top, 0, colDivider)
 	}
 
 	// Wells and bezels, under their labels.
@@ -151,6 +163,10 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 		}
 		wb := m.well(p)
 		for _, cell := range p.Cells {
+			// An empty name is drawn live by the widget (Gibigiana's lane number).
+			if cell.Label == "" {
+				continue
+			}
 			t := Text{faces.SemiBold, labelSize, labelTracking, strings.ToUpper(cell.Label)}
 			d, err := t.PathCentered(m.colX(cell.Col), wb.Y+cellNameBase)
 			if err != nil {
@@ -192,7 +208,12 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 		w.text("label-"+p.ID, d, fill)
 	}
 
-	// The mark: between the bottom screws from 6 HP, above the single screw below.
+	// The mark: between the bottom screws from 6 HP, above the single screw below,
+	// and none on an unsigned panel.
+	if !m.signed() {
+		w.b.WriteString("</svg>\n")
+		return w.b.String(), nil
+	}
 	mw, cx, cy := 15.0, W/2, screwRowY+screwSize/2
 	if m.HP < smallPanel {
 		mw = 22

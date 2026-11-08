@@ -1,14 +1,14 @@
-// Gibigiana: a clocked echo lane. Four taps read one mono voice back on the clock
-// grid, each with a chance; the coins roll once per hit and ride with the audio, so
-// a note and its tail share one fate. Wet only, no feedback. The DSP is in
-// GibigianaEngine.hpp, and the coin loop is Moleta's.
+// Gibigiana: a clocked echo lane. Each lane reads one mono voice back on the clock
+// grid with its own chance; the coins roll once per hit and ride with the audio, so
+// a note and its tail share one fate. Wet only, no feedback. Gibigiana is the
+// system and lane 1; each Gibigiana + on its right adds a lane, up to 8 in all, and
+// every lane's sound is made here (GibigianaEngine.hpp, GibigianaExpander.hpp).
 #include "plugin.hpp"
 #include "GibigianaPanel.hpp"
 #include "GibigianaEngine.hpp"
+#include "GibigianaExpander.hpp"
 #include "widgets.hpp"
 
-// Four taps on one panel until the lanes move to Gibigiana +; the engine holds up to gibigiana::LANES.
-static const int TAPS = 4;
 static const int COIN_LOOPS[] = {8, 16};
 
 static float uniform() {
@@ -25,11 +25,24 @@ struct WidthQuantity : ParamQuantity {
 	}
 };
 
+// The Gibigiana + modules chained on a module's right, nearest first, up to the cap.
+static int chainedLanes(Module* m, Module** last = NULL) {
+	int n = 0;
+	Module* at = m;
+	while (n < GIBIGIANA_PLUS_MAX && at->rightExpander.module && at->rightExpander.module->model == modelGibigianaPlus) {
+		at = at->rightExpander.module;
+		n++;
+	}
+	if (last)
+		*last = at;
+	return n;
+}
+
 struct Gibigiana : Module {
-	enum ParamId { ENUMS(STEP_PARAM, TAPS), ENUMS(CHANCE_PARAM, TAPS), ENUMS(LEVEL_PARAM, TAPS), ENUMS(PAN_PARAM, TAPS), CENTRE_PARAM, WIDTH_PARAM, REPEAT_PARAM, DUCK_PARAM, PARAMS_LEN };
+	enum ParamId { STEP_PARAM, CHANCE_PARAM, LEVEL_PARAM, PAN_PARAM, CENTRE_PARAM, WIDTH_PARAM, REPEAT_PARAM, DUCK_PARAM, ADD_LANE_PARAM, PARAMS_LEN };
 	// New inputs and outputs go at the end: patches store cables by index.
-	enum InputId { IN_INPUT, CLOCK_INPUT, GATE_INPUT, RESET_INPUT, DENSITY_INPUT, DUCK_INPUT, INPUTS_LEN };
-	enum OutputId { LEFT_OUTPUT, RIGHT_OUTPUT, ENUMS(TAP_OUTPUT, TAPS), OUTPUTS_LEN };
+	enum InputId { IN_INPUT, CLOCK_INPUT, GATE_INPUT, RESET_INPUT, DENSITY_INPUT, DUCK_INPUT, CHANCE_INPUT, LEVEL_INPUT, PAN_INPUT, INPUTS_LEN };
+	enum OutputId { LEFT_OUTPUT, RIGHT_OUTPUT, TAP_OUTPUT, OUTPUTS_LEN };
 	enum LightId { LIGHTS_LEN };
 
 	gibigiana::Engine engine;
@@ -48,30 +61,39 @@ struct Gibigiana : Module {
 		std::vector<std::string> names;
 		for (const gibigiana::Step& s : gibigiana::STEPS)
 			names.push_back(s.name);
-		for (int i = 0; i < TAPS; i++) {
-			configSwitch(STEP_PARAM + i, 0.f, gibigiana::STEP_COUNT - 1, gibigiana::DEFAULT_STEPS[i], string::f("Step %d", i + 1), names)->description =
-				"Clock steps behind the input";
-			configParam(CHANCE_PARAM + i, 0.f, 1.f, 1.f, string::f("Chance %d", i + 1), "%", 0.f, 100.f)->description =
-				"The chance that a hit comes back at this tap";
-			configParam(LEVEL_PARAM + i, 0.f, 1.f, 0.5f, string::f("Level %d", i + 1), " dB", -10.f, 20.f);
-			configParam(PAN_PARAM + i, -1.f, 1.f, 0.f, string::f("Pan %d", i + 1), "%", 0.f, 100.f);
-		}
+		configSwitch(STEP_PARAM, 0.f, gibigiana::STEP_COUNT - 1, gibigiana::DEFAULT_STEPS[0], "Step", names)->description =
+			"Clock steps behind the input";
+		configParam(CHANCE_PARAM, 0.f, 1.f, 1.f, "Chance", "%", 0.f, 100.f)->description =
+			"The chance that a hit comes back at this tap";
+		configParam(LEVEL_PARAM, 0.f, 1.f, 0.5f, "Level", " dB", -10.f, 20.f);
+		configParam(PAN_PARAM, -1.f, 1.f, 0.f, "Pan", "%", 0.f, 100.f);
 		configParam(CENTRE_PARAM, 0.f, 1.f, 0.5f, "Band centre", " Hz", gibigiana::BAND_RANGE, gibigiana::BAND_LOW);
 		configParam<WidthQuantity>(WIDTH_PARAM, 0.f, 1.f, 1.f, "Band width")->description = "Fully right, the band is open";
 		configParam(REPEAT_PARAM, 0.f, 1.f, 0.f, "Repeat", "%", 0.f, 100.f)->description =
-			"Fully left, every hit flips a fresh coin; fully right, each tap's coin loop is locked";
+			"Fully left, every hit flips a fresh coin; fully right, each lane's coin loop is locked";
 		configParam(DUCK_PARAM, 0.f, 1.f, 0.8f, "Duck amount", "%", 0.f, 100.f);
+		configButton(ADD_LANE_PARAM, "Add lane")->description = "Places a Gibigiana + after the last lane, up to 8 lanes";
 		configInput(IN_INPUT, "Audio");
 		configInput(CLOCK_INPUT, "Clock")->description = "One step per pulse; the taps are silent until two pulses have set the step";
 		configInput(GATE_INPUT, "Gate")->description = "Each rising edge is a hit and rolls the coins. Unpatched, every clock pulse is a hit";
 		configInput(RESET_INPUT, "Reset")->description = "Restarts the coin loops";
-		configInput(DENSITY_INPUT, "Density")->description = "10% per volt, added to every CHANCE";
+		configInput(DENSITY_INPUT, "Density")->description = "10% per volt, added to every lane's CHANCE";
 		configInput(DUCK_INPUT, "Duck")->description = "Pulls the reflections down by up to the DUCK amount";
-		configOutput(LEFT_OUTPUT, "Left");
-		configOutput(RIGHT_OUTPUT, "Right");
-		for (int i = 0; i < TAPS; i++)
-			configOutput(TAP_OUTPUT + i, string::f("Tap %d", i + 1))->description = "Patched, the tap leaves the sum (right-click menu)";
+		configInput(CHANCE_INPUT, "Chance CV")->description = "10% per volt, added to CHANCE";
+		configInput(LEVEL_INPUT, "Level CV")->description = "10% per volt, added to LEVEL";
+		configInput(PAN_INPUT, "Pan CV")->description = "±5 V sweeps from side to side, added to PAN";
+		configOutput(LEFT_OUTPUT, "Left")->description = "Every lane in the chain";
+		configOutput(RIGHT_OUTPUT, "Right")->description = "Every lane in the chain";
+		configOutput(TAP_OUTPUT, "Tap")->description = "Patched, the tap leaves the sum (right-click menu)";
+		// Each Gibigiana + on the right writes its lanes here; Rack swaps the two at the end of each sample.
+		rightExpander.producerMessage = new GibigianaLanes;
+		rightExpander.consumerMessage = new GibigianaLanes;
 		engine.fillCoins(uniform);
+	}
+
+	~Gibigiana() {
+		delete (GibigianaLanes*) rightExpander.producerMessage;
+		delete (GibigianaLanes*) rightExpander.consumerMessage;
 	}
 
 	void onSampleRateChange(const SampleRateChangeEvent& e) override {
@@ -83,6 +105,48 @@ struct Gibigiana : Module {
 		engine.fillCoins(uniform);
 		coinLoop = 1;
 		keepPatched = false;
+	}
+
+	// The lanes the Gibigiana + chain sent: none unless one is on the right.
+	int readLanes() {
+		GibigianaLanes* message = (GibigianaLanes*) rightExpander.consumerMessage;
+		Module* right = rightExpander.module;
+		if (!right || right->model != modelGibigianaPlus) {
+			// Stale once the chain is gone: a Gibigiana + placed back reads as empty until it writes.
+			message->count = 0;
+			return 0;
+		}
+		int n = clamp(message->count, 0, GIBIGIANA_PLUS_MAX);
+		for (int j = 0; j < n; j++) {
+			const GibigianaLane& l = message->lane[j];
+			int i = j + 1;
+			knobs.step[i] = l.step;
+			knobs.chance[i] = l.chance;
+			knobs.level[i] = l.level;
+			knobs.pan[i] = l.pan;
+			knobs.chanceCv[i] = l.chanceCv;
+			knobs.levelCv[i] = l.levelCv;
+			knobs.panCv[i] = l.panCv;
+			knobs.patched[i] = l.patched;
+			// One sample per hop: lane i hears its tap i samples late.
+			knobs.lag[i] = i;
+		}
+		return n;
+	}
+
+	// Sends the expanders their taps, nearest first.
+	void pushTaps(const gibigiana::Out& o) {
+		Module* right = rightExpander.module;
+		if (!right || right->model != modelGibigianaPlus || !right->leftExpander.producerMessage)
+			return;
+		GibigianaTaps* message = (GibigianaTaps*) right->leftExpander.producerMessage;
+		message->linked = true;
+		message->place = 1;
+		for (int j = 0; j < GIBIGIANA_PLUS_MAX; j++) {
+			message->tap[j] = o.tap[j + 1];
+			message->reach[j] = engine.taps[j + 1].reach;
+		}
+		right->leftExpander.requestMessageFlip();
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -99,46 +163,45 @@ struct Gibigiana : Module {
 		f.density = inputs[DENSITY_INPUT].getVoltage();
 		f.duck = inputs[DUCK_INPUT].getVoltage();
 
-		for (int i = 0; i < TAPS; i++) {
-			knobs.step[i] = (int) std::round(params[STEP_PARAM + i].getValue());
-			knobs.chance[i] = params[CHANCE_PARAM + i].getValue();
-			knobs.level[i] = params[LEVEL_PARAM + i].getValue();
-			knobs.pan[i] = params[PAN_PARAM + i].getValue();
-			knobs.patched[i] = outputs[TAP_OUTPUT + i].isConnected();
-		}
+		knobs.step[0] = (int) std::round(params[STEP_PARAM].getValue());
+		knobs.chance[0] = params[CHANCE_PARAM].getValue();
+		knobs.level[0] = params[LEVEL_PARAM].getValue();
+		knobs.pan[0] = params[PAN_PARAM].getValue();
+		knobs.chanceCv[0] = inputs[CHANCE_INPUT].getVoltage();
+		knobs.levelCv[0] = inputs[LEVEL_INPUT].getVoltage();
+		knobs.panCv[0] = inputs[PAN_INPUT].getVoltage();
+		knobs.patched[0] = outputs[TAP_OUTPUT].isConnected();
+		knobs.lag[0] = 0;
+		knobs.lanes = 1 + readLanes();
 		knobs.centre = params[CENTRE_PARAM].getValue();
 		knobs.width = params[WIDTH_PARAM].getValue();
 		knobs.repeat = params[REPEAT_PARAM].getValue();
 		knobs.duck = params[DUCK_PARAM].getValue();
-		knobs.lanes = TAPS;
 		knobs.loopLength = COIN_LOOPS[coinLoop];
 		knobs.keepPatched = keepPatched;
 
 		gibigiana::Out o = engine.process(f, knobs, uniform);
 		outputs[LEFT_OUTPUT].setVoltage(o.left);
 		outputs[RIGHT_OUTPUT].setVoltage(o.right);
-		for (int i = 0; i < TAPS; i++)
-			outputs[TAP_OUTPUT + i].setVoltage(o.tap[i]);
+		outputs[TAP_OUTPUT].setVoltage(o.tap[0]);
+		pushTaps(o);
 	}
 
 	json_t* dataToJson() override {
 		json_t* rootJ = json_object();
 		// The step itself, not the knob's position, so the list can grow.
-		json_t* stepsJ = json_array();
-		for (int i = 0; i < TAPS; i++) {
-			const gibigiana::Step& s = gibigiana::STEPS[gibigiana::clampStep((int) std::round(params[STEP_PARAM + i].getValue()))];
-			json_t* sJ = json_object();
-			json_object_set_new(sJ, "p", json_integer(s.p));
-			json_object_set_new(sJ, "q", json_integer(s.q));
-			json_array_append_new(stepsJ, sJ);
-		}
-		json_object_set_new(rootJ, "steps", stepsJ);
+		const gibigiana::Step& s = gibigiana::STEPS[gibigiana::clampStep((int) std::round(params[STEP_PARAM].getValue()))];
+		json_t* stepJ = json_object();
+		json_object_set_new(stepJ, "p", json_integer(s.p));
+		json_object_set_new(stepJ, "q", json_integer(s.q));
+		json_object_set_new(rootJ, "step", stepJ);
+		// The coin loops belong to the places in the chain, so Gibigiana keeps all eight.
 		json_t* coinsJ = json_array();
 		for (const moleta::Coin& c : engine.coins) {
 			json_t* cJ = json_object();
 			json_t* slotsJ = json_array();
-			for (float s : c.slots)
-				json_array_append_new(slotsJ, json_real(s));
+			for (float v : c.slots)
+				json_array_append_new(slotsJ, json_real(v));
 			json_object_set_new(cJ, "slots", slotsJ);
 			json_object_set_new(cJ, "pointer", json_integer(c.pointer));
 			json_array_append_new(coinsJ, cJ);
@@ -151,14 +214,11 @@ struct Gibigiana : Module {
 
 	void dataFromJson(json_t* rootJ) override {
 		// Rack loads the params first, so a saved step wins over the knob's position.
-		json_t* stepsJ = json_object_get(rootJ, "steps");
-		for (int i = 0; i < TAPS; i++) {
-			json_t* sJ = json_array_get(stepsJ, i);
-			int p = (int) json_integer_value(json_object_get(sJ, "p"));
-			int q = (int) json_integer_value(json_object_get(sJ, "q"));
-			if (p > 0 && q > 0)
-				params[STEP_PARAM + i].setValue(gibigiana::nearestStep(p, q));
-		}
+		json_t* stepJ = json_object_get(rootJ, "step");
+		int p = (int) json_integer_value(json_object_get(stepJ, "p"));
+		int q = (int) json_integer_value(json_object_get(stepJ, "q"));
+		if (p > 0 && q > 0)
+			params[STEP_PARAM].setValue(gibigiana::nearestStep(p, q));
 		json_t* coinsJ = json_object_get(rootJ, "coins");
 		for (int i = 0; i < gibigiana::LANES; i++) {
 			json_t* cJ = json_array_get(coinsJ, i);
@@ -177,26 +237,41 @@ struct Gibigiana : Module {
 	}
 };
 
-// Each tap's step; dim when the step reaches past the buffer and the tap is silent.
+// Lane 1's step, over its number; dim when the step reaches past the buffer.
 struct GibigianaReadout : w72::Readout {
 	Gibigiana* module;
 
 	GibigianaReadout(Gibigiana* module)
-		: Readout(GibigianaPanel::READOUT_WELL, GibigianaPanel::READOUT, TAPS, GibigianaPanel::READOUT_VALUE_SIZE), module(module) {}
+		: Readout(GibigianaPanel::READOUT_WELL, GibigianaPanel::READOUT, 1, GibigianaPanel::READOUT_VALUE_SIZE), module(module) {
+		nameBaseline = GibigianaPanel::READOUT_NAME_BASELINE - GibigianaPanel::READOUT_WELL.pos.y;
+	}
 
 	std::string text(int i) override {
 		if (!module)
 			return GibigianaPanel::READOUT_SAMPLE[i];
-		int s = gibigiana::clampStep((int) std::round(module->params[Gibigiana::STEP_PARAM + i].getValue()));
+		int s = gibigiana::clampStep((int) std::round(module->params[Gibigiana::STEP_PARAM].getValue()));
 		return gibigiana::STEPS[s].shown;
 	}
 
+	std::string name(int i) override {
+		return "1";
+	}
+
 	bool dim(int i) override {
-		return module && !module->engine.taps[i].reach;
+		return module && !module->engine.taps[0].reach;
+	}
+};
+
+// ADD LANE: momentary, lit while held.
+struct AddLaneButton : w72::FlatButton {
+	AddLaneButton() {
+		momentary = true;
 	}
 };
 
 struct GibigianaWidget : ModuleWidget {
+	bool addHeld = false;
+
 	GibigianaWidget(Gibigiana* module) {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/Gibigiana.svg")));
@@ -205,22 +280,16 @@ struct GibigianaWidget : ModuleWidget {
 			addChild(createWidget<ScrewBlack>(pos));
 
 		addChild(new GibigianaReadout(module));
+		addParam(w72::createFlatButton<AddLaneButton>(GibigianaPanel::ADD_LANE, GibigianaPanel::BUTTON_SIZE, GibigianaPanel::FLAT_LIGHT_SIZE, module, Gibigiana::ADD_LANE_PARAM));
 
-		const Vec step[TAPS] = {GibigianaPanel::STEP_1, GibigianaPanel::STEP_2, GibigianaPanel::STEP_3, GibigianaPanel::STEP_4};
-		const Vec chance[TAPS] = {GibigianaPanel::CHANCE_1, GibigianaPanel::CHANCE_2, GibigianaPanel::CHANCE_3, GibigianaPanel::CHANCE_4};
-		const Vec level[TAPS] = {GibigianaPanel::LEVEL_1, GibigianaPanel::LEVEL_2, GibigianaPanel::LEVEL_3, GibigianaPanel::LEVEL_4};
-		const Vec pan[TAPS] = {GibigianaPanel::PAN_1, GibigianaPanel::PAN_2, GibigianaPanel::PAN_3, GibigianaPanel::PAN_4};
-		const Vec out[TAPS] = {GibigianaPanel::OUT_1, GibigianaPanel::OUT_2, GibigianaPanel::OUT_3, GibigianaPanel::OUT_4};
-		for (int i = 0; i < TAPS; i++) {
-			addParam(createParamCentered<RoundBlackKnob>(step[i], module, Gibigiana::STEP_PARAM + i));
-			addParam(createParamCentered<RoundBlackKnob>(chance[i], module, Gibigiana::CHANCE_PARAM + i));
-			addParam(createParamCentered<Trimpot>(level[i], module, Gibigiana::LEVEL_PARAM + i));
-			addParam(createParamCentered<Trimpot>(pan[i], module, Gibigiana::PAN_PARAM + i));
-		}
-		addParam(createParamCentered<Trimpot>(GibigianaPanel::CENTRE, module, Gibigiana::CENTRE_PARAM));
-		addParam(createParamCentered<Trimpot>(GibigianaPanel::WIDTH, module, Gibigiana::WIDTH_PARAM));
-		addParam(createParamCentered<Trimpot>(GibigianaPanel::REPEAT, module, Gibigiana::REPEAT_PARAM));
-		addParam(createParamCentered<Trimpot>(GibigianaPanel::DUCK_AMOUNT, module, Gibigiana::DUCK_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GibigianaPanel::REPEAT, module, Gibigiana::REPEAT_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GibigianaPanel::DUCK_AMOUNT, module, Gibigiana::DUCK_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GibigianaPanel::CENTRE, module, Gibigiana::CENTRE_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GibigianaPanel::WIDTH, module, Gibigiana::WIDTH_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GibigianaPanel::STEP, module, Gibigiana::STEP_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(GibigianaPanel::CHANCE, module, Gibigiana::CHANCE_PARAM));
+		addParam(createParamCentered<Trimpot>(GibigianaPanel::LEVEL, module, Gibigiana::LEVEL_PARAM));
+		addParam(createParamCentered<Trimpot>(GibigianaPanel::PAN, module, Gibigiana::PAN_PARAM));
 
 		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::IN, module, Gibigiana::IN_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::CLOCK, module, Gibigiana::CLOCK_INPUT));
@@ -228,11 +297,56 @@ struct GibigianaWidget : ModuleWidget {
 		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::RESET, module, Gibigiana::RESET_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::DENSITY, module, Gibigiana::DENSITY_INPUT));
 		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::DUCK, module, Gibigiana::DUCK_INPUT));
+		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::CHANCE_CV, module, Gibigiana::CHANCE_INPUT));
+		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::LEVEL_CV, module, Gibigiana::LEVEL_INPUT));
+		addInput(createInputCentered<DarkPJ301MPort>(GibigianaPanel::PAN_CV, module, Gibigiana::PAN_INPUT));
 
 		addOutput(createOutputCentered<DarkPJ301MPort>(GibigianaPanel::OUT_L, module, Gibigiana::LEFT_OUTPUT));
 		addOutput(createOutputCentered<DarkPJ301MPort>(GibigianaPanel::OUT_R, module, Gibigiana::RIGHT_OUTPUT));
-		for (int i = 0; i < TAPS; i++)
-			addOutput(createOutputCentered<DarkPJ301MPort>(out[i], module, Gibigiana::TAP_OUTPUT + i));
+		addOutput(createOutputCentered<DarkPJ301MPort>(GibigianaPanel::OUT, module, Gibigiana::TAP_OUTPUT));
+	}
+
+	// The scene changes only on the UI thread, so the button is read here, not in process().
+	void step() override {
+		if (module) {
+			bool held = module->params[Gibigiana::ADD_LANE_PARAM].getValue() > 0.f;
+			if (held && !addHeld)
+				addLane();
+			addHeld = held;
+		}
+		ModuleWidget::step();
+	}
+
+	// Places a Gibigiana + after the last lane and pushes the modules there aside, in
+	// one undo action. At the cap it does nothing.
+	void addLane() {
+		Module* last = NULL;
+		int n = chainedLanes(module, &last);
+		if (n >= GIBIGIANA_PLUS_MAX)
+			return;
+		RackWidget* rack = APP->scene->rack;
+		ModuleWidget* lastWidget = rack->getModule(last->id);
+		if (!lastWidget)
+			return;
+		rack->updateModuleOldPositions();
+
+		Module* m = modelGibigianaPlus->createModule();
+		APP->engine->addModule(m);
+		ModuleWidget* mw = modelGibigianaPlus->createModuleWidget(m);
+		rack->addModule(mw);
+		rack->setModulePosForce(mw, Vec(lastWidget->box.getRight(), lastWidget->box.pos.y));
+		mw->loadTemplate();
+		// A new lane's step follows the first defaults by its place: 3, 4, then 8.
+		m->params[GIBIGIANA_PLUS_STEP_PARAM].setValue(gibigiana::DEFAULT_STEPS[n + 1]);
+
+		// Undo removes the lane first, then moves the neighbours back.
+		history::ComplexAction* h = new history::ComplexAction;
+		h->name = "add Gibigiana lane";
+		h->push(rack->getModuleDragAction());
+		history::ModuleAdd* add = new history::ModuleAdd;
+		add->setModule(mw);
+		h->push(add);
+		APP->history->push(h);
 	}
 
 	void appendContextMenu(Menu* menu) override {
@@ -240,6 +354,8 @@ struct GibigianaWidget : ModuleWidget {
 		if (!m)
 			return;
 		menu->addChild(new MenuSeparator);
+		bool full = chainedLanes(m) >= GIBIGIANA_PLUS_MAX;
+		menu->addChild(createMenuItem("Add lane", full ? "8 lanes" : "", [=]() { addLane(); }, full));
 		menu->addChild(createIndexPtrSubmenuItem("Coin loop", {"8 hits", "16 hits"}, &m->coinLoop));
 		menu->addChild(createBoolPtrMenuItem("Patched tap stays in the sum", "", &m->keepPatched));
 	}

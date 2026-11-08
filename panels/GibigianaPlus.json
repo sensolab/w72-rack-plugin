@@ -1,0 +1,19 @@
+{
+  "slug": "GibigianaPlus",
+  "name": "Gibigiana +",
+  "family": "weather",
+  "hp": 4,
+  "mark": false,
+  "columns": {"inset": 15, "pitch": 15},
+  "controls": [
+    { "id": "READOUT", "kind": "readout", "row": 6, "dy": 4.5, "cells": [{"col": 1, "label": "", "sample": "3"}] },
+    { "id": "STEP", "kind": "knob", "label": "STEP", "row": 5, "dy": 5.5, "col": 1 },
+    { "id": "CHANCE", "kind": "knob", "label": "CHANCE", "row": 4, "dy": 4.5, "col": 1 },
+    { "id": "LEVEL", "kind": "trimpot", "label": "LEVEL", "row": 3, "col": 0 },
+    { "id": "PAN", "kind": "trimpot", "label": "PAN", "row": 3, "col": 2 },
+    { "id": "CHANCE_CV", "kind": "input", "label": "CHANCE", "row": 2, "col": 1 },
+    { "id": "LEVEL_CV", "kind": "input", "label": "LEVEL", "row": 1, "col": 0 },
+    { "id": "PAN_CV", "kind": "input", "label": "PAN", "row": 1, "col": 2 },
+    { "id": "OUT", "kind": "output", "label": "TAP", "row": 0, "col": 1 }
+  ]
+}

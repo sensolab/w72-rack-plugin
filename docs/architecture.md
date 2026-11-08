@@ -4,7 +4,7 @@
 
 ## At a glance
 
-W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown four modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +, Gibigiana); the diagram is the bridge only.
+W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +, Gibigiana and its lane expander Gibigiana +); the diagram is the bridge only.
 
 ```mermaid
 flowchart LR
@@ -28,7 +28,7 @@ One GitHub repository, `w72-rack-plugin`, holds the plugin, the MCP binary and t
 w72-rack-plugin/
   plugin.json             the Rack plugin, slug W72
   Makefile
-  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, Gibigiana, and W72's own parts
+  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, Gibigiana, Gibigiana +, and W72's own parts
                           (widgets.hpp; MoletaEngine.hpp and GibigianaEngine.hpp, DSP with no Rack includes)
   res/                    panels (SVG), generated; fonts/ holds the readout's Inter Tight weight
   panels/                 one description per panel
@@ -293,6 +293,9 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | All of Gibigiana's sound is made in Gibigiana: each Gibigiana + sends its lane's settings leftward every sample, and Gibigiana sends each lane's tap sound rightward, reading lane *n* *n* samples early so its tap out lands on the grid; the L/R sum has no chain lag. The buffer's coin mask is 8 bits, one per lane; coin loops belong to the place in the chain and are saved by Gibigiana. A Gibigiana + with no Gibigiana to its left is silent, its readout dim. Lanes that leave fade out over the 2 ms coin ramp; a lane that joins starts silent until the next hit | 2026-11-08 |
 | 2.9.0 waits for Gibigiana's split: Gibigiana is released once, in its split form | 2026-11-08 |
 | Gibigiana's lane CVs add to their knobs: CHANCE and LEVEL by 10% of their range per volt, as DENSITY does, and PAN by 20% per volt, so ±5 V sweeps it from side to side. Starting points, to tune by ear | 2026-11-08 |
+| Gibigiana's panels are layout A from the split canvas: Gibigiana is 10 HP, a 6 HP system section (ADD LANE; REPEAT, DUCK, CENTRE and WIDTH as knobs now there is room; CLOCK, GATE, RESET, IN, DENSITY, DUCK; L and R) beside lane 1, drawn as the very strip a Gibigiana + repeats so lanes read left to right in one rhythm. Gibigiana + is 4 HP with its CVs above the plate and goes unsigned, since under 6 HP the mark sits where the plate would; Gibigiana signs the chain. A four-lane setup is 22 HP, eight lanes 38 HP. The readout's small number is the lane's place in the chain, drawn live; every tap output is labelled TAP. Chosen over 5 HP signed lanes (26 and 46 HP) for a compact chain | 2026-11-08 |
+| The panel generator gains `splits` (side-by-side sections at columns, drawn as hairlines; a readout takes its section and may share its row), `"mark": false` for an unsigned panel, the only way under 6 HP to take outputs, and readout cells whose blank names the widget draws live | 2026-11-08 |
+| A Gibigiana + sends its lane's settings leftward and gets its tap from the left (`GibigianaExpander.hpp`); a lane past the eighth, or one with no Gibigiana at the head of its chain, is silent with its readout dim. ADD LANE sets the new lane's STEP by its place; one made from the module browser takes its place's step the first time it joins a chain, unless its knob was turned, and one loaded from a patch or preset keeps its own | 2026-11-08 |
 | Gibigiana's engine holds 8 lanes and takes each lane's chain lag (one sample per expander hop) as an input: the lane's tap reads that many samples early, and an 8-sample ring holds its share of the sum back as much. A lane that joins plays nothing written before it joined (the engine counts the samples it writes), so decisions left in the buffer from before it left never sound | 2026-11-08 |
 
 ## Open questions

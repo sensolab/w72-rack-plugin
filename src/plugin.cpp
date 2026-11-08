@@ -9,4 +9,5 @@ void init(Plugin* p) {
 	p->addModel(modelMoleta);
 	p->addModel(modelMoletaPlus);
 	p->addModel(modelGibigiana);
+	p->addModel(modelGibigianaPlus);
 }

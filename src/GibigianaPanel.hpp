@@ -5,38 +5,27 @@
 namespace GibigianaPanel {
 
 // Centres of the controls, in px.
-static const rack::math::Vec STEP_1 = rack::math::Vec(26.25f, 111.0f);
-static const rack::math::Vec STEP_2 = rack::math::Vec(78.75f, 111.0f);
-static const rack::math::Vec STEP_3 = rack::math::Vec(131.25f, 111.0f);
-static const rack::math::Vec STEP_4 = rack::math::Vec(183.75f, 111.0f);
-static const rack::math::Vec CHANCE_1 = rack::math::Vec(26.25f, 158.0f);
-static const rack::math::Vec CHANCE_2 = rack::math::Vec(78.75f, 158.0f);
-static const rack::math::Vec CHANCE_3 = rack::math::Vec(131.25f, 158.0f);
-static const rack::math::Vec CHANCE_4 = rack::math::Vec(183.75f, 158.0f);
-static const rack::math::Vec LEVEL_1 = rack::math::Vec(13.125f, 201.5f);
-static const rack::math::Vec PAN_1 = rack::math::Vec(39.375f, 201.5f);
-static const rack::math::Vec LEVEL_2 = rack::math::Vec(65.625f, 201.5f);
-static const rack::math::Vec PAN_2 = rack::math::Vec(91.875f, 201.5f);
-static const rack::math::Vec LEVEL_3 = rack::math::Vec(118.125f, 201.5f);
-static const rack::math::Vec PAN_3 = rack::math::Vec(144.375f, 201.5f);
-static const rack::math::Vec LEVEL_4 = rack::math::Vec(170.625f, 201.5f);
-static const rack::math::Vec PAN_4 = rack::math::Vec(196.875f, 201.5f);
-static const rack::math::Vec CENTRE = rack::math::Vec(26.25f, 247.0f);
-static const rack::math::Vec WIDTH = rack::math::Vec(78.75f, 247.0f);
-static const rack::math::Vec REPEAT = rack::math::Vec(131.25f, 247.0f);
-static const rack::math::Vec DUCK_AMOUNT = rack::math::Vec(183.75f, 247.0f);
-static const rack::math::Vec IN = rack::math::Vec(17.5f, 297.5f);
-static const rack::math::Vec CLOCK = rack::math::Vec(52.5f, 297.5f);
-static const rack::math::Vec GATE = rack::math::Vec(87.5f, 297.5f);
-static const rack::math::Vec RESET = rack::math::Vec(122.5f, 297.5f);
-static const rack::math::Vec DENSITY = rack::math::Vec(157.5f, 297.5f);
-static const rack::math::Vec DUCK = rack::math::Vec(192.5f, 297.5f);
-static const rack::math::Vec OUT_L = rack::math::Vec(17.5f, 345.5f);
-static const rack::math::Vec OUT_R = rack::math::Vec(52.5f, 345.5f);
-static const rack::math::Vec OUT_1 = rack::math::Vec(87.5f, 345.5f);
-static const rack::math::Vec OUT_2 = rack::math::Vec(122.5f, 345.5f);
-static const rack::math::Vec OUT_3 = rack::math::Vec(157.5f, 345.5f);
-static const rack::math::Vec OUT_4 = rack::math::Vec(192.5f, 345.5f);
+static const rack::math::Vec ADD_LANE = rack::math::Vec(45.0f, 59.0f);
+static const rack::math::Vec REPEAT = rack::math::Vec(22.5f, 111.0f);
+static const rack::math::Vec DUCK_AMOUNT = rack::math::Vec(67.5f, 111.0f);
+static const rack::math::Vec STEP = rack::math::Vec(120.0f, 111.0f);
+static const rack::math::Vec CENTRE = rack::math::Vec(22.5f, 158.0f);
+static const rack::math::Vec WIDTH = rack::math::Vec(67.5f, 158.0f);
+static const rack::math::Vec CHANCE = rack::math::Vec(120.0f, 158.0f);
+static const rack::math::Vec LEVEL = rack::math::Vec(105.0f, 201.5f);
+static const rack::math::Vec PAN = rack::math::Vec(135.0f, 201.5f);
+static const rack::math::Vec CLOCK = rack::math::Vec(15.0f, 249.5f);
+static const rack::math::Vec GATE = rack::math::Vec(45.0f, 249.5f);
+static const rack::math::Vec RESET = rack::math::Vec(75.0f, 249.5f);
+static const rack::math::Vec CHANCE_CV = rack::math::Vec(120.0f, 249.5f);
+static const rack::math::Vec IN = rack::math::Vec(15.0f, 297.5f);
+static const rack::math::Vec DENSITY = rack::math::Vec(45.0f, 297.5f);
+static const rack::math::Vec DUCK = rack::math::Vec(75.0f, 297.5f);
+static const rack::math::Vec LEVEL_CV = rack::math::Vec(105.0f, 297.5f);
+static const rack::math::Vec PAN_CV = rack::math::Vec(135.0f, 297.5f);
+static const rack::math::Vec OUT_L = rack::math::Vec(22.5f, 345.5f);
+static const rack::math::Vec OUT_R = rack::math::Vec(67.5f, 345.5f);
+static const rack::math::Vec OUT = rack::math::Vec(120.0f, 345.5f);
 
 // Square parts. A button's light is FLAT_LIGHT_SIZE wide, centred on the button;
 // a display is its well and the boxes of its lights (bars left to right;
@@ -44,28 +33,24 @@ static const rack::math::Vec OUT_4 = rack::math::Vec(192.5f, 345.5f);
 static const float BUTTON_SIZE = 14.0f;
 static const float FLAT_LIGHT_SIZE = 9.0f;
 
-static const rack::math::Rect READOUT_WELL = rack::math::Rect(rack::math::Vec(10.0f, 43.0f), rack::math::Vec(190.0f, 38.0f));
+static const rack::math::Rect READOUT_WELL = rack::math::Rect(rack::math::Vec(100.0f, 43.0f), rack::math::Vec(40.0f, 38.0f));
 // READOUT: centre of each cell's value baseline (px), and the value the module browser shows.
 static const float READOUT_VALUE_SIZE = 14.0f;
 static const rack::math::Vec READOUT[] = {
-	rack::math::Vec(26.25f, 64.0f),
-	rack::math::Vec(78.75f, 64.0f),
-	rack::math::Vec(131.25f, 64.0f),
-	rack::math::Vec(183.75f, 64.0f),
+	rack::math::Vec(120.0f, 64.0f),
 };
+// Cells with no name in the panel have it drawn live, on this baseline.
+static const float READOUT_NAME_BASELINE = 75.0f;
 static const char* const READOUT_SAMPLE[] = {
 	"1¹⁄₂",
-	"3",
-	"²⁄₃",
-	"8",
 };
 
 // Top-left corners of the screws, in px.
 static const rack::math::Vec SCREWS[] = {
 	rack::math::Vec(15.0f, 0.0f),
-	rack::math::Vec(180.0f, 0.0f),
+	rack::math::Vec(120.0f, 0.0f),
 	rack::math::Vec(15.0f, 365.0f),
-	rack::math::Vec(180.0f, 365.0f),
+	rack::math::Vec(120.0f, 365.0f),
 };
 
 } // namespace GibigianaPanel
