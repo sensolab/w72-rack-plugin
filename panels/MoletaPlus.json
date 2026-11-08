@@ -5,7 +5,7 @@
   "hp": 11,
   "columns": {"inset": 27, "pitch": 37},
   "controls": [
-    { "id": "READOUT", "kind": "readout", "row": 6, "dy": 4.5, "cells": [{"col": 0, "label": "5", "sample": "/2"}, {"col": 1, "label": "6", "sample": "×4"}, {"col": 2, "label": "7", "sample": "2/3"}, {"col": 3, "label": "8", "sample": "/8"}] },
+    { "id": "READOUT", "kind": "readout", "row": 6, "dy": 4.5, "cells": [{"col": 0, "label": "", "sample": "/2"}, {"col": 1, "label": "", "sample": "×4"}, {"col": 2, "label": "", "sample": "2/3"}, {"col": 3, "label": "", "sample": "/8"}] },
     { "id": "RATIO_5", "kind": "knob", "label": "RATIO", "row": 5, "dy": 10.5, "col": 0 },
     { "id": "RATIO_6", "kind": "knob", "label": "RATIO", "row": 5, "dy": 10.5, "col": 1 },
     { "id": "RATIO_7", "kind": "knob", "label": "RATIO", "row": 5, "dy": 10.5, "col": 2 },
@@ -18,9 +18,9 @@
     { "id": "LENGTH_6", "kind": "knob", "label": "LENGTH", "row": 2, "dy": -1.5, "col": 1 },
     { "id": "LENGTH_7", "kind": "knob", "label": "LENGTH", "row": 2, "dy": -1.5, "col": 2 },
     { "id": "LENGTH_8", "kind": "knob", "label": "LENGTH", "row": 2, "dy": -1.5, "col": 3 },
-    { "id": "OUT_5", "kind": "output", "label": "5", "row": 0, "col": 0 },
-    { "id": "OUT_6", "kind": "output", "label": "6", "row": 0, "col": 1 },
-    { "id": "OUT_7", "kind": "output", "label": "7", "row": 0, "col": 2 },
-    { "id": "OUT_8", "kind": "output", "label": "8", "row": 0, "col": 3 }
+    { "id": "OUT_5", "kind": "output", "label": "OUT", "row": 0, "col": 0 },
+    { "id": "OUT_6", "kind": "output", "label": "OUT", "row": 0, "col": 1 },
+    { "id": "OUT_7", "kind": "output", "label": "OUT", "row": 0, "col": 2 },
+    { "id": "OUT_8", "kind": "output", "label": "OUT", "row": 0, "col": 3 }
   ]
 }

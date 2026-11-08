@@ -37,6 +37,8 @@ static const rack::math::Vec READOUT[] = {
 	rack::math::Vec(101.0f, 64.0f),
 	rack::math::Vec(138.0f, 64.0f),
 };
+// Cells with no name in the panel have it drawn live, on this baseline.
+static const float READOUT_NAME_BASELINE = 75.0f;
 static const char* const READOUT_SAMPLE[] = {
 	"/2",
 	"×4",

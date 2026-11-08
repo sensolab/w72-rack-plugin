@@ -8,12 +8,12 @@
 #include "MoletaExpander.hpp"
 #include "widgets.hpp"
 
-static const int OUTS = 4;
+static const int OUTS = MOLETA_OUTS;
 static const int PULSES_PER_BEAT[] = {1, 4, 24};
 static const int BEATS_PER_BAR[] = {2, 3, 4, 5, 6, 7, 8, 12};
 static const int COIN_LOOPS[] = {8, 16};
 
-// The expander's model: only a Moleta+ on the right counts as an expander.
+// The expander's model: only Moleta+ modules on the right count as expanders.
 static Model* expanderModel() {
 	return modelMoletaPlus;
 }
@@ -131,17 +131,25 @@ struct Moleta : Module {
 		std::fill(follow, follow + OUTS, false);
 	}
 
-	// While Moleta+ is on the right, hands it this sample's tick. Returns whether it is attached.
+	// Hands this sample's tick to every Moleta+ chained on the right, up to the cap,
+	// each with its place. Returns whether one is attached.
 	bool pushToExpander(const moleta::Tick& tick, const moleta::Shared& shared) {
 		Model* plus = expanderModel();
-		Module* right = rightExpander.module;
-		if (!plus || !right || right->model != plus || !right->leftExpander.producerMessage)
+		if (!plus)
 			return false;
-		MoletaMessage* message = (MoletaMessage*) right->leftExpander.producerMessage;
-		message->tick = tick;
-		message->shared = shared;
-		right->leftExpander.requestMessageFlip();
-		return true;
+		int n = 0;
+		for (Module* at = rightExpander.module; n < MOLETA_PLUS_MAX && at && at->model == plus; at = at->rightExpander.module) {
+			MoletaMessage* message = (MoletaMessage*) at->leftExpander.producerMessage;
+			if (!message)
+				break;
+			message->linked = true;
+			message->place = n;
+			message->tick = tick;
+			message->shared = shared;
+			at->leftExpander.requestMessageFlip();
+			n++;
+		}
+		return n > 0;
 	}
 
 	void process(const ProcessArgs& args) override {

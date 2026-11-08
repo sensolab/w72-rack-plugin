@@ -156,6 +156,8 @@ static void testTable() {
 		CHECK(nearestRatio(RATIOS[i].p, RATIOS[i].q) == i, "a listed ratio maps back to its own step (%s)", RATIOS[i].name);
 	CHECK(nearestRatio(4, 2) == ratioIndex("×2"), "4/2 lands on ×2");
 	CHECK(nearestRatio(64, 1) == ratioIndex("×32"), "×64 lands on ×32");
+	CHECK(moletaPlusOutput(0, 0) == 5 && moletaPlusOutput(0, 3) == 8, "the first Moleta+ has outputs 5 to 8");
+	CHECK(moletaPlusOutput(1, 0) == 9 && moletaPlusOutput(MOLETA_PLUS_MAX - 1, 3) == 20, "a chain of four ends at output 20");
 	CHECK(nearestRatio(5, 4) == ratioIndex("4/3"), "5/4 lands on 4/3, the nearer by octaves");
 }
 

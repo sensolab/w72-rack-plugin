@@ -1,8 +1,9 @@
-// Moleta+: four more outputs for the Moleta on its left, 5 to 8, each a ratio, a
-// chance and a length. It has no clock of its own: every sample Moleta sends it the
-// beat clock's tick and the shared controls (MoletaExpander.hpp), and it runs the
-// same output engine on them, with its own coin loops. Rack passes the message one
-// sample late, and Moleta delays its own outputs to match while this is attached.
+// Moleta+: four more outputs for the Moleta on its left, each a ratio, a chance and
+// a length: 5 to 8 next to Moleta, 9 to 12 on a second one, up to four in a chain.
+// It has no clock of its own: every sample Moleta sends it the beat clock's tick,
+// the shared controls and its place (MoletaExpander.hpp), and it runs the same
+// output engine on them, with its own coin loops. The message arrives one sample
+// late, and Moleta delays its own outputs to match while one is attached.
 #include "plugin.hpp"
 #include "MoletaPlusPanel.hpp"
 #include "MoletaEngine.hpp"
@@ -11,9 +12,7 @@
 
 namespace {
 
-const int OUTS = 4;
-// The first output's number on the panel.
-const int FIRST = 5;
+const int OUTS = MOLETA_OUTS;
 
 float uniform() {
 	return random::uniform();
@@ -46,10 +45,11 @@ struct MoletaPlus : Module {
 	enum LightId { LIGHTS_LEN };
 
 	moleta::OutputEngine outs[OUTS];
-	// follow[0] is unused: output 5 starts a fresh chain.
+	// follow[0] is unused: each Moleta+'s first output starts a fresh chain.
 	bool follow[OUTS] = {};
-	// A Moleta was on the left last sample.
+	// A Moleta wrote to this one last sample, and where in the chain it sits.
 	bool attached = false;
+	int place = 0;
 
 	MoletaPlus() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -57,13 +57,14 @@ struct MoletaPlus : Module {
 		for (const moleta::Ratio& r : moleta::RATIOS)
 			names.push_back(r.name);
 		for (int i = 0; i < OUTS; i++) {
-			configSwitch(RATIO_PARAM + i, 0.f, moleta::RATIO_COUNT - 1, moleta::PLUS_DEFAULT_RATIOS[i], string::f("Ratio %d", FIRST + i), names);
-			configParam(CHANCE_PARAM + i, 0.f, 1.f, 1.f, string::f("Chance %d", FIRST + i), "%", 0.f, 100.f);
-			configParam<LengthQuantity>(LENGTH_PARAM + i, 0.f, 1.f, 0.5f, string::f("Length %d", FIRST + i))->description =
+			configSwitch(RATIO_PARAM + i, 0.f, moleta::RATIO_COUNT - 1, moleta::PLUS_DEFAULT_RATIOS[i], "", names);
+			configParam(CHANCE_PARAM + i, 0.f, 1.f, 1.f, "", "%", 0.f, 100.f);
+			configParam<LengthQuantity>(LENGTH_PARAM + i, 0.f, 1.f, 0.5f, "")->description =
 				"Fully left, a 1 ms trigger; then a gate of 5% to 95% of the output's period";
 		}
 		for (int i = 0; i < OUTS; i++)
-			configOutput(OUT_OUTPUT + i, string::f("Output %d", FIRST + i))->description = "Silent unless a Moleta is on the left";
+			configOutput(OUT_OUTPUT + i, "")->description = "Silent unless a Moleta, or a chain of Moleta + from one, is on the left";
+		name(0);
 		// Moleta writes the producer buffer; Rack swaps the two at the end of each sample.
 		leftExpander.producerMessage = new MoletaMessage;
 		leftExpander.consumerMessage = new MoletaMessage;
@@ -73,6 +74,18 @@ struct MoletaPlus : Module {
 	~MoletaPlus() {
 		delete (MoletaMessage*) leftExpander.producerMessage;
 		delete (MoletaMessage*) leftExpander.consumerMessage;
+	}
+
+	// Names the knobs and outputs by their numbers at a place. Called from the UI
+	// thread (the widget's step), where Rack reads the names.
+	void name(int at) {
+		for (int i = 0; i < OUTS; i++) {
+			int k = moletaPlusOutput(at, i);
+			paramQuantities[RATIO_PARAM + i]->name = string::f("Ratio %d", k);
+			paramQuantities[CHANCE_PARAM + i]->name = string::f("Chance %d", k);
+			paramQuantities[LENGTH_PARAM + i]->name = string::f("Length %d", k);
+			outputInfos[OUT_OUTPUT + i]->name = string::f("Output %d", k);
+		}
 	}
 
 	void fillCoins() {
@@ -89,8 +102,11 @@ struct MoletaPlus : Module {
 
 	void process(const ProcessArgs& args) override {
 		MoletaMessage* message = (MoletaMessage*) leftExpander.consumerMessage;
-		Module* left = leftExpander.module;
-		if (!left || left->model != modelMoleta) {
+		// Moleta writes to every expander it reaches; clearing what was read makes
+		// this one read as unlinked once it stops being written.
+		MoletaMessage in = *message;
+		*message = MoletaMessage();
+		if (!in.linked) {
 			if (attached) {
 				// Wait for the next cycle restart once a Moleta is back, so the
 				// outputs fall in line with its beats; the coin loops are kept.
@@ -100,14 +116,12 @@ struct MoletaPlus : Module {
 				}
 			}
 			attached = false;
-			// What is left in the buffer is stale: when a Moleta is placed again,
-			// its first message arrives a sample later, and until then this reads as stopped.
-			*message = MoletaMessage();
 			for (int i = 0; i < OUTS; i++)
 				outputs[OUT_OUTPUT + i].setVoltage(0.f);
 			return;
 		}
 		attached = true;
+		place = in.place;
 
 		moleta::Controls controls[OUTS];
 		for (int i = 0; i < OUTS; i++) {
@@ -117,7 +131,7 @@ struct MoletaPlus : Module {
 			controls[i].follow = follow[i];
 		}
 		float v[OUTS];
-		moleta::processChain(outs, controls, OUTS, args.sampleTime, message->tick, message->shared, uniform, v);
+		moleta::processChain(outs, controls, OUTS, args.sampleTime, in.tick, in.shared, uniform, v);
 		for (int i = 0; i < OUTS; i++)
 			outputs[OUT_OUTPUT + i].setVoltage(v[i]);
 	}
@@ -185,7 +199,9 @@ struct MoletaPlusReadout : w72::Readout {
 	MoletaPlus* module;
 
 	MoletaPlusReadout(MoletaPlus* module)
-		: Readout(MoletaPlusPanel::READOUT_WELL, MoletaPlusPanel::READOUT, OUTS, MoletaPlusPanel::READOUT_VALUE_SIZE), module(module) {}
+		: Readout(MoletaPlusPanel::READOUT_WELL, MoletaPlusPanel::READOUT, OUTS, MoletaPlusPanel::READOUT_VALUE_SIZE), module(module) {
+		nameBaseline = MoletaPlusPanel::READOUT_NAME_BASELINE - MoletaPlusPanel::READOUT_WELL.pos.y;
+	}
 
 	std::string text(int i) override {
 		if (!module)
@@ -193,9 +209,19 @@ struct MoletaPlusReadout : w72::Readout {
 		int r = moleta::clampRatio((int) std::round(module->params[MoletaPlus::RATIO_PARAM + i].getValue()));
 		return moleta::RATIOS[r].name;
 	}
+
+	// The output's number, from the place in the chain; none while unlinked.
+	std::string name(int i) override {
+		if (!module)
+			return string::f("%d", moletaPlusOutput(0, i));
+		return module->attached ? string::f("%d", moletaPlusOutput(module->place, i)) : "";
+	}
 };
 
 struct MoletaPlusWidget : ModuleWidget {
+	// The place the knobs and outputs are named for.
+	int named = 0;
+
 	MoletaPlusWidget(MoletaPlus* module) {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/MoletaPlus.svg")));
@@ -218,14 +244,24 @@ struct MoletaPlusWidget : ModuleWidget {
 			addOutput(createOutputCentered<DarkPJ301MPort>(out[i], module, MoletaPlus::OUT_OUTPUT + i));
 	}
 
+	void step() override {
+		MoletaPlus* m = getModule<MoletaPlus>();
+		if (m && m->attached && m->place != named) {
+			named = m->place;
+			m->name(named);
+		}
+		ModuleWidget::step();
+	}
+
 	void appendContextMenu(Menu* menu) override {
 		MoletaPlus* m = getModule<MoletaPlus>();
 		if (!m)
 			return;
+		int at = m->attached ? m->place : 0;
 		menu->addChild(new MenuSeparator);
 		menu->addChild(createSubmenuItem("Follow the output above", "", [=](Menu* sub) {
 			for (int i = 1; i < OUTS; i++)
-				sub->addChild(createBoolPtrMenuItem(string::f("Output %d follows %d", FIRST + i, FIRST + i - 1), "", &m->follow[i]));
+				sub->addChild(createBoolPtrMenuItem(string::f("Output %d follows %d", moletaPlusOutput(at, i), moletaPlusOutput(at, i - 1)), "", &m->follow[i]));
 		}));
 	}
 };

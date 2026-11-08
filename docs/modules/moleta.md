@@ -79,4 +79,4 @@ I kept patching the same pair: a clock, then a Chances module on an output, to d
 
 The clock modules I used had either fractions or chance, never both, and none let me pick a trigger or a gate per output. SickoCV Clocker has integer ratios and widths. CVfunk Syncro has fractions but no chance. Count Modula Chances flips a coin on any signal. ALM's Pamela's Workout does ratio, width and chance per output in hardware, and is the closest ancestor.
 
-Moleta + adds four more outputs; see [its manual](moletaplus.md). Timing details, edge cases and the saved state are in the [reference](moleta-reference.md).
+Moleta + adds four more outputs, and up to four chain for twenty in all; see [its manual](moletaplus.md). Timing details, edge cases and the saved state are in the [reference](moleta-reference.md).

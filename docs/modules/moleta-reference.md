@@ -49,7 +49,7 @@ In the module browser the readout shows a sample: 120.0, ×2, 3/2, /4 and ×3.
 
 ## Expander
 
-[Moleta +](moletaplus.md), an 11 HP expander placed directly to the right, adds outputs 5 to 8, with the same strips and their ratios on its own readout row. It shares the clock, RESET, RUN and *Coin loop*, keeps its own coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays all its own outputs by one sample while Moleta + is attached, keeping all eight in line; with nothing attached there is no delay.
+[Moleta +](moletaplus.md), an 11 HP expander placed directly to the right, adds outputs 5 to 8, with the same strips and their ratios on its own readout row; up to four chain, for outputs 5 to 20. It shares the clock, RESET, RUN and *Coin loop*, keeps its own coin loops, and follows the base's REPEAT and DENSITY. Rack passes data between neighbours one sample late, so the base delays all its own outputs by one sample while Moleta + is attached, keeping every output in line (Moleta writes to each Moleta + directly, so the delay stays one sample however long the chain); with nothing attached there is no delay.
 
 ## Saved state
 
