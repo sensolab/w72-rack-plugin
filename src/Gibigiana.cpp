@@ -7,7 +7,8 @@
 #include "GibigianaEngine.hpp"
 #include "widgets.hpp"
 
-using gibigiana::TAPS;
+// Four taps on one panel until the lanes move to Gibigiana +; the engine holds up to gibigiana::LANES.
+static const int TAPS = 4;
 static const int COIN_LOOPS[] = {8, 16};
 
 static float uniform() {
@@ -109,6 +110,7 @@ struct Gibigiana : Module {
 		knobs.width = params[WIDTH_PARAM].getValue();
 		knobs.repeat = params[REPEAT_PARAM].getValue();
 		knobs.duck = params[DUCK_PARAM].getValue();
+		knobs.lanes = TAPS;
 		knobs.loopLength = COIN_LOOPS[coinLoop];
 		knobs.keepPatched = keepPatched;
 
@@ -158,7 +160,7 @@ struct Gibigiana : Module {
 				params[STEP_PARAM + i].setValue(gibigiana::nearestStep(p, q));
 		}
 		json_t* coinsJ = json_object_get(rootJ, "coins");
-		for (int i = 0; i < TAPS; i++) {
+		for (int i = 0; i < gibigiana::LANES; i++) {
 			json_t* cJ = json_array_get(coinsJ, i);
 			json_t* slotsJ = json_object_get(cJ, "slots");
 			moleta::Coin& coin = engine.coins[i];
