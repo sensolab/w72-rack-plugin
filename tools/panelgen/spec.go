@@ -115,9 +115,22 @@ type Module struct {
 	Controls []Control `json:"controls"`
 	// Dividers are hairlines across the panel, each midway below the row it names.
 	Dividers []int `json:"dividers,omitempty"`
-	// PlateRules are rules on the plate, each after the output it names.
+	// PlateRules are rules on the plate, each after the output it names. A rule
+	// between two sections sits on their split.
 	PlateRules []string `json:"plateRules,omitempty"`
+	// Splits divide the panel into side-by-side sections at columns of
+	// Module.Columns, each drawn as a hairline from under the band to above the
+	// plate. A readout then takes its section's width, not the panel's, and may
+	// share its row with the other sections. Gibigiana uses one to set its lane
+	// apart, drawn as the strip a Gibigiana + repeats.
+	Splits []int `json:"splits,omitempty"`
+	// Mark false leaves the panel unsigned: a lane expander under 6 HP, where the
+	// mark would sit on the plate. Its system module signs the chain.
+	Mark *bool `json:"mark,omitempty"`
 }
+
+// signed says whether the panel carries the mark.
+func (m *Module) signed() bool { return m.Mark == nil || *m.Mark }
 
 // Columns is a fixed grid of columns: the first centre Inset px from the left
 // edge, then one every Pitch px.
@@ -231,8 +244,8 @@ func (m *Module) check() error {
 		if c.Kind == Output && c.Row != 0 {
 			return fmt.Errorf("%s: outputs go in row 0, on the plate", c.ID)
 		}
-		if c.Kind == Output && m.HP < smallPanel {
-			return fmt.Errorf("%s: below %d HP the mark sits where the plate would; not designed yet", c.ID, smallPanel)
+		if c.Kind == Output && m.HP < smallPanel && m.signed() {
+			return fmt.Errorf("%s: below %d HP the mark sits where the plate would; only an unsigned panel (mark false) takes outputs", c.ID, smallPanel)
 		}
 		if c.Kind == KnobLarge {
 			large++
@@ -240,23 +253,35 @@ func (m *Module) check() error {
 		if c.Kind == Input || c.Kind == Output {
 			jacks[c.Row]++
 		}
-		rowCount[c.Row]++
+		// In a split panel, a readout takes only its section's row.
+		key := c.Row
+		if len(m.Splits) > 0 {
+			key = c.Row*100 + m.sectionOf(c)
+		}
+		rowCount[key]++
 		if isDisplay(c.Kind) || c.Kind == ButtonGrid {
-			rowHasWide[c.Row] = true
+			rowHasWide[key] = true
 		}
 	}
 	if large > 1 {
 		return fmt.Errorf("at most one knob-large per module")
 	}
 	for row, n := range rowCol {
-		if n != rowCount[row] {
+		// A split panel places everything in columns (checkSplits), readouts by their cells.
+		if len(m.Splits) == 0 && n != rowCount[row] {
 			return fmt.Errorf("row %d mixes controls in columns with controls sharing the width", row)
 		}
 	}
-	for row, n := range rowCount {
-		if n > 1 && rowHasWide[row] {
-			return fmt.Errorf("row %d holds a display or button grid, which takes the whole row", row)
+	for key, n := range rowCount {
+		if n > 1 && rowHasWide[key] {
+			if len(m.Splits) > 0 {
+				return fmt.Errorf("row %d holds a readout, which takes its section's whole row", key/100)
+			}
+			return fmt.Errorf("row %d holds a display or button grid, which takes the whole row", key)
 		}
+	}
+	if err := m.checkSplits(); err != nil {
+		return err
 	}
 	for row, n := range jacks {
 		if n > m.HP/2 && n > 1 {
@@ -303,6 +328,79 @@ func (m *Module) outputCount() int {
 }
 
 func (m *Module) width() float64 { return pxPerHP * float64(m.HP) }
+
+// checkSplits validates the sections: splits go left to right inside the panel,
+// every control sits in a column, and a readout keeps its cells in one section.
+func (m *Module) checkSplits() error {
+	if len(m.Splits) == 0 {
+		return nil
+	}
+	if m.Columns == nil {
+		return fmt.Errorf("splits need columns")
+	}
+	last := 0.0
+	for _, s := range m.Splits {
+		x := m.colX(s)
+		if x <= last || x >= m.width() {
+			return fmt.Errorf("split at column %d is off the panel or out of order", s)
+		}
+		last = x
+	}
+	for _, c := range m.Controls {
+		switch {
+		case c.Kind == Readout:
+			for _, cell := range c.Cells {
+				if m.section(m.colX(cell.Col)) != m.sectionOf(c) {
+					return fmt.Errorf("%s: a readout's cells stay in one section", c.ID)
+				}
+			}
+		case isDisplay(c.Kind) || c.Kind == ButtonGrid:
+			return fmt.Errorf("%s: a split panel takes readouts, not %s", c.ID, c.Kind)
+		case c.Col == nil:
+			return fmt.Errorf("%s: a split panel places every control in a column", c.ID)
+		}
+	}
+	return nil
+}
+
+// sections are the left and right edges of each section, in px.
+func (m *Module) sections() [][2]float64 {
+	edges := []float64{0}
+	if m.Columns != nil {
+		for _, s := range m.Splits {
+			edges = append(edges, m.colX(s))
+		}
+	}
+	edges = append(edges, m.width())
+	out := make([][2]float64, len(edges)-1)
+	for i := range out {
+		out[i] = [2]float64{edges[i], edges[i+1]}
+	}
+	return out
+}
+
+// section is the index of the section holding x.
+func (m *Module) section(x float64) int {
+	for i, s := range m.sections() {
+		if x < s[1] {
+			return i
+		}
+	}
+	return len(m.Splits)
+}
+
+// sectionOf is the section a control sits in: a readout's is its first cell's.
+func (m *Module) sectionOf(c Control) int {
+	switch {
+	case m.Columns == nil:
+		return 0
+	case c.Kind == Readout && len(c.Cells) > 0:
+		return m.section(m.colX(c.Cells[0].Col))
+	case c.Col != nil:
+		return m.section(m.colX(*c.Col))
+	}
+	return 0
+}
 
 // colX is the centre of a column of Module.Columns, in px.
 func (m *Module) colX(col int) float64 { return m.Columns.Inset + m.Columns.Pitch*float64(col) }

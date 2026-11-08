@@ -50,7 +50,7 @@ Four names are modules (Brumista and Ghisa in the VCV Library, Moleta in 2.8.0 w
 | Ghisa | The Milanese traffic warden, nicknamed after the old helmet | A shift register whose taps are a control: chords and a bass from the melody's recent past ([manual](modules/ghisa.md)) | Shipped ([Library](https://library.vcvrack.com/W72/Ghisa)) |
 | Moleta | The itinerant knife grinder (also Molèta, Molètta), pedalling a steady wheel that throws sparks at random | A master clock whose outputs each have a ratio, a chance and a length ([manual](modules/moleta.md)); its expander, [Moleta +](modules/moletaplus.md), adds outputs 5 to 8 | Shipped (2.8.0) |
 | Scighera | The thick Po Valley fog | Diffusion, reverb, smeared noise | Approved |
-| Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | A clocked echo lane: four taps on the clock grid, each with a chance per hit ([manual](modules/gibigiana.md)) | Built (2.9.0) |
+| Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | A clocked echo lane: taps on the clock grid, each with a chance per hit. Gibigiana holds the system and lane 1, and each Gibigiana + adds a lane, up to 8 ([manual](modules/gibigiana.md)) | Built (2.9.0) |
 | Magutt | The bricklayer or labourer who builds what the architect drew | Passed over for the bridge: Claude builds the patch you design | Candidate |
 | Tram | The city's trams, carrying people between stops on fixed rails | Passed over for the bridge: carries commands on a fixed protocol | Candidate |
 | Naviglio | The canals that carried the Duomo's marble into the city | Passed over for the bridge: a channel into the rack | Candidate |

@@ -27,6 +27,13 @@ func panelHeader(m *Module) string {
 				fmt.Fprintf(&others, "\track::math::Vec(%sf, %sf),\n", fnum(m.colX(c.Col)), fnum(w.Y+cellValueBase))
 			}
 			others.WriteString("};\n")
+			for _, c := range p.Cells {
+				if c.Label == "" {
+					fmt.Fprintf(&others, "// Cells with no name in the panel have it drawn live, on this baseline.\n")
+					fmt.Fprintf(&others, "static const float %s_NAME_BASELINE = %sf;\n", p.ID, fnum(w.Y+cellNameBase))
+					break
+				}
+			}
 			fmt.Fprintf(&others, "static const char* const %s_SAMPLE[] = {\n", p.ID)
 			for _, c := range p.Cells {
 				fmt.Fprintf(&others, "\t%q,\n", c.Sample)
