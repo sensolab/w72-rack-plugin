@@ -172,7 +172,8 @@ const (
 func (m *Module) well(p Placed) Box {
 	switch {
 	case isDisplay(p.Kind):
-		return Box{wellMargin, p.Y - wellHeight/2, m.wellWidth(), wellHeight}
+		s := m.sections()[m.sectionOf(p.Control)]
+		return Box{s[0] + wellMargin, p.Y - wellHeight/2, s[1] - s[0] - 2*wellMargin, wellHeight}
 	case p.Kind == Button:
 		return Box{p.X - buttonSize/2, p.Y - buttonSize/2, buttonSize, buttonSize}
 	}

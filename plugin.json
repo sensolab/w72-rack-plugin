@@ -38,9 +38,16 @@
     {
       "slug": "Gibigiana",
       "name": "Gibigiana",
-      "description": "Four echoes on the clock grid, each with its own chance of coming back.",
+      "description": "Echoes on the clock grid, each lane with its own chance of coming back.",
       "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/gibigiana.md",
       "tags": ["Delay", "Random"]
+    },
+    {
+      "slug": "GibigianaPlus",
+      "name": "Gibigiana +",
+      "description": "One more echo lane for the Gibigiana on its left.",
+      "manualUrl": "https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/gibigianaplus.md",
+      "tags": ["Delay", "Expander", "Random"]
     }
   ]
 }
