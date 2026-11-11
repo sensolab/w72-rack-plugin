@@ -15,4 +15,10 @@ Each module's `manualUrl` in `plugin.json` points to its page here on `main` (`h
 
 The panel images are Rack's own renders, not the panel SVGs (GitHub can't draw Rack's knobs, jacks and lights). Regenerate them after a panel change with `Rack -u <empty folder> -t 2`, with only the W72 `.vcvplugin` in that folder's `plugins-<os>-<arch>/`; Rack writes `screenshots/W72/<Slug>.png`, which becomes `<slug-lowercase>.png` here.
 
+Designed, not built yet:
+
+| Module | Family | HP | What it does |
+| --- | --- | --- | --- |
+| [Barbapedana](barbapedana.md) | Trades | ~30 | A 16-step sequencer crossed with a random loop: each step is yours by a chance you set, and anchors keep the notes you like |
+
 Scighera is an approved name for a module still to come; the glossary in [concept.md](../concept.md#glossary) has the candidates.
