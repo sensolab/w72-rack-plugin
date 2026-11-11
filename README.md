@@ -10,6 +10,7 @@ Modules for [VCV Rack](https://vcvrack.com/) by WinterOf72, named in Milanese di
 | [Moleta +](docs/modules/moletaplus.md) | Four more outputs for the Moleta on its left, each with its own ratio, chance and length. |
 | [Gibigiana](docs/modules/gibigiana.md) | Echoes on the clock grid, each lane with its own chance of coming back. |
 | [Gibigiana +](docs/modules/gibigianaplus.md) | One more echo lane for the Gibigiana on its left. |
+| [Barbapedana](docs/modules/barbapedana.md) | A 16-step sequencer crossed with a random loop: each step is yours by a chance you set, and anchors capture the loop's notes. |
 
 Both expanders chain: up to four Moleta + for 20 outputs in all, and up to seven Gibigiana + for 8 lanes. Scighera is planned. Each module has a page in [docs/modules](docs/modules/README.md). The project's foundations are in [docs/concept.md](docs/concept.md) (theme, naming, design principles) and [docs/architecture.md](docs/architecture.md) (architecture, milestones, build), and the panel style is in [docs/design-system.md](docs/design-system.md).
 

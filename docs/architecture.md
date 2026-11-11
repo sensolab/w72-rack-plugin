@@ -4,7 +4,7 @@
 
 ## At a glance
 
-W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +, Gibigiana and its lane expander Gibigiana +); the diagram is the bridge only.
+W72's first deliverable is a Rack module and a small MCP binary, built from one repo and one command list. The plugin has since grown modules that run inside Rack on their own (Ghisa, Moleta and its expander Moleta +, Gibigiana and its lane expander Gibigiana +, Barbapedana); the diagram is the bridge only.
 
 ```mermaid
 flowchart LR
@@ -28,11 +28,11 @@ One GitHub repository, `w72-rack-plugin`, holds the plugin, the MCP binary and t
 w72-rack-plugin/
   plugin.json             the Rack plugin, slug W72
   Makefile
-  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, Gibigiana, Gibigiana +, and W72's own parts
-                          (widgets.hpp; MoletaEngine.hpp and GibigianaEngine.hpp, DSP with no Rack includes)
+  src/                    C++: Brumista, Ghisa, Moleta, Moleta +, Gibigiana, Gibigiana +, Barbapedana, and W72's own parts
+                          (widgets.hpp; MoletaEngine.hpp, GibigianaEngine.hpp and BarbapedanaEngine.hpp, DSP with no Rack includes)
   res/                    panels (SVG), generated; fonts/ holds the readout's Inter Tight weight
   panels/                 one description per panel
-  tests/                  host tests of Moleta's and Gibigiana's engines and Brumista's engine watch (not in the plugin package)
+  tests/                  host tests of Moleta's, Gibigiana's and Barbapedana's engines and Brumista's engine watch (not in the plugin package)
   tools/panelgen/         the panel generator, Go (not in the plugin package)
   mcp/                    the MCP server, Go (not in the plugin package)
   protocol/
@@ -311,6 +311,10 @@ The plugin and the MCP binary are GPL-3.0-or-later. That allows reusing limen, l
 | Barbapedana's display follows PAGE: on VALUE each step shows the programmed value as a solid bar and the loop's value as an outline (what an anchor would capture); on KEEP and CHANCE one bar per step. Anchor dots, the playhead and a top line (page, step / LENGTH, CV out) show on every page. It is W72's first display that plots values | 2026-11-11 |
 | Barbapedana's values: VALUE and the loop share a 0 to 1 space; CV = OFFSET + value × RANGE, RANGE 0 to 10 V (default 2 V), OFFSET −5 to +5 V (default 0); VALUE's tooltip shows volts | 2026-11-11 |
 | Barbapedana's menu: *Gate outputs* gate (half a step, from the clock; default) or trigger (1 ms); *CV on silent steps* hold (default) or move; *Loop draws* walk (default, within about an eighth of the span), anywhere or Turing bits, all overridden by a patched TURING IN | 2026-11-11 |
+| Barbapedana's panel on the grid: 30 HP on 2 px columns, a 96 px section of shared controls and the steps 44 px apart past a split. PAGE is Rack's horizontal three-way switch with its positions named left, above and right of it, and no PAGE label. Steps 1 to 8 get a plate of their own; the display is a plot two rows tall across the step section; RANGE and OFFSET line up with the first row of step knobs | 2026-11-11 |
+| The panel generator gains `switch` (Rack's horizontal three-way switch, with three named positions), `plot` (a display `rows` rows tall across its section, drawn freely by the widget) and outputs above row 0 in a split panel, each row of them on a plate of its own across its section | 2026-11-11 |
+| Barbapedana's capture lives in the anchor button's own press handler, which writes VALUE and the anchor as one undo action. Anchoring any other way (a MIDI map, Brumista) locks the step without a capture: a capture in `process()` on the anchor's rising edge would also fire on patch load and on redo, and rewrite VALUE | 2026-11-11 |
+| Barbapedana's details: a fresh module plays the loop (KEEP 0%, VALUE 0.5, CHANCE 100%, MUTATE 10%); RESET makes the next clock play step 1; a gate lasts half the last clock interval (100 ms until two clocks have measured it) and drops for one sample when the next gate fires while it is open. TURING IN sets a redrawn value so the step sends the input's voltage, (V − OFFSET) / RANGE clamped. *Turing bits* is a 16-bit circular register: step k reads bits k to k+7, the first the most significant, and a redraw flips bit k | 2026-11-11 |
 
 ## Open questions
 

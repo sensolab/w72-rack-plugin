@@ -42,14 +42,14 @@ Rules for names and slugs:
 
 ## Glossary
 
-Four names are modules (Brumista and Ghisa in the VCV Library, Moleta in 2.8.0 with its expander Moleta +, Gibigiana in 2.9.0), two are approved for modules to come (Scighera, and Barbapedana, designed), and the rest are candidates. Spellings follow common use; classical Milanese orthography varies.
+Five names are modules (Brumista and Ghisa in the VCV Library, Moleta in 2.8.0 with its expander Moleta +, Gibigiana in 2.9.0, Barbapedana in 2.11.0), one is approved for a module to come (Scighera), and the rest are candidates. Spellings follow common use; classical Milanese orthography varies.
 
 | Name | Meaning | Module role | Status |
 | --- | --- | --- | --- |
 | Brumista | The old cab driver, from the brougham carriage | The bridge: carries Claude's commands into a running Rack, where it's told ([manual](modules/brumista.md)) | Shipped ([Library](https://library.vcvrack.com/W72/Brumista)) |
 | Ghisa | The Milanese traffic warden, nicknamed after the old helmet | A shift register whose taps are a control: chords and a bass from the melody's recent past ([manual](modules/ghisa.md)) | Shipped ([Library](https://library.vcvrack.com/W72/Ghisa)) |
 | Moleta | The itinerant knife grinder (also Molèta, Molètta), pedalling a steady wheel that throws sparks at random | A master clock whose outputs each have a ratio, a chance and a length ([manual](modules/moleta.md)); its expander, [Moleta +](modules/moletaplus.md), adds four outputs at a time, up to four in a chain | Shipped (2.8.0) |
-| Barbapedana | The Milanese street singer of the 1800s, remembered in the song that carries his name, singing familiar tunes with verses of his own | A 16-step sequencer crossed with a random loop: each step is yours by a chance you set, and anchors capture the loop's notes ([design](modules/barbapedana.md)) | Approved |
+| Barbapedana | The Milanese street singer of the 1800s, remembered in the song that carries his name, singing familiar tunes with verses of his own | A 16-step sequencer crossed with a random loop: each step is yours by a chance you set, and anchors capture the loop's notes ([manual](modules/barbapedana.md)) | Built (2.11.0) |
 | Scighera | The thick Po Valley fog | Diffusion, reverb, smeared noise | Approved |
 | Gibigiana | The patch of reflected sunlight that dances on a wall, off water or glass | A clocked echo lane: taps on the clock grid, each with a chance per hit. Gibigiana holds the system and lane 1, and each Gibigiana + adds a lane, up to 8 ([manual](modules/gibigiana.md)) | Built (2.9.0) |
 | Magutt | The bricklayer or labourer who builds what the architect drew | Passed over for the bridge: Claude builds the patch you design | Candidate |
