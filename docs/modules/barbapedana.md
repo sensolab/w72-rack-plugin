@@ -28,12 +28,14 @@ OrangeLine Morph and Morpheus come closest: they morph between a stored sequence
 ## How it works
 
 - **Steps.** 16 steps, each with VALUE, KEEP and CHANCE. LENGTH sets how many steps play (1 to 16). CLOCK advances, RESET returns to step 1.
-- **The random loop.** Behind the steps runs a Turing-style loop of 16 values. On each pass, MUTATE is the chance that a free step's loop value is redrawn, so fully left the loop repeats and further right it keeps changing. TURING IN, when patched, replaces the internal randomness: a redrawn value is sampled from the input instead.
+- **The random loop.** Behind the steps runs a Turing-style loop of 16 values. On each pass, MUTATE is the chance that a free step's loop value is redrawn, so fully left the loop repeats and further right it keeps changing. What a redraw does is the *Loop draws* menu item: **Walk** (the default) lands near the step's old value, within about an eighth of the span either way, so the loop drifts instead of jumping; **Anywhere** draws across the whole span; **Turing bits** runs a 16-bit shift register read as values, so a redraw flips a bit and neighbouring steps stay related. TURING IN, when patched, overrides all three: a redrawn value is sampled from the input instead.
 - **KEEP.** On each step, a coin with the step's KEEP chance decides whether it plays VALUE or the loop's value. KEEP CV shifts every step's KEEP at once.
-- **Anchors.** An anchored step always plays VALUE, whatever KEEP or KEEP CV say. Pressing the anchor on a free step captures the value the loop is playing into VALUE, so the knob turns to it, and locks the step; pressing it again frees the step. A capture is one Ctrl+Z.
+- **Anchors.** An anchored step always plays VALUE, whatever KEEP or KEEP CV say. Pressing the anchor on a free step captures the value the loop is playing into VALUE, so the knob turns to it, and locks the step; pressing it again frees the step. A capture is one Ctrl+Z. The anchor never touches KEEP: it is an override on top of it, so a released step goes back to the KEEP its knob was showing all along.
 - **CHANCE.** The chance that the step fires its gate, on its own output and on GATE. CHANCE CV shifts every step's CHANCE at once, so KEEP CV and CHANCE CV are the two global "how much fate" controls.
 - **Pages.** The 16 knobs edit one thing at a time: the PAGE switch picks VALUE, KEEP or CHANCE. Each page has its own 16 parameters and PAGE only shows one set, so the knobs show the stored values of the page you're on, and undo, Randomize, presets, MIDI mappings and Brumista all see stable parameters (KEEP 5 is always KEEP 5).
-- **No quantizer.** RANGE and OFFSET scale the CV output, so it needs no rescaler; a quantizer goes downstream.
+- **Values and the CV.** VALUE and the loop share one 0 to 1 space, so a capture is a plain copy. CV out is OFFSET + value × RANGE: RANGE spans 0 to 10 V (default 2 V, two octaves), OFFSET runs from −5 to +5 V (default 0). Since the steps are fractions of the span, turning RANGE squeezes or stretches the whole line, steps and loop together. VALUE's tooltip shows the volts the step will send. No quantizer: one goes downstream.
+- **Silent steps.** CV only moves when a gate fires, so a note's release tail never jumps in pitch; *CV on silent steps* in the menu can make it move on every step instead, for CV used as modulation.
+- **Gates.** By default each gate lasts half a step, measured from the clock, so two firing steps in a row stay two notes; *Gate outputs* in the menu switches to 1 ms triggers.
 
 ## Inputs and outputs
 
@@ -44,7 +46,7 @@ OrangeLine Morph and Morpheus come closest: they morph between a stored sequence
 | CHANCE CV | Shifts every step's CHANCE |
 | TURING IN | Source for the loop's redrawn values, normalled to the internal random |
 | KEEP CV | Shifts every free step's KEEP |
-| CV | The current step's value, scaled by RANGE and OFFSET |
+| CV | The current step's value, scaled by RANGE and OFFSET; holds through silent steps by default |
 | GATE | The current step's gate, when its CHANCE coin passes |
 | 1 to 16 | Each step's own gate |
 
@@ -52,7 +54,9 @@ OrangeLine Morph and Morpheus come closest: they morph between a stored sequence
 
 | Item | Choices | Default |
 | --- | --- | --- |
-| Gate outputs | Trigger or gate | To be decided |
+| Gate outputs | Gate (half a step) or trigger (1 ms) | Gate |
+| CV on silent steps | Hold or move | Hold |
+| Loop draws | Walk, anywhere or Turing bits | Walk |
 
 ## Panel
 
@@ -61,15 +65,9 @@ OrangeLine Morph and Morpheus come closest: they morph between a stored sequence
 A hand-drawn sketch, not a mock: the real panel comes from the generator once the layout is settled on the grid.
 
 - **Left column:** PAGE (a horizontal three-way switch: VALUE, KEEP, CHANCE), LENGTH and MUTATE, RANGE and OFFSET, CLOCK and RESET, MUT CV and CHANCE CV, TURING IN and KEEP CV, then CV and GATE on the plate.
-- **A wide display** over the steps: the page, the step and LENGTH (`step 6 / 16`) and the CV going out on its top line; under it all 16 steps as three thin bars each (VALUE, KEEP, CHANCE), a dot on anchored steps and a line under the playhead. It replaces a LENGTH readout.
+- **A wide display** over the steps, following the PAGE switch. Its top line shows the page, the step and LENGTH (`step 6 / 16`) and the CV going out. On the VALUE page each step shows your value as a solid bar and the loop's value at that step as an outline, so you can see what an anchor would capture; on KEEP and CHANCE, one bar per step, the value its knob is editing. Anchored steps get a dot and the playhead a line underneath on every page. It replaces a LENGTH readout. (The sketch predates this and still draws all three pages at once.)
 - **Two rows of eight steps**, each a number, the page knob, the anchor button and its gate output on a plate. The second row's plate lines up with the CV/GATE plate.
 
 ## Open questions
 
-- [ ] What the display shows: all three pages as thin bars, or only the current page as wider ones. It is the first W72 display that plots values, so it also settles the open question about small screens in [design-system.md](../design-system.md).
-- [ ] The default for *Gate outputs*, trigger or gate.
-- [ ] VALUE's range before RANGE and OFFSET, and their ranges.
-- [ ] How the loop draws a new value (uniform, a random walk, Turing bits), and whether the choice is a menu item.
-- [ ] Whether CV moves on a step whose gate doesn't fire, or holds.
-- [ ] What KEEP a step returns to when its anchor is released.
 - [ ] Relative steps (each step a move from the last note), set aside for later.
