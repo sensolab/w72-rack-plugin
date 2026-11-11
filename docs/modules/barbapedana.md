@@ -17,7 +17,7 @@ Each step also has a chance of firing at all, and a gate output of its own. Ther
 | Control | What it does |
 | --- | --- |
 | PAGE | What the 16 step knobs set: VALUE (the note), KEEP (how often the step plays it) or CHANCE (how often it fires). |
-| Display | The page you're on, the step playing and the CV. On VALUE, the solid bars are your notes and the outlines the loop's. A dot marks an anchored step. |
+| Display | The page you're on, the step playing and the CV. On VALUE, the solid bars are your notes and the outlines the loop's. An anchored step has a dot, and its outline is dim, since it always plays your note. |
 | LENGTH | How many steps play, 1 to 16. |
 | MUTATE | How often the loop changes. Fully left, it repeats. |
 | RANGE, OFFSET | The span of the CV: RANGE wide (2 V, two octaves, by default), starting at OFFSET. |
