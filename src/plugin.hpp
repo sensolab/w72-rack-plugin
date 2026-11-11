@@ -11,3 +11,4 @@ extern Model* modelMoleta;
 extern Model* modelMoletaPlus;
 extern Model* modelGibigiana;
 extern Model* modelGibigianaPlus;
+extern Model* modelBarbapedana;
