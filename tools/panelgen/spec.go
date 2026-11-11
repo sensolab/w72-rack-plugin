@@ -84,6 +84,13 @@ const (
 	Keyboard Kind = "keyboard"
 	// Readout is a display: signage text in cells, one per column, in a well.
 	Readout Kind = "readout"
+	// Plot is a display whose content the widget draws freely: a well Rows rows
+	// tall, across its section. Barbapedana's steps are the first.
+	Plot Kind = "plot"
+
+	// Switch is Rack's horizontal three-way switch, with its three positions
+	// named left, above and right of it.
+	Switch Kind = "switch"
 )
 
 var diameters = map[Kind]float64{
@@ -94,10 +101,11 @@ var diameters = map[Kind]float64{
 	Output:    8.03,
 	Light:     3.0,
 	Button:    buttonSize * mmPerPx,
+	Switch:    switchH * mmPerPx, // its height: what sits above it clears it
 }
 
 // Displays and the button grid have no diameter: they size from their own fields.
-func isDisplay(k Kind) bool { return k == Bars || k == Keyboard || k == Readout }
+func isDisplay(k Kind) bool { return k == Bars || k == Keyboard || k == Readout || k == Plot }
 func knownKind(k Kind) bool {
 	_, ok := diameters[k]
 	return ok || isDisplay(k) || k == ButtonGrid
@@ -161,9 +169,11 @@ type Control struct {
 	Dy float64 `json:"dy,omitempty"`
 	// Count is the number of bars in a bars display.
 	Count int `json:"count,omitempty"`
-	// Cols and Rows size a button grid.
+	// Cols and Rows size a button grid; Rows is also a plot's height in rows.
 	Cols int `json:"cols,omitempty"`
 	Rows int `json:"rows,omitempty"`
+	// Positions name a switch's three positions: left, middle, right.
+	Positions []string `json:"positions,omitempty"`
 	// Col places the control in a column of Module.Columns (counted from 0)
 	// instead of sharing its row's width. A row holds either kind, not both.
 	Col *int `json:"col,omitempty"`
@@ -241,7 +251,8 @@ func (m *Module) check() error {
 		if c.Col != nil {
 			rowCol[c.Row]++
 		}
-		if c.Kind == Output && c.Row != 0 {
+		// A split panel may give a section a plate of its own higher up.
+		if c.Kind == Output && c.Row != 0 && len(m.Splits) == 0 {
 			return fmt.Errorf("%s: outputs go in row 0, on the plate", c.ID)
 		}
 		if c.Kind == Output && m.HP < smallPanel && m.signed() {
@@ -306,7 +317,7 @@ func (m *Module) check() error {
 func (m *Module) outputIndex(id string) int {
 	n := 0
 	for _, c := range m.Controls {
-		if c.Kind != Output {
+		if c.Kind != Output || c.Row != 0 {
 			continue
 		}
 		if c.ID == id {
@@ -320,7 +331,7 @@ func (m *Module) outputIndex(id string) int {
 func (m *Module) outputCount() int {
 	n := 0
 	for _, c := range m.Controls {
-		if c.Kind == Output {
+		if c.Kind == Output && c.Row == 0 {
 			n++
 		}
 	}
@@ -354,8 +365,12 @@ func (m *Module) checkSplits() error {
 					return fmt.Errorf("%s: a readout's cells stay in one section", c.ID)
 				}
 			}
+		case c.Kind == Plot:
+			if c.Col == nil {
+				return fmt.Errorf("%s: in a split panel a plot takes a column, which picks its section", c.ID)
+			}
 		case isDisplay(c.Kind) || c.Kind == ButtonGrid:
-			return fmt.Errorf("%s: a split panel takes readouts, not %s", c.ID, c.Kind)
+			return fmt.Errorf("%s: a split panel takes readouts and plots, not %s", c.ID, c.Kind)
 		case c.Col == nil:
 			return fmt.Errorf("%s: a split panel places every control in a column", c.ID)
 		}

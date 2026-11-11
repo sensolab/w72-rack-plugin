@@ -116,7 +116,7 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 	}
 	var outs []Placed
 	for _, p := range placed {
-		if p.Kind == Output {
+		if p.Kind == Output && p.Row == 0 {
 			outs = append(outs, p)
 		}
 	}
@@ -129,6 +129,12 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 			}
 		}
 		w.rect("rule-"+id, x-ruleWidth/2, plateTop+plateRuleInset, ruleWidth, plateBottom-plateTop-2*plateRuleInset, 0, colPlateRule)
+	}
+
+	// Plates higher up: outputs above row 0 get a plate of their own, as tall as
+	// the bottom one around them and across their section.
+	for i, b := range upperPlates(m, placed) {
+		w.rect(fmt.Sprintf("plate-%d", i+1), b.X, b.Y, b.W, b.H, plateRadius, colPlate)
 	}
 
 	// Dividers between groups of rows: hairlines midway below the rows they name.
@@ -178,6 +184,35 @@ func panelSVG(m *Module, faces Faces) (string, error) {
 			x := (m.colX(r) + m.colX(r+1)) / 2
 			w.line(`<rect id="rule-%s-%d" x="%s" y="%s" width="%s" height="%s" fill="%s"/>`,
 				p.ID, r, mm(x-0.5), mm(wb.Y+cellRuleTop), mm(1), mm(cellRuleEnd-cellRuleTop), colWellEdge)
+		}
+	}
+
+	// A switch's positions: left of it, above it, right of it, the outer two
+	// centred on its height.
+	for _, p := range placed {
+		if p.Kind != Switch {
+			continue
+		}
+		for i, name := range p.Positions {
+			t := Text{faces.SemiBold, labelSize, labelTracking, strings.ToUpper(name)}
+			tw, err := t.Width()
+			if err != nil {
+				return "", err
+			}
+			mid := p.Y + t.CapHeight()/2
+			var d []string
+			switch i {
+			case 0:
+				d, err = t.Path(p.X-switchW/2-labelGap-tw, mid)
+			case 1:
+				d, err = t.PathCentered(p.X, p.Y-switchH/2-labelGap)
+			case 2:
+				d, err = t.Path(p.X+switchW/2+labelGap, mid)
+			}
+			if err != nil {
+				return "", err
+			}
+			w.text(fmt.Sprintf("label-%s-%d", p.ID, i), d, colLabel)
 		}
 	}
 
@@ -252,7 +287,7 @@ func plateSpan(m *Module, placed []Placed) ([2]float64, bool) {
 	}
 	if m.Columns != nil {
 		for _, p := range placed {
-			if p.Kind == Output {
+			if p.Kind == Output && p.Row == 0 {
 				return [2]float64{plateMargin, m.width() - plateMargin}, true
 			}
 		}
@@ -261,7 +296,7 @@ func plateSpan(m *Module, placed []Placed) ([2]float64, bool) {
 	lo, hi, ok := 0.0, 0.0, false
 	col := m.width() / float64(max(n, 1))
 	for _, p := range placed {
-		if p.Kind != Output {
+		if p.Kind != Output || p.Row != 0 {
 			continue
 		}
 		l, r := p.X-col/2, p.X+col/2
@@ -274,4 +309,28 @@ func plateSpan(m *Module, placed []Placed) ([2]float64, bool) {
 		ok = true
 	}
 	return [2]float64{max(lo, plateMargin), min(hi, m.width()-plateMargin)}, ok
+}
+
+// upperPlates are the plates of outputs above row 0, one per height and
+// section, plateMargin in from the section's edges.
+func upperPlates(m *Module, placed []Placed) []Box {
+	type key struct {
+		y   float64
+		sec int
+	}
+	var out []Box
+	seen := map[key]bool{}
+	for _, p := range placed {
+		if p.Kind != Output || p.Row == 0 {
+			continue
+		}
+		k := key{p.Y, m.sectionOf(p.Control)}
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		s := m.sections()[k.sec]
+		out = append(out, Box{s[0] + plateMargin, p.Y - (outputRowY - plateTop), s[1] - s[0] - 2*plateMargin, plateBottom - plateTop})
+	}
+	return out
 }

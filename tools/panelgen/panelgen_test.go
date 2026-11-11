@@ -481,3 +481,63 @@ func TestSplitsAndUnsigned(t *testing.T) {
 		}
 	}
 }
+
+func TestBarbapedanaPanel(t *testing.T) {
+	f := testFaces(t)
+	b, err := loadModule(filepath.Join("..", "..", "panels", "Barbapedana.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := map[Kind]int{}
+	at := map[string]Placed{}
+	for _, p := range b.place() {
+		n[p.Kind]++
+		at[p.ID] = p
+	}
+	// 16 step knobs, LENGTH, RANGE and OFFSET, MUTATE, 16 anchors, 6 inputs, CV, GATE and 16 step gates.
+	if b.HP != 30 || n[Knob] != 19 || n[KnobLarge] != 1 || n[Button] != 16 || n[Input] != 6 || n[Output] != 18 || n[Switch] != 1 || n[Plot] != 1 {
+		t.Errorf("Barbapedana: %d HP, %v", b.HP, n)
+	}
+	// The display spans the step section, two rows tall, 6 px under the band.
+	if w := b.well(at["DISPLAY"]); w.X != 106 || w.W != 334 || w.H != 86 || w.Y != bandY+bandH+wellGap {
+		t.Errorf("display well %v", w)
+	}
+	// Steps 1 to 8 on their own plate, as tall as the bottom one, across the step section.
+	plates := upperPlates(b, b.place())
+	if len(plates) != 1 || plates[0].X != 102 || plates[0].W != 342 || plates[0].H != plateBottom-plateTop || plates[0].Y != at["GATE_1"].Y-(outputRowY-plateTop) {
+		t.Errorf("upper plates %v", plates)
+	}
+	if at["STEP_1"].Y != at["RANGE"].Y {
+		t.Errorf("RANGE at %v, the first step row at %v", at["RANGE"].Y, at["STEP_1"].Y)
+	}
+	svg, err := panelSVG(b, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{`id="plate-1"`, `id="label-PAGE-0"`, `id="label-PAGE-1"`, `id="label-PAGE-2"`, `id="well-DISPLAY"`} {
+		if !strings.Contains(svg, id) {
+			t.Errorf("no %s in the panel", id)
+		}
+	}
+	if h := panelHeader(b); !strings.Contains(h, "DISPLAY_WELL = rack::math::Rect(rack::math::Vec(106.0f, 42.0f), rack::math::Vec(334.0f, 86.0f))") {
+		t.Error("the header lacks the display well")
+	}
+
+	col := func(i int) *int { return &i }
+	for name, bad := range map[string]*Module{
+		"switch with two positions": {Slug: "T", Name: "T", Family: "trades", HP: 10, Controls: []Control{{ID: "S", Kind: Switch, Row: 3, Positions: []string{"A", "B"}}}},
+		"switch with a label":       {Slug: "T", Name: "T", Family: "trades", HP: 10, Controls: []Control{{ID: "S", Kind: Switch, Row: 3, Label: "S", Positions: []string{"A", "B", "C"}}}},
+		"positions on a knob":       {Slug: "T", Name: "T", Family: "trades", HP: 10, Controls: []Control{{ID: "K", Kind: Knob, Row: 3, Positions: []string{"A", "B", "C"}}}},
+		"plot with no rows":         {Slug: "T", Name: "T", Family: "trades", HP: 10, Controls: []Control{{ID: "P", Kind: Plot, Row: 4}}},
+		"plot with a label":         {Slug: "T", Name: "T", Family: "trades", HP: 10, Controls: []Control{{ID: "P", Kind: Plot, Row: 4, Rows: 2, Label: "P"}}},
+		"plot too tall":             {Slug: "T", Name: "T", Family: "trades", HP: 10, Controls: []Control{{ID: "P", Kind: Plot, Row: 6, Rows: 2}}},
+		"plot in a split, no column": {Slug: "T", Name: "T", Family: "trades", HP: 10, Columns: &Columns{Pitch: 7.5}, Splits: []int{12},
+			Controls: []Control{{ID: "P", Kind: Plot, Row: 4, Rows: 2}}},
+		"output above the plate, no split": {Slug: "T", Name: "T", Family: "trades", HP: 10, Columns: &Columns{Pitch: 7.5},
+			Controls: []Control{{ID: "O", Kind: Output, Row: 2, Col: col(4)}}},
+	} {
+		if bad.check() == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}
