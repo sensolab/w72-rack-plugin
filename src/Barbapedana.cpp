@@ -210,8 +210,8 @@ struct AnchorButton : w72::FlatButton {
 // The steps, following PAGE. The top line names the page and shows the step,
 // LENGTH and the CV going out. On VALUE each step shows its value as a solid bar
 // and the loop's value beside it as an outline (what an anchor would capture); on
-// KEEP and CHANCE, one bar for the knob. Anchored steps get a dot, the playhead a
-// line, and steps past LENGTH are dim.
+// KEEP and CHANCE, one bar for the knob. Anchored steps get a dot and a dim
+// outline, the playhead a line, and steps past LENGTH are dim.
 struct BarbapedanaDisplay : widget::TransparentWidget {
 	Barbapedana* module;
 
@@ -284,13 +284,15 @@ struct BarbapedanaDisplay : widget::TransparentWidget {
 				float v = module ? module->params[Barbapedana::VALUE_PARAM + k].getValue() : SAMPLE_VALUE[k];
 				float l = module ? module->engine.loop[k] : SAMPLE_LOOP[k];
 				w72::drawFlat(vg, level(slot(k, 1), v), ink);
+				// An anchored step never plays the loop, so its outline is dim.
+				NVGcolor outline = anchored ? nvgTransRGBAf(ink, ink.a * w72::DIM) : ink;
 				math::Rect o = level(slot(k, 2), l);
 				if (o.size.y < 2.f)
-					w72::drawFlat(vg, o, ink);
+					w72::drawFlat(vg, o, outline);
 				else {
 					nvgBeginPath(vg);
 					nvgRect(vg, o.pos.x + 0.5f, o.pos.y + 0.5f, o.size.x - 1.f, o.size.y - 1.f);
-					nvgStrokeColor(vg, ink);
+					nvgStrokeColor(vg, outline);
 					nvgStrokeWidth(vg, 1.f);
 					nvgStroke(vg);
 				}
