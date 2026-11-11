@@ -39,6 +39,8 @@ func panelHeader(m *Module) string {
 				fmt.Fprintf(&others, "\t%q,\n", c.Sample)
 			}
 			others.WriteString("};\n\n")
+		case p.Kind == Plot:
+			fmt.Fprintf(&others, "static const rack::math::Rect %s_WELL = %s;\n\n", p.ID, rect(m.well(p)))
 		case isDisplay(p.Kind):
 			w := m.well(p)
 			fmt.Fprintf(&others, "static const rack::math::Rect %s_WELL = %s;\n", p.ID, rect(w))

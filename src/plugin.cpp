@@ -10,4 +10,5 @@ void init(Plugin* p) {
 	p->addModel(modelMoletaPlus);
 	p->addModel(modelGibigiana);
 	p->addModel(modelGibigianaPlus);
+	p->addModel(modelBarbapedana);
 }

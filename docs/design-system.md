@@ -98,6 +98,7 @@ Rack's stock parts, chosen for a dark panel, and the flat button, the first cust
 | Jacks | `DarkPJ301MPort` | 8.03 mm |
 | Screws | `ScrewBlack` | 5.08 mm |
 | Lights | `MediumLight<WhiteLight>` | 3 mm |
+| Three-way switch | `CKSSThreeHorizontal` | 28 × 13 px |
 | Button | custom: latching, 14 px bezel, flat square light 9 px | see [Displays](#displays) |
 
 A trimpot is first a CV amount. It also takes a row's secondary controls, such as a level or a pan beside the knobs that define the row, and a strip of settings the rows share, where a full knob for each would not fit the width. What a row is about stays a knob. Gibigiana's LEVEL and PAN use them this way; its shared REPEAT, DUCK, CENTRE and WIDTH were trimpots on the 14 HP panel and are knobs since the split gave them room.
@@ -116,26 +117,27 @@ A display has two halves. The well and its label are panel SVG, made by the gene
 | Keyboard | A quantizer's scale | Twelve flat square lights laid out as one octave of keys: dim for a note in the scale, full for the note playing |
 | Bars | A row or column of states, such as a register's bits | Flat rectangular lights, lit or off |
 | Single light | One state, such as Brumista's LINK | `MediumLight<WhiteLight>`, as in [Parts](#parts) |
+| Plot | Values drawn freely: Barbapedana's 16 steps | A well several rows tall, across its section; bars in the flat lights' colours, a top line in readout type |
 
 - **Signage, not LEDs.** A readout is type, as on Noorda's signs: Inter Tight SemiBold, 14 px for the value and 6.5 px capitals for its name. Seven segments can't spell a note or a scale, and a dot matrix holds one line at this size and comes apart at 100% zoom.
 - **White ink**, `#f1f3f4`, like the lights, so colour on a panel still means family. A highlight colour is left open until a module needs one, and is chosen then for that use.
-- **One row.** A readout takes one 48 px row: a well 38 px tall, 10 px in from each side, ground `#151718`, a `#2c2f32` hairline, corners 1.5 like the plate. Half rows wait until a module needs them.
+- **One row.** A readout takes one 48 px row: a well 38 px tall, 10 px in from each side, ground `#151718`, a `#2c2f32` hairline, corners 1.5 like the plate. A plot takes whole rows, 38 px and 48 more for each further row. Half rows wait until a module needs them.
 - **Dim for a value with no effect.** A readout value that is set but does nothing right now, such as a Gibigiana step that reaches past its buffer, is drawn in the dim ink.
 - **Fractions are composed.** Inter Tight has ⅓ and ½ but no ⅔, so a readout writes every fraction from superior digits, the fraction slash and inferior digits (`¹⁄₃`, `²⁄₃`, `1¹⁄₂`), which match its own fractions.
 - **Flat lights for arrays, round for single states.** The keyboard's square light is the first W72 part; bars are the same part, stretched. Off is `#2b2d30`; dim is the ink at about 40%. A row of bars may carry a 1 px dim underline in the gap above the well's label, to mark a span of the row (Ghisa's hold loop); it is drawn only while that span means something.
 - **A sample in the browser.** The module browser draws a panel with no module behind it, so each display shows a sample value there.
-- **Generator kinds.** `bars` (`count`) and `keyboard` are displays: a well 38 px tall and 10 px in from each side, with the label inside it at the foot. `button` is a 14 px bezel with its label below. `button-grid` (`cols`, `rows`) is buttons at a 30 px (2 HP) pitch both ways, centred, with no label. The generator draws the wells and bezels; the header lists the boxes and centres the widget draws its lights in (bars left to right, keyboard C to B, grids row by row). `readout` (`cells`, `rules`) is a well with one cell per column: each cell's name is an outline in the panel, below the value, and the widget draws the value live, 14 px, centred on the column. The header lists each cell's value baseline and a sample value for the module browser. A cell whose name is left blank has it drawn live instead, in the same type, on a baseline the header gives (`<ID>_NAME_BASELINE`): Gibigiana's lane number, which an expander only learns from the chain. `rules` are hairlines between groups of cells.
+- **Generator kinds.** `bars` (`count`) and `keyboard` are displays: a well 38 px tall and 10 px in from each side, with the label inside it at the foot. `button` is a 14 px bezel with its label below. `button-grid` (`cols`, `rows`) is buttons at a 30 px (2 HP) pitch both ways, centred, with no label. The generator draws the wells and bezels; the header lists the boxes and centres the widget draws its lights in (bars left to right, keyboard C to B, grids row by row). `readout` (`cells`, `rules`) is a well with one cell per column: each cell's name is an outline in the panel, below the value, and the widget draws the value live, 14 px, centred on the column. The header lists each cell's value baseline and a sample value for the module browser. A cell whose name is left blank has it drawn live instead, in the same type, on a baseline the header gives (`<ID>_NAME_BASELINE`): Gibigiana's lane number, which an expander only learns from the chain. `rules` are hairlines between groups of cells. `plot` (`rows`) is a well that many rows tall across its section, with no label; in a split panel it takes a `col`, which picks the section. The header gives only the well, and the widget draws everything in it. `switch` is Rack's horizontal three-way switch with its three `positions` named left of it, above it and right of it, and no label of its own.
 - **Off the grid.** A control takes `dy`, a nudge in px of up to half a row, and a display or button may sit in the top row, with its top 6 px under the band. A display or grid takes its whole row.
 
 ## How panels get made
 
 The design is decided on the Claude Design canvas; the SVGs in `res/` are built from it by `tools/panelgen`, a Go program (Go is already in the toolchain for the MCP server). Nobody edits a panel SVG by hand.
 
-1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`, `button`, `button-grid`, `bars`, `keyboard`, `readout`), a label and a row, and optionally a `dy` nudge.
+1. Each module has a description, `panels/<Slug>.json`: slug, display name, family, HP, and its controls, each with an id, a kind (`knob-large`, `knob`, `trimpot`, `input`, `output`, `light`, `button`, `button-grid`, `switch`, `bars`, `keyboard`, `readout`, `plot`), a label and a row, and optionally a `dy` nudge.
 
    A module may set `dividers`, rows to draw a hairline midway below, and `plateRules`, outputs to draw a rule after on the plate.
 
-   A module with `columns` may set `splits`, columns where the panel divides into side-by-side sections, each drawn as a hairline from 12 px under the band to 12 px above the plate. Every control then sits in a column, a readout takes its section's width rather than the panel's and may share its row with the other sections, and a plate rule between two sections sits on their split. Gibigiana uses one to set lane 1 apart from the system, drawn as the very strip a Gibigiana + repeats.
+   A module with `columns` may set `splits`, columns where the panel divides into side-by-side sections, each drawn as a hairline from 12 px under the band to 12 px above the plate. Every control then sits in a column, a readout takes its section's width rather than the panel's and may share its row with the other sections, and a plate rule between two sections sits on their split. Gibigiana uses one to set lane 1 apart from the system, drawn as the very strip a Gibigiana + repeats. A split panel may also put outputs above row 0, with a `dy`: each row of them gets a plate of its own, as tall as the bottom one and across its section. Barbapedana's first row of steps is the first.
 
    `"mark": false` leaves a panel unsigned, the only way a panel under 6 HP takes outputs (see [Geometry](#geometry)).
 
@@ -143,7 +145,7 @@ The design is decided on the Claude Design canvas; the SVGs in `res/` are built 
 2. **Rows count from the bottom.** Row 0 is the output row on the plate (y = 345.5 px), and each row up is 48 px higher. Controls in a row share its width equally, in the order they are listed, so a description never holds a coordinate.
 3. `make panels` writes `res/<Slug>.svg` in mm (ground, band and title, labels, plate, mark) and `src/<Slug>Panel.hpp`, which holds each control's centre and the screws' corners in px. The module widget places its parts from that header, so the widget and the SVG can't disagree.
 4. Every label is turned into outlines from the static Inter Tight SemiBold and Bold files in `tools/panelgen/fonts/` (read with `golang.org/x/image/font/sfnt`). They stay out of the plugin package. Rack ignores fill rules and takes a contour for a hole by counting crossings, so Inter Tight's overlapping outlines (the stem and bowl of D, the legs and bar of A) would lose a sliver. The generator keeps each outline with its own counters and puts overlapping outlines in separate paths, and a test replays Rack's hole check on every glyph.
-5. The generator refuses what nanosvg can't draw (`text`, `style`, `class`, `use`, clips, masks, filters, dashes), and a description that breaks the grid: a second large knob, an output off row 0, more jacks in a row than HP / 2.
+5. The generator refuses what nanosvg can't draw (`text`, `style`, `class`, `use`, clips, masks, filters, dashes), and a description that breaks the grid: a second large knob, an output off row 0 outside a split panel, more jacks in a row than HP / 2.
 6. CI runs `go test` in `tools/panelgen`, which also fails when a committed panel or header differs from what the generator writes now.
 
 Kerning is not applied yet: Inter Tight keeps it in its `GPOS` table, which `sfnt` doesn't read. Labels are short capitals and the difference is small, but a long mixed-case name may want it later.
@@ -154,5 +156,5 @@ Kerning is not applied yet: Inter Tight keeps it in its `GPOS` table, which `sfn
 - [x] What goes on Brumista's panel besides the link light? A CMD light that flashes per command, dim for reads and full for patch edits, and a slow LINK blink while the port is taken (see the Decisions table in [architecture.md](architecture.md)).
 - [x] Outputs on a panel under 6 HP: the mark sits where the plate would. Such a panel goes unsigned, and its system module signs the chain (Gibigiana +, 2026-11-08). A signed one is still refused.
 - [ ] Custom knobs to match the panels, or stock parts for good?
-- [ ] Small screens that plot values (a register's voltages, an envelope): not designed until a module needs one.
+- [x] Small screens that plot values: the `plot` display, a well of whole rows the widget draws freely, first on Barbapedana (2026-11-11).
 - [ ] The display highlight colour, when a module first needs one.

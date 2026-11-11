@@ -11,6 +11,9 @@ const (
 	flatLightSize = 9.0  // the flat square light inside a button, px
 	gridPitch     = 30.0 // button grid pitch, both ways: 2 HP
 
+	switchW = 28.348 // Rack's CKSSThreeHorizontal, px
+	switchH = 13.457
+
 	wellHeight = 38.0 // a display takes one 48 px row
 	wellMargin = 10.0 // in from each side of the panel
 	wellInset  = 2.0  // lights in from the well's edge, sides
@@ -45,7 +48,7 @@ func (m *Module) checkPart(c Control) error {
 	if c.Dy < -rowPitch/2 || c.Dy > rowPitch/2 {
 		return fmt.Errorf("%s: dy %v is more than half a row", c.ID, c.Dy)
 	}
-	if c.Kind == Output && c.Dy != 0 {
+	if c.Kind == Output && c.Row == 0 && c.Dy != 0 {
 		return fmt.Errorf("%s: outputs sit on the plate and take no dy", c.ID)
 	}
 	y := rowY(c.Row) + c.Dy
@@ -55,7 +58,7 @@ func (m *Module) checkPart(c Control) error {
 	top := y - radiusPx(c.Kind)
 	switch {
 	case isDisplay(c.Kind):
-		floor, top = bandY+bandH+wellGap, y-wellHeight/2
+		floor, top = bandY+bandH+wellGap, y-c.wellH()/2
 	case c.Kind == ButtonGrid:
 		floor, top = bandY+bandH+wellGap, y-buttonSize/2
 	case c.Kind == Button:
@@ -78,6 +81,17 @@ func (m *Module) checkPart(c Control) error {
 		if m.keySize() < keyMinSize {
 			return fmt.Errorf("%s: a keyboard needs at least %d HP", c.ID, 5)
 		}
+	case Plot:
+		if c.Rows < 1 {
+			return fmt.Errorf("%s: a plot needs rows, its height", c.ID)
+		}
+		if c.Label != "" {
+			return fmt.Errorf("%s: a plot takes no label; it draws its own", c.ID)
+		}
+	case Switch:
+		if len(c.Positions) != 3 || c.Label != "" {
+			return fmt.Errorf("%s: a switch names its three positions, and takes no label", c.ID)
+		}
 	case ButtonGrid:
 		if c.Cols < 1 || c.Rows < 1 {
 			return fmt.Errorf("%s: button-grid needs cols and rows", c.ID)
@@ -89,10 +103,21 @@ func (m *Module) checkPart(c Control) error {
 			return fmt.Errorf("%s: a button grid takes no label; label what it controls elsewhere", c.ID)
 		}
 	}
-	if c.Kind != Bars && c.Count != 0 || c.Kind != ButtonGrid && (c.Cols != 0 || c.Rows != 0) {
-		return fmt.Errorf("%s: count, cols and rows belong to bars and button-grid", c.ID)
+	if c.Kind != Bars && c.Count != 0 || c.Kind != ButtonGrid && c.Cols != 0 || c.Kind != ButtonGrid && c.Kind != Plot && c.Rows != 0 {
+		return fmt.Errorf("%s: count, cols and rows belong to bars, button-grid and plot", c.ID)
+	}
+	if c.Kind != Switch && len(c.Positions) != 0 {
+		return fmt.Errorf("%s: positions belong to a switch", c.ID)
 	}
 	return nil
+}
+
+// wellH is a display's well height: one row's, or a plot's rows.
+func (c Control) wellH() float64 {
+	if c.Kind == Plot {
+		return wellHeight + rowPitch*float64(c.Rows-1)
+	}
+	return wellHeight
 }
 
 func (m *Module) wellWidth() float64 { return m.width() - 2*wellMargin }
@@ -121,7 +146,7 @@ func (m *Module) checkColumns(c Control) error {
 		if err := inPanel(*c.Col); err != nil {
 			return err
 		}
-		if c.Kind == ButtonGrid || isDisplay(c.Kind) {
+		if c.Kind == ButtonGrid || isDisplay(c.Kind) && c.Kind != Plot {
 			return fmt.Errorf("%s: a display or button grid takes its whole row, not a column", c.ID)
 		}
 	}
@@ -173,7 +198,7 @@ func (m *Module) well(p Placed) Box {
 	switch {
 	case isDisplay(p.Kind):
 		s := m.sections()[m.sectionOf(p.Control)]
-		return Box{s[0] + wellMargin, p.Y - wellHeight/2, s[1] - s[0] - 2*wellMargin, wellHeight}
+		return Box{s[0] + wellMargin, p.Y - p.wellH()/2, s[1] - s[0] - 2*wellMargin, p.wellH()}
 	case p.Kind == Button:
 		return Box{p.X - buttonSize/2, p.Y - buttonSize/2, buttonSize, buttonSize}
 	}

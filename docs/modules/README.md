@@ -10,15 +10,10 @@ One manual per module: what it does, its panel, and how to start using it. Each 
 | [Moleta +](moletaplus.md) | Trades | 11 | Four more outputs for the Moleta on its left, each with its own ratio, chance and length. | 2.8.0 |
 | [Gibigiana](gibigiana.md) | Weather and light | 10 | Echoes on the clock grid, each lane with its own chance of coming back. | 2.9.0 |
 | [Gibigiana +](gibigianaplus.md) | Weather and light | 4 | One more echo lane for the Gibigiana on its left. | 2.9.0 |
+| [Barbapedana](barbapedana.md) | Trades | 30 | A 16-step sequencer crossed with a random loop: each step is yours by a chance you set, and anchors capture the loop's notes. | 2.11.0 |
 
 Each module's `manualUrl` in `plugin.json` points to its page here on `main` (`https://github.com/sensolab/w72-rack-plugin/blob/main/docs/modules/<slug-lowercase>.md`), so Rack's right-click Manual opens it. A new module ships with its page and that link.
 
 The panel images are Rack's own renders, not the panel SVGs (GitHub can't draw Rack's knobs, jacks and lights). Regenerate them after a panel change with `Rack -u <empty folder> -t 2`, with only the W72 `.vcvplugin` in that folder's `plugins-<os>-<arch>/`; Rack writes `screenshots/W72/<Slug>.png`, which becomes `<slug-lowercase>.png` here.
-
-Designed, not built yet:
-
-| Module | Family | HP | What it does |
-| --- | --- | --- | --- |
-| [Barbapedana](barbapedana.md) | Trades | ~30 | A 16-step sequencer crossed with a random loop: each step is yours by a chance you set, and anchors keep the notes you like |
 
 Scighera is an approved name for a module still to come; the glossary in [concept.md](../concept.md#glossary) has the candidates.
