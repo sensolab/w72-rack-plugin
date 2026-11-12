@@ -52,6 +52,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - Ghisa's root bass scores intervals as the Harmonic mode of bss in [cvly-modules](https://github.com/Lyqst/cvly-modules) by Lyqst (GPL-3.0) does.
 - Panel text is set in [Inter Tight](https://github.com/rsms/inter-tight) (SIL Open Font License 1.1, in [tools/panelgen/fonts](tools/panelgen/fonts)). The SemiBold weight also ships in [res/fonts](res/fonts), with its licence, for the readouts of Moleta and Gibigiana.
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/sensolab-w72-rack-plugin-lilpqt)](https://m8ven.ai/mcp/sensolab-w72-rack-plugin-lilpqt?s=readme)
+
 ## Licence
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
