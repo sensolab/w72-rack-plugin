@@ -76,6 +76,9 @@ struct Moleta : Module {
 	int beatsPerBar = 2;
 	int coinLoop = 1;
 	bool follow[OUTS] = {};
+	// 0: a trigger toggles RUN. 1: RUN follows the input's level, for a transport's
+	// run gate that is high while playing.
+	int runInput = 0;
 
 	dsp::SchmittTrigger runTrigger;
 	dsp::SchmittTrigger resetTrigger;
@@ -103,7 +106,7 @@ struct Moleta : Module {
 			configParam<LengthQuantity>(LENGTH_PARAM + i, 0.f, 1.f, 0.5f, string::f("Length %d", i + 1))->description =
 				"Fully left, a 1 ms trigger; then a gate of 5% to 95% of the output's period";
 		}
-		configInput(RUN_INPUT, "Run")->description = "A trigger toggles RUN";
+		configInput(RUN_INPUT, "Run")->description = "A trigger toggles RUN; or, as a gate (right-click menu), RUN follows it";
 		configInput(CLOCK_INPUT, "Clock")->description = "Rising edges; 1, 4 or 24 per beat (right-click menu). Unpatched, BPM sets the tempo";
 		configInput(RESET_INPUT, "Reset");
 		configInput(DENSITY_INPUT, "Density")->description = "10% per volt, added to every CHANCE";
@@ -128,6 +131,7 @@ struct Moleta : Module {
 		clockInput = 0;
 		beatsPerBar = 2;
 		coinLoop = 1;
+		runInput = 0;
 		std::fill(follow, follow + OUTS, false);
 	}
 
@@ -153,7 +157,10 @@ struct Moleta : Module {
 	}
 
 	void process(const ProcessArgs& args) override {
-		if (runTrigger.process(inputs[RUN_INPUT].getVoltage(), 0.1f, 1.f))
+		bool runEdge = runTrigger.process(inputs[RUN_INPUT].getVoltage(), 0.1f, 1.f);
+		if (runInput == 1 && inputs[RUN_INPUT].isConnected())
+			params[RUN_PARAM].setValue(runTrigger.isHigh() ? 1.f : 0.f);
+		else if (runEdge)
 			params[RUN_PARAM].setValue(params[RUN_PARAM].getValue() > 0.5f ? 0.f : 1.f);
 		bool running = params[RUN_PARAM].getValue() > 0.5f;
 		bool resetPressed = resetButton.process(params[RESET_PARAM].getValue() > 0.5f);
@@ -235,6 +242,7 @@ struct Moleta : Module {
 		json_object_set_new(rootJ, "clockInput", json_integer(PULSES_PER_BEAT[clockInput]));
 		json_object_set_new(rootJ, "beatsPerBar", json_integer(BEATS_PER_BAR[beatsPerBar]));
 		json_object_set_new(rootJ, "coinLoop", json_integer(COIN_LOOPS[coinLoop]));
+		json_object_set_new(rootJ, "runInput", json_string(runInput == 1 ? "gate" : "trigger"));
 		json_t* followJ = json_array();
 		for (int i = 1; i < OUTS; i++)
 			json_array_append_new(followJ, json_boolean(follow[i]));
@@ -267,6 +275,8 @@ struct Moleta : Module {
 		clockInput = indexOf(PULSES_PER_BEAT, (int) json_integer_value(json_object_get(rootJ, "clockInput")), 0);
 		beatsPerBar = indexOf(BEATS_PER_BAR, (int) json_integer_value(json_object_get(rootJ, "beatsPerBar")), 2);
 		coinLoop = indexOf(COIN_LOOPS, (int) json_integer_value(json_object_get(rootJ, "coinLoop")), 1);
+		const char* run = json_string_value(json_object_get(rootJ, "runInput"));
+		runInput = run && std::string(run) == "gate" ? 1 : 0;
 		json_t* followJ = json_object_get(rootJ, "follow");
 		for (int i = 1; i < OUTS; i++)
 			follow[i] = json_is_true(json_array_get(followJ, i - 1));
@@ -346,6 +356,7 @@ struct MoletaWidget : ModuleWidget {
 		if (!m)
 			return;
 		menu->addChild(new MenuSeparator);
+		menu->addChild(createIndexPtrSubmenuItem("Run input", {"Trigger toggles", "Gate holds"}, &m->runInput));
 		menu->addChild(createIndexPtrSubmenuItem("Clock input", {"1 pulse per beat", "4 pulses per beat", "24 pulses per beat"}, &m->clockInput));
 		menu->addChild(createIndexPtrSubmenuItem("Beats per bar", {"2", "3", "4", "5", "6", "7", "8", "12"}, &m->beatsPerBar));
 		menu->addChild(createIndexPtrSubmenuItem("Coin loop", {"8 flips", "16 flips"}, &m->coinLoop));

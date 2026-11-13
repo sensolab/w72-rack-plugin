@@ -27,7 +27,7 @@ The obvious job is drums, but any ticks will do. Clock a sample and hold for ste
 | DENSITY input | CV that adds to or takes from every CHANCE at once. Mono. |
 | CHANCE 1 to 4 | How often a tick gets through. Fully right, always. |
 | LENGTH 1 to 4 | Fully left, a short trigger. Further right, a gate that lasts longer, up to almost the next tick. |
-| RUN input | A trigger starts or stops the clock. |
+| RUN input | A trigger starts or stops the clock. Set it to a gate in the right-click menu to follow a transport's run output. |
 | CLOCK input | A clock to follow instead of BPM. Optional. |
 | RESET input | A trigger resets, like the button. |
 | CLICK | Audio: a metronome click, accented on the first beat of the bar. |
@@ -41,6 +41,7 @@ The defaults suit a clock at one pulse per beat in 4/4.
 
 | Option | What it does | Default |
 | --- | --- | --- |
+| Run input | *Trigger toggles*: each trigger starts or stops the clock. *Gate holds*: the clock runs while the input is high, so a sequencer's RUN gate (one that stays high while playing) starts and stops it. While patched as a gate, the RUN button only shows the state. | Trigger toggles |
 | Clock input | Set to 4 or 24 if the clock in CLOCK sends that many pulses per beat. | 1 |
 | Beats per bar | Where the CLICK accent falls. | 4 |
 | Follow the output above | Outputs 2 to 4 only play while the output above them is playing. Rests then fall on whole beats or bars. | Off |
